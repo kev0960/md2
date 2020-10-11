@@ -1,10 +1,15 @@
 #include "parser.h"
 
+#include <unordered_set>
+
+#include "parse_tree_nodes/escape.h"
 #include "parse_tree_nodes/paragraph.h"
 #include "parse_tree_nodes/text_decoration.h"
 
 namespace md2 {
 namespace {
+
+static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\'};
 
 // Create a new node that starts at the given parameter.
 template <typename NewNodeType>
@@ -43,12 +48,19 @@ ParseTreeNode* MarkEndAllTheWayUp(ParseTreeNode* current_node, int index) {
 
 }  // namespace
 
-// Rule of parsing.
 ParseTree Parser::GenerateParseTree(std::string_view content) {
   auto root = std::make_unique<ParseTreeNode>(/*parent=*/nullptr, 0);
+  GenericParser(content, 0, /*end_parsing_token=*/"", root.get());
 
-  ParseTreeNode* current_node = root.get();
-  int index = 0;
+  return ParseTree(std::move(root));
+}
+
+int Parser::GenericParser(std::string_view content, int start,
+                          std::string_view end_parsing_token,
+                          ParseTreeNode* root) {
+  ParseTreeNode* current_node = root;
+
+  int index = start;
   while (index != content.size()) {
     // If current node is the root node, then create the Paragraph node as a
     // default.
@@ -58,6 +70,18 @@ ParseTree Parser::GenerateParseTree(std::string_view content) {
 
     // We should skip the escape character.
     if (content[index] == '\\') {
+      if (index + 1 < content.size()) {
+        char c = content[index + 1];
+        if (kEscapeableChars.count(c)) {
+          current_node =
+              CreateNewNode<ParseTreeEscapeNode>(current_node, index);
+          current_node->SetEnd(index + 2);
+          current_node = current_node->GetParent();
+
+          index += 2;
+          continue;
+        }
+      }
     }
 
     if (content[index] == '*') {
@@ -104,6 +128,14 @@ ParseTree Parser::GenerateParseTree(std::string_view content) {
       continue;
     }
 
+    if (!end_parsing_token.empty() &&
+        content.substr(index, end_parsing_token.size()) == end_parsing_token) {
+      // Walk up the node and mark its end.
+      MarkEndAllTheWayUp(current_node, index + end_parsing_token.size());
+      root->SetEnd(index + end_parsing_token.size());
+      return index + end_parsing_token.size();
+    }
+
     index += 1;
   }
 
@@ -111,7 +143,10 @@ ParseTree Parser::GenerateParseTree(std::string_view content) {
   MarkEndAllTheWayUp(current_node, content.size());
   root->SetEnd(content.size());
 
-  return ParseTree(std::move(root));
+  return content.size();
 }
+
+ParseTreeNode* Parser::MaybeParseLink(std::string_view content, int start,
+                                      int& end) {}
 
 }  // namespace md2

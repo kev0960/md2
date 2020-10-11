@@ -1,6 +1,7 @@
 #ifndef PARSE_TREE_NODE_H
 #define PARSE_TREE_NODE_H
 
+#include <cassert>
 #include <functional>
 #include <list>
 #include <memory>
@@ -12,15 +13,21 @@ namespace md2 {
 
 class ParseTreeNode {
  public:
-  enum NodeType { NODE, PARAGRAPH, BOLD, ITALIC };
+  enum NodeType { NODE, PARAGRAPH, BOLD, ITALIC, ESCAPE };
 
-  ParseTreeNode(ParseTreeNode* parent, int start)
-      : parent_(parent), start_(start) {}
+  ParseTreeNode(ParseTreeNode* parent, int start, bool is_leaf_node = false)
+      : parent_(parent), start_(start), is_leaf_node_(is_leaf_node) {}
 
   virtual NodeType GetNodeType() const { return NODE; }
   void SetEnd(int end) { end_ = end; }
 
+  // Override in case adding a children is not valid.
   void AddChildren(std::unique_ptr<ParseTreeNode> child) {
+    if (is_leaf_node_) {
+      assert(("This node is the leaf node.", false));
+      return;
+    }
+
     children_.push_back(std::move(child));
   }
 
@@ -64,6 +71,9 @@ class ParseTreeNode {
   // Spans [start_, end) in the text. Note that end_ is not included.
   int start_;
   int end_;
+
+  // If this is true, then the node cannot have any child node.
+  bool is_leaf_node_;
 };
 
 }  // namespace md2
