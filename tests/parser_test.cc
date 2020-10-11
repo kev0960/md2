@@ -136,7 +136,11 @@ TEST(ParserTest, Link) {
   DoParserTest("[link](http://link)",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 19, 0},
                                   {ParseTreeNode::PARAGRAPH, 0, 19, 1},
-                                  {ParseTreeNode::LINK, 0, 19, 2}}));
+                                  {ParseTreeNode::LINK, 0, 19, 2},
+                                  {ParseTreeNode::NODE, 0, 6, 3},
+                                  {ParseTreeNode::PARAGRAPH, 1, 6, 4},
+                                  {ParseTreeNode::NODE, 6, 19, 3},
+                                  {ParseTreeNode::PARAGRAPH, 7, 19, 4}}));
 }
 
 TEST(ParserTest, Link2) {
@@ -144,14 +148,23 @@ TEST(ParserTest, Link2) {
   DoParserTest("[link *]*](http://link)",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 23, 0},
                                   {ParseTreeNode::PARAGRAPH, 0, 23, 1},
-                                  {ParseTreeNode::LINK, 0, 23, 2}}));
+                                  {ParseTreeNode::LINK, 0, 23, 2},
+                                  {ParseTreeNode::NODE, 0, 10, 3},
+                                  {ParseTreeNode::PARAGRAPH, 1, 10, 4},
+                                  {ParseTreeNode::ITALIC, 6, 9, 5},
+                                  {ParseTreeNode::NODE, 10, 23, 3},
+                                  {ParseTreeNode::PARAGRAPH, 11, 23, 4}}));
 }
 
 TEST(ParserTest, Link3) {
   DoParserTest("arr[0][1][2](link)",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 18, 0},
                                   {ParseTreeNode::PARAGRAPH, 0, 18, 1},
-                                  {ParseTreeNode::LINK, 9, 18, 2}}));
+                                  {ParseTreeNode::LINK, 9, 18, 2},
+                                  {ParseTreeNode::NODE, 9, 12, 3},
+                                  {ParseTreeNode::PARAGRAPH, 10, 12, 4},
+                                  {ParseTreeNode::NODE, 12, 18, 3},
+                                  {ParseTreeNode::PARAGRAPH, 13, 18, 4}}));
 }
 
 TEST(ParserTest, InvalidLink) {
@@ -164,6 +177,15 @@ TEST(ParserTest, InvalidLink2) {
   DoParserTest("arr[0][1][2]",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 12, 0},
                                   {ParseTreeNode::PARAGRAPH, 0, 12, 1}}));
+}
+
+TEST(ParserTest, EscapeChar) {
+  // \b and \note are not escaped.
+  DoParserTest(R"(\*\b\\\note)",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 11, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 11, 1},
+                                  {ParseTreeNode::ESCAPE, 0, 2, 2},
+                                  {ParseTreeNode::ESCAPE, 4, 6, 2}}));
 }
 
 }  // namespace

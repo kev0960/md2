@@ -1,5 +1,5 @@
-#ifndef GENERATOR_H
-#define GENERATOR_H
+#ifndef GENERATORS_GENERATOR_H
+#define GENERATORS_GENERATOR_H
 
 #include <string>
 
@@ -20,7 +20,12 @@ class Generator {
   virtual void EmitItalicStart() {}
   virtual void EmitItalicEnd() {}
 
-  virtual void EmitLink() {}
+  virtual void StartLink() {}
+  virtual void EmitLinkUrlStart() {}
+  virtual void EmitLinkUrlEnd() {}
+  virtual void EmitLinkDescStart() {}
+  virtual void EmitLinkDescEnd() {}
+  virtual void EndLink() {}
 
  protected:
   std::string_view md_;

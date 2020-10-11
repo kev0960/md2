@@ -7,13 +7,13 @@
 #include <memory>
 #include <vector>
 
-#include "../generator.h"
+#include "../generators/generator.h"
 
 namespace md2 {
 
 class ParseTreeNode {
  public:
-  enum NodeType { NODE, PARAGRAPH, BOLD, ITALIC, ESCAPE, LINK};
+  enum NodeType { NODE, PARAGRAPH, BOLD, ITALIC, ESCAPE, LINK, IMAGE };
 
   ParseTreeNode(ParseTreeNode* parent, int start, bool is_leaf_node = false)
       : parent_(parent), start_(start), is_leaf_node_(is_leaf_node) {}
@@ -31,6 +31,7 @@ class ParseTreeNode {
     children_.push_back(std::move(child));
   }
 
+  void SetParent(ParseTreeNode* parent) { parent_ = parent; }
   constexpr ParseTreeNode* GetParent() const { return parent_; }
   ParseTreeNode* GetLastChildren() {
     if (children_.empty()) {

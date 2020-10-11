@@ -122,12 +122,16 @@ int Parser::GenericParser(std::string_view content, int start,
     }
 
     if (content[index] == '[') {
-      auto maybe_link = MaybeParseLink(content, index, index);
+      auto maybe_link =
+          MaybeParseLink<ParseTreeLinkNode>(content, index, index);
 
       if (maybe_link) {
         current_node->AddChildren(std::move(maybe_link));
         continue;
       }
+    }
+
+    if (content.substr(index, 2) == "![") {
     }
 
     if (content.substr(index, 2) == "\n\n") {
@@ -158,25 +162,41 @@ int Parser::GenericParser(std::string_view content, int start,
   return content.size();
 }
 
+// Link has the form [link-desc](url)
+template <typename LinkNodeType>
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
                                                       int start, int& end) {
-  auto root = std::make_unique<ParseTreeLinkNode>(nullptr, start);
-  int link_desc_end =
-      GenericParser(content, start + 1, "](", root->CreateLinkDesc(start));
+  auto root = std::make_unique<LinkNodeType>(nullptr, start);
 
-  if (content.substr(link_desc_end - 2, 2) != "](") {
+  // We should not specify the parent as Link yet (otherwise checking the end
+  // parsing token would not work.)
+  auto desc = std::make_unique<ParseTreeNode>(nullptr, start);
+
+  // Note that parsing starts after "[" (to prevent infinite loop).
+  int desc_end = GenericParser(content, start + 1, "]", desc.get());
+
+  if (content.substr(desc_end - 1, 2) != "](") {
     return nullptr;
   }
+  desc->SetEnd(desc_end);
 
-  int link_end = GenericParser(content, link_desc_end, ")",
-                               root->CreateLink(link_desc_end));
-  if (content.substr(link_end - 1, 1) != ")") {
+  auto url = std::make_unique<ParseTreeNode>(nullptr, desc_end);
+
+  // Parsing starts after "(".
+  int url_end = GenericParser(content, desc_end + 1, ")", url.get());
+  if (content.substr(url_end - 1, 1) != ")") {
     return nullptr;
   }
+  url->SetEnd(url_end);
 
-  end = link_end;
-  root->SetLinkDescEndAndLinkEnd(link_desc_end, link_end);
-  root->SetEnd(link_end);
+  end = url_end;
+  root->SetEnd(url_end);
+
+  desc->SetParent(root.get());
+  root->AddChildren(std::move(desc));
+
+  url->SetParent(root.get());
+  root->AddChildren(std::move(url));
 
   return root;
 }

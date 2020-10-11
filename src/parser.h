@@ -28,7 +28,9 @@ class Parser {
   // and end will not be modified.
   // Otherwise, return the constructed tree node and set the end of the parsed
   // link.
-  std::unique_ptr<ParseTreeNode> MaybeParseLink(std::string_view content, int start, int& end);
+  template <typename LinkNodeType>
+  std::unique_ptr<ParseTreeNode> MaybeParseLink(std::string_view content,
+                                                int start, int& end);
 };
 
 }  // namespace md2

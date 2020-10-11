@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include "generator.h"
+#include "generators/generator.h"
 #include "parse_tree_nodes/node.h"
 
 namespace md2 {
