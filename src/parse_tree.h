@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include "generator.h"
 #include "parse_tree_nodes/node.h"
 
 namespace md2 {
@@ -13,9 +14,9 @@ class ParseTree {
  public:
   ParseTree(std::unique_ptr<ParseTreeNode> root) : root_(std::move(root)) {}
 
-  // Per each character's index, list the actions that need to be done.
-  // This will be passed to the Generator to emit the converted result.
-  std::vector<std::list<ParseTreeNode::NodeActions>> FlattenTree() const;
+  void Generate(Generator* generator);
+
+  const ParseTreeNode* GetRoot() const { return root_.get(); }
 
  private:
   std::unique_ptr<ParseTreeNode> root_;

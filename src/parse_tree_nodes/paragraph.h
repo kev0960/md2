@@ -10,13 +10,10 @@ class ParseTreeParagraphNode : public ParseTreeNode {
  public:
   ParseTreeParagraphNode(ParseTreeNode* parent, int start)
       : ParseTreeNode(parent, start) {}
-  ParseTreeParagraphNode(ParseTreeNode* parent, int start, int end)
-      : ParseTreeNode(parent, start, end) {}
 
-  NodeType GetNodeType() override { return ParseTreeNode::PARAGRAPH; }
+  NodeType GetNodeType() const override { return ParseTreeNode::PARAGRAPH; }
 
-  int SetActions(std::vector<std::list<ParseTreeNode::NodeActions>>& actions)
-      const override;
+  void Generate(Generator* generator) const override;
 };
 
 }  // namespace md2

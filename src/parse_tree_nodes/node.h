@@ -1,32 +1,30 @@
 #ifndef PARSE_TREE_NODE_H
 #define PARSE_TREE_NODE_H
 
+#include <functional>
 #include <list>
 #include <memory>
 #include <vector>
+
+#include "../generator.h"
 
 namespace md2 {
 
 class ParseTreeNode {
  public:
-  enum NodeType { NODE, PARAGRAPH };
-
-  // Actions to take by generators.
-  enum NodeActions { EMIT_CHAR, IGNORE, EMIT_P_START, EMIT_P_END };
+  enum NodeType { NODE, PARAGRAPH, BOLD, ITALIC };
 
   ParseTreeNode(ParseTreeNode* parent, int start)
       : parent_(parent), start_(start) {}
-  ParseTreeNode(ParseTreeNode* parent, int start, int end)
-      : parent_(parent), start_(start), end_(end) {}
 
-  virtual NodeType GetNodeType() { return NODE; }
+  virtual NodeType GetNodeType() const { return NODE; }
   void SetEnd(int end) { end_ = end; }
 
   void AddChildren(std::unique_ptr<ParseTreeNode> child) {
     children_.push_back(std::move(child));
   }
 
-  ParseTreeNode* GetParent() { return parent_; }
+  constexpr ParseTreeNode* GetParent() const { return parent_; }
   ParseTreeNode* GetLastChildren() {
     if (children_.empty()) {
       return nullptr;
@@ -34,22 +32,31 @@ class ParseTreeNode {
 
     return children_.back().get();
   }
+  constexpr const std::vector<std::unique_ptr<ParseTreeNode>>& GetChildren()
+      const {
+    return children_;
+  }
 
-  // Given index, return the TreeNode that contains the index in its span. If
-  // there is no such, then this returns a nullptr.
-  ParseTreeNode* GetNext(int index) const;
+  virtual void Generate(Generator* generator) const;
 
-  // Set the action per indexes. Returns the index to continue.
-  virtual int SetActions(
-      std::vector<std::list<ParseTreeNode::NodeActions>>& actions) const;
-
-  constexpr int Size() { return end_ - start_; }
-  constexpr int Start() { return start_; }
-  constexpr int End() { return end_; }
+  constexpr int Size() const { return end_ - start_; }
+  constexpr int Start() const { return start_; }
+  constexpr int End() const { return end_; }
 
   virtual ~ParseTreeNode() = default;
 
  protected:
+  // Given index, return the TreeNode that contains the index in its span. If
+  // there is no such, then this returns a nullptr.
+  ParseTreeNode* GetNext(int index) const;
+
+  // For the elements that are not part of the child nodes, it runs the
+  // default_action(g, index); Otherwise, it just calls the Generate of the
+  // child node.
+  void GenerateWithDefaultAction(
+      Generator* generator,
+      std::function<void(Generator*, int index)> default_action) const;
+
   std::vector<std::unique_ptr<ParseTreeNode>> children_;
 
   ParseTreeNode* parent_;
