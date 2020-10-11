@@ -19,17 +19,16 @@ class Parser {
   // Builds the tree from the given root node. Note that this parses until it
   // sees the end_parsing_token. If end_parsing_token is empty, then it tries to
   // parse until the end of the content.
-  // Returns the location when the parsing is done.
+  // Returns the location right after the end parsing token.
   int GenericParser(std::string_view content, int start,
-                     std::string_view end_parsing_token, ParseTreeNode* root
-                     );
+                    std::string_view end_parsing_token, ParseTreeNode* root);
 
   // Try to parse the markdown that starts with '['. The parsing can fail if it
   // does not construct the proper link. In such case, this will return nullptr
   // and end will not be modified.
   // Otherwise, return the constructed tree node and set the end of the parsed
   // link.
-  ParseTreeNode* MaybeParseLink(std::string_view content, int start, int& end);
+  std::unique_ptr<ParseTreeNode> MaybeParseLink(std::string_view content, int start, int& end);
 };
 
 }  // namespace md2

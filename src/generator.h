@@ -20,6 +20,8 @@ class Generator {
   virtual void EmitItalicStart() {}
   virtual void EmitItalicEnd() {}
 
+  virtual void EmitLink() {}
+
  protected:
   std::string_view md_;
   std::string target_;

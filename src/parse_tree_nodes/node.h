@@ -13,7 +13,7 @@ namespace md2 {
 
 class ParseTreeNode {
  public:
-  enum NodeType { NODE, PARAGRAPH, BOLD, ITALIC, ESCAPE };
+  enum NodeType { NODE, PARAGRAPH, BOLD, ITALIC, ESCAPE, LINK};
 
   ParseTreeNode(ParseTreeNode* parent, int start, bool is_leaf_node = false)
       : parent_(parent), start_(start), is_leaf_node_(is_leaf_node) {}

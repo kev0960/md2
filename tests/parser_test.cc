@@ -132,5 +132,39 @@ TEST(ParserTest, BoldInItalic2) {
                                   {ParseTreeNode::BOLD, 7, 12, 3}}));
 }
 
+TEST(ParserTest, Link) {
+  DoParserTest("[link](http://link)",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 19, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 19, 1},
+                                  {ParseTreeNode::LINK, 0, 19, 2}}));
+}
+
+TEST(ParserTest, Link2) {
+  // "]" inside of the ** should be ignored.
+  DoParserTest("[link *]*](http://link)",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 23, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 23, 1},
+                                  {ParseTreeNode::LINK, 0, 23, 2}}));
+}
+
+TEST(ParserTest, Link3) {
+  DoParserTest("arr[0][1][2](link)",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 18, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 18, 1},
+                                  {ParseTreeNode::LINK, 9, 18, 2}}));
+}
+
+TEST(ParserTest, InvalidLink) {
+  DoParserTest("[link] (http://link)",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 20, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 20, 1}}));
+}
+
+TEST(ParserTest, InvalidLink2) {
+  DoParserTest("arr[0][1][2]",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 12, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 12, 1}}));
+}
+
 }  // namespace
 }  // namespace md2

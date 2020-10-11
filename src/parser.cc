@@ -3,6 +3,7 @@
 #include <unordered_set>
 
 #include "parse_tree_nodes/escape.h"
+#include "parse_tree_nodes/link.h"
 #include "parse_tree_nodes/paragraph.h"
 #include "parse_tree_nodes/text_decoration.h"
 
@@ -120,6 +121,15 @@ int Parser::GenericParser(std::string_view content, int start,
       continue;
     }
 
+    if (content[index] == '[') {
+      auto maybe_link = MaybeParseLink(content, index, index);
+
+      if (maybe_link) {
+        current_node->AddChildren(std::move(maybe_link));
+        continue;
+      }
+    }
+
     if (content.substr(index, 2) == "\n\n") {
       current_node = MarkEndAllTheWayUp(current_node, index);
 
@@ -128,7 +138,9 @@ int Parser::GenericParser(std::string_view content, int start,
       continue;
     }
 
+    // End parsing token must be checked at the paragraph level.
     if (!end_parsing_token.empty() &&
+        current_node->GetNodeType() == ParseTreeNode::PARAGRAPH &&
         content.substr(index, end_parsing_token.size()) == end_parsing_token) {
       // Walk up the node and mark its end.
       MarkEndAllTheWayUp(current_node, index + end_parsing_token.size());
@@ -146,7 +158,27 @@ int Parser::GenericParser(std::string_view content, int start,
   return content.size();
 }
 
-ParseTreeNode* Parser::MaybeParseLink(std::string_view content, int start,
-                                      int& end) {}
+std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
+                                                      int start, int& end) {
+  auto root = std::make_unique<ParseTreeLinkNode>(nullptr, start);
+  int link_desc_end =
+      GenericParser(content, start + 1, "](", root->CreateLinkDesc(start));
+
+  if (content.substr(link_desc_end - 2, 2) != "](") {
+    return nullptr;
+  }
+
+  int link_end = GenericParser(content, link_desc_end, ")",
+                               root->CreateLink(link_desc_end));
+  if (content.substr(link_end - 1, 1) != ")") {
+    return nullptr;
+  }
+
+  end = link_end;
+  root->SetLinkDescEndAndLinkEnd(link_desc_end, link_end);
+  root->SetEnd(link_end);
+
+  return root;
+}
 
 }  // namespace md2
