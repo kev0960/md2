@@ -27,6 +27,17 @@ class Generator {
   virtual void EmitLinkDescEnd() {}
   virtual void EndLink() {}
 
+  virtual void StartImage() {}
+  virtual void EmitImageUrlStart() {}
+  virtual void EmitImageUrlEnd() {}
+  virtual void EmitImageAltStart() {}  // Alt tag of the image.
+  virtual void EmitImageAltEnd() {}
+  virtual void EmitImageCaptionStart() {}
+  virtual void EmitImageCaptionEnd() {}
+  virtual void EmitImageSizeStart() {}
+  virtual void EmitImageSizeEnd() {}
+  virtual void EndImage() {}
+
  protected:
   std::string_view md_;
   std::string target_;

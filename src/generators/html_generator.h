@@ -13,6 +13,13 @@ struct HTMLLinkBuilder {
   std::string link_url;
 };
 
+struct HTMLImageBuilder {
+  std::string alt;
+  std::string caption;
+  std::string size;
+  std::string url;
+};
+
 class HTMLGenerator : public Generator {
  public:
   HTMLGenerator() { targets_.push_back(&target_); }
@@ -44,19 +51,40 @@ class HTMLGenerator : public Generator {
   void EmitLinkDescEnd() override { targets_.pop_back(); }
 
   void EndLink() override {
-    std::string* link_desc = targets_.back();
-    targets_.pop_back();
-
-    std::string* link_url = targets_.back();
-    targets_.pop_back();
-
+    const HTMLLinkBuilder& link = links_.back();
     GetCurrentTarget()->append(
-        StrCat("<a href='", *link_url, "'>", *link_desc, "</a>"));
+        StrCat("<a href='", link.link_url, "'>", link.link_desc, "</a>"));
     links_.pop_back();
+  }
+
+  void StartImage() override { images_.push_back(HTMLImageBuilder()); }
+
+  void EmitImageUrlStart() override { targets_.push_back(&images_.back().url); }
+
+  void EmitImageUrlEnd() override { targets_.pop_back(); }
+
+  void EmitImageAltStart() override { targets_.push_back(&images_.back().alt); }
+  void EmitImageAltEnd() override { targets_.pop_back(); }
+  void EmitImageCaptionStart() override {
+    targets_.push_back(&images_.back().caption);
+  }
+  void EmitImageCaptionEnd() override { targets_.pop_back(); }
+  void EmitImageSizeStart() override {
+    targets_.push_back(&images_.back().size);
+  }
+  void EmitImageSizeEnd() override { targets_.pop_back(); }
+  void EndImage() override {
+    const HTMLImageBuilder& image = images_.back();
+    GetCurrentTarget()->append(
+        StrCat("<figure><picture><img class='content-img' src='", image.url,
+               "' alt=", image.alt, "'>", "</picture><figcaption>",
+               image.caption, "</figcaption></figure>"));
+    images_.pop_back();
   }
 
  private:
   std::vector<HTMLLinkBuilder> links_;
+  std::vector<HTMLImageBuilder> images_;
   std::vector<std::string*> targets_;
 };
 

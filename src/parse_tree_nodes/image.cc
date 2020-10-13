@@ -8,7 +8,43 @@
 namespace md2 {
 namespace {}  // namespace
 
-void ParseTreeImageNode::Generate(Generator* generator) const {}
+void ParseTreeImageNode::Generate(Generator* generator) const {
+  assert(("(Image) Number of children is not two", children_.size() == 2));
+
+  ParseTreeNode* desc_node = children_[0].get();
+  assert(desc_node->GetNodeType() == ParseTreeNode::NODE);
+
+  ParseTreeNode* desc = desc_node->GetChildren()[0].get();
+  assert(desc->GetNodeType() == ParseTreeNode::PARAGRAPH);
+
+  generator->StartImage();
+
+  if (auto index = keyword_to_index_.find("alt");
+      index != keyword_to_index_.end()) {
+    generator->EmitImageAltStart();
+    desc->GetChildren().at(index->second)->Generate(generator);
+    generator->EmitImageAltEnd();
+  }
+
+  if (auto index = keyword_to_index_.find("caption");
+      index != keyword_to_index_.end()) {
+    generator->EmitImageCaptionStart();
+    desc->GetChildren().at(index->second)->Generate(generator);
+    generator->EmitImageCaptionEnd();
+  }
+
+  if (auto index = keyword_to_index_.find("size");
+      index != keyword_to_index_.end()) {
+    generator->EmitImageSizeStart();
+    desc->GetChildren().at(index->second)->Generate(generator);
+    generator->EmitImageSizeEnd();
+  }
+
+  generator->EmitImageUrlStart();
+  children_[1]->Generate(generator);
+  generator->EmitImageUrlEnd();
+  generator->EndImage();
+}
 
 void ParseTreeImageNode::SetKeywordNodes(
     std::unordered_map<std::string, std::unique_ptr<ParseTreeNode>>&
