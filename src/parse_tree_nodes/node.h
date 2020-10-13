@@ -13,7 +13,7 @@ namespace md2 {
 
 class ParseTreeNode {
  public:
-  enum NodeType { NODE, PARAGRAPH, BOLD, ITALIC, ESCAPE, LINK, IMAGE };
+  enum NodeType { NODE, PARAGRAPH, TEXT, BOLD, ITALIC, ESCAPE, LINK, IMAGE };
 
   ParseTreeNode(ParseTreeNode* parent, int start, bool is_leaf_node = false)
       : parent_(parent), start_(start), is_leaf_node_(is_leaf_node) {}
@@ -44,6 +44,7 @@ class ParseTreeNode {
       const {
     return children_;
   }
+  std::unique_ptr<ParseTreeNode> PopChildrenAt(int index);
 
   virtual void Generate(Generator* generator) const;
 
@@ -51,13 +52,17 @@ class ParseTreeNode {
   constexpr int Start() const { return start_; }
   constexpr int End() const { return end_; }
 
+  // Given index, return the TreeNode that contains the pos in its span. If
+  // there is no such, then this returns a nullptr.
+  ParseTreeNode* GetNext(int pos) const;
+
+  // Same as GetNext but returns the index of the child node instead. If there
+  // is no such node, then this returns the children_.size().
+  int GetNextChildIndex(int pos) const;
+
   virtual ~ParseTreeNode() = default;
 
  protected:
-  // Given index, return the TreeNode that contains the index in its span. If
-  // there is no such, then this returns a nullptr.
-  ParseTreeNode* GetNext(int index) const;
-
   // For the elements that are not part of the child nodes, it runs the
   // default_action(g, index); Otherwise, it just calls the Generate of the
   // child node.

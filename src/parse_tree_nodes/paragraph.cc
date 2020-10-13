@@ -11,4 +11,10 @@ void ParseTreeParagraphNode::Generate(Generator* generator) const {
   generator->EmitPEnd();
 }
 
+void ParseTreeTextNode::Generate(Generator* generator) const {
+  // Print any character that is not part of the child node.
+  GenerateWithDefaultAction(generator,
+                            [](Generator* g, int index) { g->Emit(index); });
+}
+
 }  // namespace md2

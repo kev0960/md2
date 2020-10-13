@@ -4,6 +4,7 @@
 #include <string>
 
 #include "parse_tree.h"
+#include "parse_tree_nodes/image.h"
 
 namespace md2 {
 
@@ -31,6 +32,10 @@ class Parser {
   template <typename LinkNodeType>
   std::unique_ptr<ParseTreeNode> MaybeParseLink(std::string_view content,
                                                 int start, int& end);
+
+  // Parse the image description of the Image node.
+  void ParseImageDescriptionMetadata(std::string_view content,
+                                     ParseTreeImageNode* image);
 };
 
 }  // namespace md2

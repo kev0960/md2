@@ -1,8 +1,10 @@
 #include "parser.h"
 
+#include <iostream>
 #include <unordered_set>
 
 #include "parse_tree_nodes/escape.h"
+#include "parse_tree_nodes/image.h"
 #include "parse_tree_nodes/link.h"
 #include "parse_tree_nodes/paragraph.h"
 #include "parse_tree_nodes/text_decoration.h"
@@ -11,6 +13,10 @@ namespace md2 {
 namespace {
 
 static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\'};
+
+// "alt" is not here because alt text is just a default when no xxx= is
+// specified.
+static std::unordered_set<std::string> kImageDescKeywords = {"caption", "size"};
 
 // Create a new node that starts at the given parameter.
 template <typename NewNodeType>
@@ -45,6 +51,57 @@ ParseTreeNode* MarkEndAllTheWayUp(ParseTreeNode* current_node, int index) {
   }
 
   return current_node;
+}
+
+std::optional<std::tuple<std::string, int>> FindDescKeywordPost(
+    std::string_view data) {
+  size_t current = 0;
+  auto found = data.find("=", current);
+  while (found != std::string_view::npos) {
+    for (const auto& keyword : kImageDescKeywords) {
+      if (data.substr(found - keyword.size(), keyword.size()) == keyword) {
+        return std::make_tuple(keyword, found - keyword.size());
+      }
+    }
+    current++;
+    found = data.find("=", current);
+  }
+
+  return std::nullopt;
+}
+
+// Builds the image's keyword to node map from the given string.
+// E.g If the given content is "(some alt text) caption=abc"
+// Then, current_keyword (=alt) will be set as "(some alt text)" and
+// new keyword (=caption) will be added to nodes_per_keyword map and the newly
+// created node will be returned.
+ParseTreeNode* BuildImageKeywordNodes(
+    std::string_view content, int start_in_actual_content,
+    ParseTreeNode* current_keyword,
+    std::unordered_map<std::string, std::unique_ptr<ParseTreeNode>>&
+        nodes_per_keyword) {
+  std::string_view current_content = content;
+  while (!current_content.empty()) {
+    auto keyword_and_pos_or = FindDescKeywordPost(current_content);
+    if (!keyword_and_pos_or) {
+      // There is no keywword (xxx=) inside of the current string.
+      return current_keyword;
+    }
+
+    auto [keyword, start_pos] = *keyword_and_pos_or;
+    current_keyword->SetEnd(start_in_actual_content + start_pos);
+
+    // The xxxx= part is not included in the text node.
+    const size_t offset_in_current_content = start_pos + keyword.size() + 1;
+    nodes_per_keyword[keyword] = std::make_unique<ParseTreeTextNode>(
+        nullptr, start_in_actual_content + offset_in_current_content);
+    current_keyword = nodes_per_keyword[keyword].get();
+
+    current_content = current_content.substr(offset_in_current_content);
+    start_in_actual_content += offset_in_current_content;
+  }
+
+  return current_keyword;
 }
 
 }  // namespace
@@ -132,6 +189,17 @@ int Parser::GenericParser(std::string_view content, int start,
     }
 
     if (content.substr(index, 2) == "![") {
+      // We need to pass the position of '['.
+      auto maybe_image =
+          MaybeParseLink<ParseTreeImageNode>(content, index + 1, index);
+
+      if (maybe_image) {
+        ParseTreeImageNode* image =
+            static_cast<ParseTreeImageNode*>(maybe_image.get());
+        ParseImageDescriptionMetadata(content, image);
+        current_node->AddChildren(std::move(maybe_image));
+        continue;
+      }
     }
 
     if (content.substr(index, 2) == "\n\n") {
@@ -147,7 +215,9 @@ int Parser::GenericParser(std::string_view content, int start,
         current_node->GetNodeType() == ParseTreeNode::PARAGRAPH &&
         content.substr(index, end_parsing_token.size()) == end_parsing_token) {
       // Walk up the node and mark its end.
-      MarkEndAllTheWayUp(current_node, index + end_parsing_token.size());
+      // NOTE that all the child nodes does not include the start of the end
+      // parsing token.
+      MarkEndAllTheWayUp(current_node, index + end_parsing_token.size() - 1);
       root->SetEnd(index + end_parsing_token.size());
       return index + end_parsing_token.size();
     }
@@ -199,6 +269,58 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
   root->AddChildren(std::move(url));
 
   return root;
+}
+
+void Parser::ParseImageDescriptionMetadata(std::string_view content,
+                                           ParseTreeImageNode* image) {
+  // Keys can be "alt", "caption" or "size".
+  std::unordered_map<std::string, std::unique_ptr<ParseTreeNode>>
+      nodes_per_keyword;
+
+  // Go through the strings in the paragraph that are not part of the any
+  // child node. If it contains xxx= kind of the form, check what xxx is.
+  ParseTreeNode* desc_node = image->GetChildren()[0].get();
+  assert(desc_node->GetNodeType() == ParseTreeNode::NODE);
+
+  ParseTreeNode* desc = desc_node->GetChildren()[0].get();
+  assert(desc->GetNodeType() == ParseTreeNode::PARAGRAPH);
+
+  nodes_per_keyword["alt"] =
+      std::make_unique<ParseTreeTextNode>(nullptr, desc->Start());
+  ParseTreeNode* current_keyword = nodes_per_keyword["alt"].get();
+
+  // Start of the current segment.
+  int start = desc->Start();
+  while (start < desc->End()) {
+    int next_child_index = desc->GetNextChildIndex(start);
+
+    if (next_child_index == desc->GetChildren().size()) {
+      // There is no child node from [start ~ ].  Then [start ~ desc->End())
+      // forms the string that is not part of the child node.
+      std::string_view raw_str = content.substr(start, desc->End() - start);
+      current_keyword = BuildImageKeywordNodes(raw_str, start, current_keyword,
+                                               nodes_per_keyword);
+      current_keyword->SetEnd(desc->End());
+      break;
+    } else {
+      ParseTreeNode* next_child = desc->GetChildren()[next_child_index].get();
+
+      // Then [start ~ next_child->Start()) forms the raw string.
+      std::string_view raw_str =
+          content.substr(start, next_child->Start() - start);
+      current_keyword = BuildImageKeywordNodes(raw_str, start, current_keyword,
+                                               nodes_per_keyword);
+
+      std::unique_ptr<ParseTreeNode> child =
+          desc->PopChildrenAt(next_child_index);
+      current_keyword->AddChildren(std::move(child));
+
+      start = next_child->End();
+    }
+  }
+  current_keyword->SetEnd(desc->End());
+
+  image->SetKeywordNodes(nodes_per_keyword);
 }
 
 }  // namespace md2

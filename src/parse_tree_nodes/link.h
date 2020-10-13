@@ -13,28 +13,6 @@ class ParseTreeLinkNode : public ParseTreeNode {
 
   NodeType GetNodeType() const override { return ParseTreeNode::LINK; }
   void Generate(Generator* generator) const override;
-
-  ParseTreeNode* CreateLinkDesc(int start) {
-    link_desc_ = std::make_unique<ParseTreeNode>(nullptr, start);
-    return link_desc_.get();
-  }
-
-  ParseTreeNode* CreateLink(int start) {
-    link_ = std::make_unique<ParseTreeNode>(nullptr, start);
-    return link_.get();
-  }
-
-  void SetLinkDescEndAndLinkEnd(int link_desc_end, int link_end) {
-    link_desc_->SetEnd(link_desc_end);
-    link_->SetEnd(link_end);
-  }
-
- private:
-  // Description of the link [...] part.
-  std::unique_ptr<ParseTreeNode> link_desc_;
-
-  // Actual link (...) part.
-  std::unique_ptr<ParseTreeNode> link_;
 };
 
 }  // namespace md2
