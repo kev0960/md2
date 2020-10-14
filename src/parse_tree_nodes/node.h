@@ -13,12 +13,23 @@ namespace md2 {
 
 class ParseTreeNode {
  public:
-  enum NodeType { NODE, PARAGRAPH, TEXT, BOLD, ITALIC, ESCAPE, LINK, IMAGE };
+  enum NodeType {
+    NODE,
+    PARAGRAPH,
+    TEXT,
+    BOLD,
+    ITALIC,
+    ESCAPE,
+    LINK,
+    IMAGE,
+    HEADER
+  };
 
   ParseTreeNode(ParseTreeNode* parent, int start, bool is_leaf_node = false)
       : parent_(parent), start_(start), is_leaf_node_(is_leaf_node) {}
 
   virtual NodeType GetNodeType() const { return NODE; }
+  void SetStart(int start) { start_ = start; }
   void SetEnd(int end) { end_ = end; }
 
   // Override in case adding a children is not valid.
@@ -29,6 +40,14 @@ class ParseTreeNode {
     }
 
     children_.push_back(std::move(child));
+  }
+  void AddChildrenFront(std::unique_ptr<ParseTreeNode> child) {
+    if (is_leaf_node_) {
+      assert(("This node is the leaf node.", false));
+      return;
+    }
+
+    children_.insert(children_.begin(), std::move(child));
   }
 
   void SetParent(ParseTreeNode* parent) { parent_ = parent; }

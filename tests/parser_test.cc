@@ -309,5 +309,33 @@ TEST(ParserTest, ImageWithCaptionItalicAndSizeNoAlt) {
                          {ParseTreeNode::NODE, 27, 39, 3},
                          {ParseTreeNode::PARAGRAPH, 28, 38, 4}}));
 }
+
+TEST(ParserTest, HeaderSimple) {
+  DoParserTest("### header", ParseTreeComparer({
+                                 {ParseTreeNode::NODE, 0, 10, 0},
+                                 {ParseTreeNode::HEADER, 0, 10, 1},
+                                 {ParseTreeNode::TEXT, 0, 3, 2},
+                                 {ParseTreeNode::TEXT, 3, 10, 2},
+                                 {ParseTreeNode::PARAGRAPH, 10, 10, 1},
+                             }));
+}
+
+TEST(ParserTest, HeaderSimple2) {
+  DoParserTest("a\n### header", ParseTreeComparer({
+                                    {ParseTreeNode::NODE, 0, 12, 0},
+                                    {ParseTreeNode::PARAGRAPH, 0, 2, 1},
+                                    {ParseTreeNode::HEADER, 2, 12, 1},
+                                    {ParseTreeNode::TEXT, 2, 5, 2},
+                                    {ParseTreeNode::TEXT, 5, 12, 2},
+                                    {ParseTreeNode::PARAGRAPH, 12, 12, 1},
+                                }));
+}
+
+TEST(ParserTest, NotHeader) {
+  DoParserTest("a### header",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 11, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 11, 1}}));
+}
+
 }  // namespace
 }  // namespace md2

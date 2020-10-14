@@ -38,6 +38,10 @@ class Generator {
   virtual void EmitImageSizeEnd() {}
   virtual void EndImage() {}
 
+  virtual void EmitRegularHeader(int header_size) {}
+  virtual void EmitLectureHeader(int start, int end) {}
+  virtual void EmitTemplate() {}
+
  protected:
   std::string_view md_;
   std::string target_;

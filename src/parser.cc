@@ -4,6 +4,7 @@
 #include <unordered_set>
 
 #include "parse_tree_nodes/escape.h"
+#include "parse_tree_nodes/header.h"
 #include "parse_tree_nodes/image.h"
 #include "parse_tree_nodes/link.h"
 #include "parse_tree_nodes/paragraph.h"
@@ -104,6 +105,32 @@ ParseTreeNode* BuildImageKeywordNodes(
   return current_keyword;
 }
 
+// As a default, most of the node will have Paragraph node as a parent node. But
+// in some cases like Header, it should be placed Outside of the paragraph node.
+//
+// Note that exising paragraph node will be placed *AFTER* added node.
+ParseTreeNode* HoistNodeAboveParagraph(ParseTreeNode* current_node,
+                                       std::unique_ptr<ParseTreeNode> node) {
+  if (current_node->Start() == node->Start()) {
+    current_node->SetStart(node->End());
+    current_node->GetParent()->AddChildrenFront(std::move(node));
+    return current_node;
+  }
+
+  // If current node is not empty, then we end the paragraph right before
+  // the added node. Then create a new paragraph node.
+  current_node->SetEnd(node->Start());
+
+  ParseTreeNode* parent = current_node->GetParent();
+  int new_paragraph_node_start = node->End();
+  parent->AddChildren(std::move(node));
+
+  // Create new paragraph node.
+  parent->AddChildren(std::make_unique<ParseTreeParagraphNode>(
+      parent, new_paragraph_node_start));
+  return current_node->GetParent()->GetLastChildren();
+}
+
 }  // namespace
 
 ParseTree Parser::GenerateParseTree(std::string_view content) {
@@ -199,6 +226,20 @@ int Parser::GenericParser(std::string_view content, int start,
         ParseImageDescriptionMetadata(content, image);
         current_node->AddChildren(std::move(maybe_image));
         continue;
+      }
+    }
+
+    if (content[index] == '#') {
+      auto maybe_header = MaybeParseHeader(content, current_node, index, index);
+      if (maybe_header) {
+        if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
+          current_node =
+              HoistNodeAboveParagraph(current_node, std::move(maybe_header));
+          continue;
+        } else {
+          // TODO Mark as a syntax error in the MD file.
+          current_node->AddChildren(std::move(maybe_header));
+        }
       }
     }
 
@@ -321,6 +362,47 @@ void Parser::ParseImageDescriptionMetadata(std::string_view content,
   current_keyword->SetEnd(desc->End());
 
   image->SetKeywordNodes(nodes_per_keyword);
+}
+
+std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
+    std::string_view content, ParseTreeNode* parent, int start, int& end) {
+  // Header must be start from the new line.
+  if (start != 0 && content[start - 1] != '\n') {
+    return nullptr;
+  }
+
+  // Check that the header token only contains # and @ until it sees the space.
+  int header_token_end = start;
+  while (header_token_end != content.size()) {
+    if (content[header_token_end] == ' ') {
+      break;
+    }
+
+    if (content[header_token_end] != '#' && content[header_token_end] != '@') {
+      return nullptr;
+    }
+
+    header_token_end++;
+  }
+
+  // Now find the end of the header.
+  end = header_token_end;
+  while (end != content.size() && content[end] != '\n') {
+    end++;
+  }
+
+  auto header = std::make_unique<ParseTreeHeaderNode>(parent, start);
+  header->AddChildren(std::make_unique<ParseTreeTextNode>(header.get(), start));
+  header->GetLastChildren()->SetEnd(header_token_end);
+
+  header->AddChildren(
+      std::make_unique<ParseTreeTextNode>(header.get(), header_token_end));
+  header->GetLastChildren()->SetEnd(end);
+
+  header->SetHeader(content.substr(start, header_token_end - start));
+  header->SetEnd(end);
+
+  return header;
 }
 
 }  // namespace md2

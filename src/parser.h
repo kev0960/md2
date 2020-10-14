@@ -36,6 +36,12 @@ class Parser {
   // Parse the image description of the Image node.
   void ParseImageDescriptionMetadata(std::string_view content,
                                      ParseTreeImageNode* image);
+
+  // Try to parse the header that starts with '#'. Note that header must be
+  // first in the line (so the preceding character must be '\n'.
+  std::unique_ptr<ParseTreeNode> MaybeParseHeader(std::string_view content,
+                                                  ParseTreeNode* parent,
+                                                  int start, int& end);
 };
 
 }  // namespace md2

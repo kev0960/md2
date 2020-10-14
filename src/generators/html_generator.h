@@ -82,6 +82,8 @@ class HTMLGenerator : public Generator {
     images_.pop_back();
   }
 
+  void EmitHeader(); 
+
  private:
   std::vector<HTMLLinkBuilder> links_;
   std::vector<HTMLImageBuilder> images_;
