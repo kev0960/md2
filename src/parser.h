@@ -42,6 +42,11 @@ class Parser {
   std::unique_ptr<ParseTreeNode> MaybeParseHeader(std::string_view content,
                                                   ParseTreeNode* parent,
                                                   int start, int& end);
+
+  // Try to parse a box (starts with ```).
+  std::unique_ptr<ParseTreeNode> MaybeParseBox(std::string_view content,
+                                               ParseTreeNode* parent, int start,
+                                               int& end);
 };
 
 }  // namespace md2

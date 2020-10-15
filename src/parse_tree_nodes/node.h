@@ -17,12 +17,14 @@ class ParseTreeNode {
     NODE,
     PARAGRAPH,
     TEXT,
+    VERBATIM,
     BOLD,
     ITALIC,
     ESCAPE,
     LINK,
     IMAGE,
-    HEADER
+    HEADER,
+    BOX
   };
 
   ParseTreeNode(ParseTreeNode* parent, int start, bool is_leaf_node = false)
@@ -80,6 +82,8 @@ class ParseTreeNode {
   int GetNextChildIndex(int pos) const;
 
   virtual ~ParseTreeNode() = default;
+
+  void Print(int depth = 0) const;
 
  protected:
   // For the elements that are not part of the child nodes, it runs the

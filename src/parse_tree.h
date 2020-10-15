@@ -17,6 +17,7 @@ class ParseTree {
   void Generate(Generator* generator);
 
   const ParseTreeNode* GetRoot() const { return root_.get(); }
+  void Print() const { root_->Print(); }
 
  private:
   std::unique_ptr<ParseTreeNode> root_;

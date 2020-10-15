@@ -3,17 +3,20 @@
 #include <iostream>
 #include <unordered_set>
 
+#include "parse_tree_nodes/box.h"
 #include "parse_tree_nodes/escape.h"
 #include "parse_tree_nodes/header.h"
 #include "parse_tree_nodes/image.h"
 #include "parse_tree_nodes/link.h"
 #include "parse_tree_nodes/paragraph.h"
 #include "parse_tree_nodes/text_decoration.h"
+#include "parse_tree_nodes/verbatim.h"
 
 namespace md2 {
 namespace {
 
 static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\'};
+static std::unordered_set<std::string> kSourceCodeBoxNames = {"cpp", "py"};
 
 // "alt" is not here because alt text is just a default when no xxx= is
 // specified.
@@ -235,10 +238,37 @@ int Parser::GenericParser(std::string_view content, int start,
         if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
           current_node =
               HoistNodeAboveParagraph(current_node, std::move(maybe_header));
-          continue;
         } else {
           // TODO Mark as a syntax error in the MD file.
           current_node->AddChildren(std::move(maybe_header));
+        }
+        continue;
+      }
+    }
+
+    if (content[index] == '`') {
+      auto maybe_box = MaybeParseBox(content, current_node, index, index);
+      if (maybe_box) {
+        if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
+          current_node =
+              HoistNodeAboveParagraph(current_node, std::move(maybe_box));
+        } else {
+          current_node->AddChildren(std::move(maybe_box));
+        }
+        continue;
+      } else if (content.substr(index, 3) != "```") {
+        int verbatim_start = index;
+        index++;
+
+        // Try to find the end `.
+        while (true) {
+          if (content[index] == '`' && content[index - 1] != '\n') {
+            current_node->AddChildren(std::make_unique<ParseTreeVerbatimNode>(
+                current_node, verbatim_start));
+            current_node->GetLastChildren()->SetEnd(index + 1);
+            break;
+          }
+          index++;
         }
       }
     }
@@ -403,6 +433,90 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
   header->SetEnd(end);
 
   return header;
+}
+
+std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
+                                                     ParseTreeNode* parent,
+                                                     int start, int& end) {
+  if (start != 0 && content[start - 1] != '\n') {
+    return nullptr;
+  }
+
+  if (content.substr(start, 3) != "```") {
+    return nullptr;
+  }
+
+  // This is the end of the verbatim mark.
+  if (content.substr(start, 4) == "```\n") {
+    return nullptr;
+  }
+
+  // Try to read the box name.
+  int box_name_end = start + 3;
+  while (content[box_name_end] != '\n' && box_name_end != content.size()) {
+    box_name_end++;
+  }
+
+  // If the box name cannot be found, then this is the End of the box marker
+  // (```)
+  if (box_name_end == start + 3) {
+    return nullptr;
+  }
+
+  std::string box_name(content.substr(start + 3, box_name_end - (start + 3)));
+  if (kSourceCodeBoxNames.count(box_name)) {
+    // Then the nested ```s are not allowed. Just find the end of the box.
+    end = box_name_end + 1;
+    while (content.substr(end, 3) != "```") {
+      end++;
+    }
+
+    auto code = std::make_unique<ParseTreeVerbatimNode>(parent, start);
+
+    // Box name becomes the first text child node.
+    code->AddChildren(
+        std::make_unique<ParseTreeTextNode>(code.get(), start + 3));
+    code->GetLastChildren()->SetEnd(box_name_end);
+
+    // The actual code becomes the next text child node.
+    code->AddChildren(
+        std::make_unique<ParseTreeTextNode>(code.get(), box_name_end + 1));
+    code->GetLastChildren()->SetEnd(end);
+
+    code->SetEnd(end + 3);
+    end += 3;
+
+    return code;
+  }
+
+  // If this is not code, then the box node can be nested.
+  auto box = std::make_unique<ParseTreeBoxNode>(parent, start);
+
+  // Box name becomes the first text child node.
+  box->AddChildren(std::make_unique<ParseTreeTextNode>(box.get(), start + 3));
+  box->GetLastChildren()->SetEnd(box_name_end);
+
+  // We should not specify the parent as Box yet (otherwise checking the end
+  // parsing token would not work.)
+  auto box_content_node =
+      std::make_unique<ParseTreeNode>(nullptr, box_name_end);
+
+  int box_content_end =
+      GenericParser(content, box_name_end, "```", box_content_node.get());
+
+  if (content.substr(box_content_end - 4, 4) != "\n```") {
+    return nullptr;
+  }
+
+  box_content_node->SetEnd(box_content_end);
+  box_content_node->SetParent(box.get());
+  box->AddChildren(std::move(box_content_node));
+
+  // Note that ``` is included in the paragraph of the box content node.
+  end = box_content_end;
+  box->SetEnd(end);
+
+  return box;
 }
 
 }  // namespace md2

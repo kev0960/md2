@@ -13,6 +13,7 @@ using ::testing::IsEmpty;
 void DoParserTest(std::string content, ParseTreeComparer comparer) {
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
+  tree.Print();
   comparer.Compare(tree);
 }
 
@@ -335,6 +336,51 @@ TEST(ParserTest, NotHeader) {
   DoParserTest("a### header",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 11, 0},
                                   {ParseTreeNode::PARAGRAPH, 0, 11, 1}}));
+}
+
+TEST(ParserTest, SimpleVerbatim) {
+  DoParserTest("a `code` a",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 10, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 10, 1},
+                                  {ParseTreeNode::VERBATIM, 2, 8, 2}}));
+}
+
+TEST(ParserTest, SimpleCode) {
+  DoParserTest(R"(
+```cpp
+hello;
+```)",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 18, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::VERBATIM, 1, 18, 1},
+                                  {ParseTreeNode::TEXT, 4, 7, 2},
+                                  {ParseTreeNode::TEXT, 8, 15, 2},
+                                  {ParseTreeNode::PARAGRAPH, 18, 18, 1}}));
+}
+
+TEST(ParserTest, NestedBox) {
+  DoParserTest(
+      R"(
+```box
+hello;
+```box
+*a*
+```
+b
+```)",
+      ParseTreeComparer({{ParseTreeNode::NODE, 0, 35, 0},
+                         {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                         {ParseTreeNode::BOX, 1, 35, 1},
+                         {ParseTreeNode::TEXT, 4, 7, 2},  // Box name
+                         {ParseTreeNode::NODE, 7, 35, 2},
+                         {ParseTreeNode::PARAGRAPH, 7, 15, 3},
+                         {ParseTreeNode::BOX, 15, 29, 3},
+                         {ParseTreeNode::TEXT, 18, 21, 4},  // Box name
+                         {ParseTreeNode::NODE, 21, 29, 4},
+                         {ParseTreeNode::PARAGRAPH, 21, 28, 5},
+                         {ParseTreeNode::ITALIC, 22, 25, 6},
+                         {ParseTreeNode::PARAGRAPH, 29, 34, 3},  // The last ```
+                         {ParseTreeNode::PARAGRAPH, 35, 35, 1}}));
 }
 
 }  // namespace
