@@ -47,6 +47,11 @@ class Parser {
   std::unique_ptr<ParseTreeNode> MaybeParseBox(std::string_view content,
                                                ParseTreeNode* parent, int start,
                                                int& end);
+
+  // Try to parse the table.
+  std::unique_ptr<ParseTreeNode> MaybeParseTable(std::string_view content,
+                                               ParseTreeNode* parent, int start,
+                                               int& end);
 };
 
 }  // namespace md2

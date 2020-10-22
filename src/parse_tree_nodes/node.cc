@@ -10,7 +10,7 @@ std::unordered_map<ParseTreeNode::NodeType, std::string_view> kNodeTypeToName =
      {ParseTreeNode::BOLD, "BOLD"},     {ParseTreeNode::ITALIC, "ITALIC"},
      {ParseTreeNode::ESCAPE, "ESCAPE"}, {ParseTreeNode::LINK, "LINK"},
      {ParseTreeNode::IMAGE, "IMAGE"},   {ParseTreeNode::HEADER, "HEADER"},
-     {ParseTreeNode::BOX, "BOX"}};
+     {ParseTreeNode::BOX, "BOX"},       {ParseTreeNode::TABLE, "TABLE"}};
 
 std::unique_ptr<ParseTreeNode> ParseTreeNode::PopChildrenAt(int index) {
   std::unique_ptr<ParseTreeNode> child = std::move(children_[index]);

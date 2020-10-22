@@ -10,10 +10,14 @@ namespace {
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 
-void DoParserTest(std::string content, ParseTreeComparer comparer) {
+void DoParserTest(std::string content, ParseTreeComparer comparer,
+                  bool show_tree = false) {
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
-  tree.Print();
+
+  if (show_tree) {
+    tree.Print();
+  }
   comparer.Compare(tree);
 }
 
@@ -359,28 +363,93 @@ hello;
 }
 
 TEST(ParserTest, NestedBox) {
-  DoParserTest(
-      R"(
+  std::string content = R"(
 ```box
 hello;
 ```box
 *a*
 ```
 b
-```)",
+```)";
+
+  DoParserTest(
+      content,
       ParseTreeComparer({{ParseTreeNode::NODE, 0, 35, 0},
                          {ParseTreeNode::PARAGRAPH, 0, 1, 1},
                          {ParseTreeNode::BOX, 1, 35, 1},
                          {ParseTreeNode::TEXT, 4, 7, 2},  // Box name
                          {ParseTreeNode::NODE, 7, 35, 2},
-                         {ParseTreeNode::PARAGRAPH, 7, 15, 3},
+                         {ParseTreeNode::PARAGRAPH, 7, 15, 3},  // "\nhello;\n"
                          {ParseTreeNode::BOX, 15, 29, 3},
                          {ParseTreeNode::TEXT, 18, 21, 4},  // Box name
                          {ParseTreeNode::NODE, 21, 29, 4},
-                         {ParseTreeNode::PARAGRAPH, 21, 28, 5},
+                         {ParseTreeNode::PARAGRAPH, 21, 26, 5},  // "\n*a*\n"
                          {ParseTreeNode::ITALIC, 22, 25, 6},
-                         {ParseTreeNode::PARAGRAPH, 29, 34, 3},  // The last ```
+                         {ParseTreeNode::PARAGRAPH, 29, 32, 3},  // "\nb\n"
                          {ParseTreeNode::PARAGRAPH, 35, 35, 1}}));
+}
+
+TEST(ParserTest, SimpleTable) {
+  std::string content = R"(
+|a|b|c|
+|-|-|-|
+|a|b|c|
+abc)";
+
+  DoParserTest(content,
+               ParseTreeComparer({
+                   {ParseTreeNode::NODE, 0, 28, 0},
+                   {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                   {ParseTreeNode::TABLE, 1, 25, 1},
+                   {ParseTreeNode::NODE, 2, 4, 2},  // Contains the ending '|'
+                   {ParseTreeNode::PARAGRAPH, 2, 3, 3},
+                   {ParseTreeNode::NODE, 4, 6, 2},
+                   {ParseTreeNode::PARAGRAPH, 4, 5, 3},
+                   {ParseTreeNode::NODE, 6, 8, 2},
+                   {ParseTreeNode::PARAGRAPH, 6, 7, 3},
+                   {ParseTreeNode::NODE, 10, 12, 2},
+                   {ParseTreeNode::PARAGRAPH, 10, 11, 3},
+                   {ParseTreeNode::NODE, 12, 14, 2},
+                   {ParseTreeNode::PARAGRAPH, 12, 13, 3},
+                   {ParseTreeNode::NODE, 14, 16, 2},
+                   {ParseTreeNode::PARAGRAPH, 14, 15, 3},
+                   {ParseTreeNode::NODE, 18, 20, 2},
+                   {ParseTreeNode::PARAGRAPH, 18, 19, 3},
+                   {ParseTreeNode::NODE, 20, 22, 2},
+                   {ParseTreeNode::PARAGRAPH, 20, 21, 3},
+                   {ParseTreeNode::NODE, 22, 24, 2},
+                   {ParseTreeNode::PARAGRAPH, 22, 23, 3},
+                   {ParseTreeNode::PARAGRAPH, 25, 28, 1},
+               }));
+}
+
+TEST(ParserTest, SimpleTable2) {
+  std::string content = R"(
+|*a*|**b**|
+|-|-|
+|\|a|`b`|)";
+
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 28, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::TABLE, 1, 28, 1},
+                                  {ParseTreeNode::NODE, 2, 6, 2},
+                                  {ParseTreeNode::PARAGRAPH, 2, 5, 3},
+                                  {ParseTreeNode::ITALIC, 2, 5, 4},
+                                  {ParseTreeNode::NODE, 6, 12, 2},
+                                  {ParseTreeNode::PARAGRAPH, 6, 11, 3},
+                                  {ParseTreeNode::BOLD, 6, 11, 4},
+                                  {ParseTreeNode::NODE, 14, 16, 2},
+                                  {ParseTreeNode::PARAGRAPH, 14, 15, 3},
+                                  {ParseTreeNode::NODE, 16, 18, 2},
+                                  {ParseTreeNode::PARAGRAPH, 16, 17, 3},
+                                  {ParseTreeNode::NODE, 20, 24, 2},
+                                  {ParseTreeNode::PARAGRAPH, 20, 23, 3},
+                                  {ParseTreeNode::ESCAPE, 20, 22, 4},
+                                  {ParseTreeNode::NODE, 24, 28, 2},
+                                  {ParseTreeNode::PARAGRAPH, 24, 27, 3},
+                                  {ParseTreeNode::VERBATIM, 24, 27, 4},
+                                  {ParseTreeNode::PARAGRAPH, 28, 28, 1}}));
 }
 
 }  // namespace

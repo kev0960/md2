@@ -9,13 +9,14 @@
 #include "parse_tree_nodes/image.h"
 #include "parse_tree_nodes/link.h"
 #include "parse_tree_nodes/paragraph.h"
+#include "parse_tree_nodes/table.h"
 #include "parse_tree_nodes/text_decoration.h"
 #include "parse_tree_nodes/verbatim.h"
 
 namespace md2 {
 namespace {
 
-static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\'};
+static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\', '|'};
 static std::unordered_set<std::string> kSourceCodeBoxNames = {"cpp", "py"};
 
 // "alt" is not here because alt text is just a default when no xxx= is
@@ -281,6 +282,19 @@ int Parser::GenericParser(std::string_view content, int start,
       continue;
     }
 
+    if (index > 0 && content.substr(index - 1, 2) == "\n|") {
+      auto maybe_table = MaybeParseTable(content, current_node, index, index);
+      if (maybe_table) {
+        if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
+          current_node =
+              HoistNodeAboveParagraph(current_node, std::move(maybe_table));
+        } else {
+          current_node->AddChildren(std::move(maybe_table));
+        }
+        continue;
+      }
+    }
+
     // End parsing token must be checked at the paragraph level.
     if (!end_parsing_token.empty() &&
         current_node->GetNodeType() == ParseTreeNode::PARAGRAPH &&
@@ -288,7 +302,7 @@ int Parser::GenericParser(std::string_view content, int start,
       // Walk up the node and mark its end.
       // NOTE that all the child nodes does not include the start of the end
       // parsing token.
-      MarkEndAllTheWayUp(current_node, index + end_parsing_token.size() - 1);
+      MarkEndAllTheWayUp(current_node, index);
       root->SetEnd(index + end_parsing_token.size());
       return index + end_parsing_token.size();
     }
@@ -517,6 +531,61 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
   box->SetEnd(end);
 
   return box;
+}
+
+std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
+                                                       ParseTreeNode* parent,
+                                                       int start, int& end) {
+  // Table must start with newline.
+  if (start != 0 && content[start - 1] != '\n') {
+    return nullptr;
+  }
+
+  if (content[start] != '|') {
+    return nullptr;
+  }
+
+  auto table = std::make_unique<ParseTreeTableNode>(parent, start);
+
+  int current = start + 1;
+  while (true) {
+    while (true) {
+      auto cell = std::make_unique<ParseTreeNode>(nullptr, current);
+      int cell_end = GenericParser(content, current, "|", cell.get());
+
+      // Not a valid table.
+      if (content[cell_end - 1] != '|') {
+        return nullptr;
+      }
+
+      table->AddChildren(std::move(cell));
+
+      if (cell_end >= content.size()) {
+        // Then the current row ends.
+        current = cell_end;
+        break;
+      }
+
+      if (content[cell_end] == '\n') {
+        // Then the current row ends.
+        table->SetRowSizeIfNotSpecified();
+        current = cell_end + 1;
+        break;
+      }
+      current = cell_end;
+    }
+
+    if (current >= content.size() || content[current] != '|') {
+      break;
+    }
+
+    current += 1;
+  }
+
+  table->SetEnd(current);
+
+  end = current;
+  return table;
 }
 
 }  // namespace md2

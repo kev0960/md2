@@ -24,7 +24,8 @@ class ParseTreeNode {
     LINK,
     IMAGE,
     HEADER,
-    BOX
+    BOX,
+    TABLE
   };
 
   ParseTreeNode(ParseTreeNode* parent, int start, bool is_leaf_node = false)
