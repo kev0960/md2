@@ -20,7 +20,7 @@ class Parser {
   // Builds the tree from the given root node. Note that this parses until it
   // sees the end_parsing_token. If end_parsing_token is empty, then it tries to
   // parse until the end of the content.
-  // Returns the location right after the end parsing token.
+  // Returns the location RIGHT AFTER the end parsing token.
   int GenericParser(std::string_view content, int start,
                     std::string_view end_parsing_token, ParseTreeNode* root);
 
@@ -50,8 +50,15 @@ class Parser {
 
   // Try to parse the table.
   std::unique_ptr<ParseTreeNode> MaybeParseTable(std::string_view content,
-                                               ParseTreeNode* parent, int start,
-                                               int& end);
+                                                 ParseTreeNode* parent,
+                                                 int start, int& end);
+  // Try to parse the list.
+  std::unique_ptr<ParseTreeNode> MaybeParseList(std::string_view content,
+                                                ParseTreeNode* parent,
+                                                int start, int& end);
+
+  // Construct List node from the consecutive list items.
+  void PostProcessList(ParseTreeNode* root);
 };
 
 }  // namespace md2

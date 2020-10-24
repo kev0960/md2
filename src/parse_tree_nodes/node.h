@@ -25,7 +25,9 @@ class ParseTreeNode {
     IMAGE,
     HEADER,
     BOX,
-    TABLE
+    TABLE,
+    LIST,
+    LIST_ITEM
   };
 
   ParseTreeNode(ParseTreeNode* parent, int start, bool is_leaf_node = false)
@@ -44,6 +46,7 @@ class ParseTreeNode {
 
     children_.push_back(std::move(child));
   }
+
   void AddChildrenFront(std::unique_ptr<ParseTreeNode> child) {
     if (is_leaf_node_) {
       assert(("This node is the leaf node.", false));
@@ -52,6 +55,10 @@ class ParseTreeNode {
 
     children_.insert(children_.begin(), std::move(child));
   }
+
+  // Add a child node right before node_to_find.
+  void AddChildBefore(ParseTreeNode* node_to_find,
+                      std::unique_ptr<ParseTreeNode> child);
 
   void SetParent(ParseTreeNode* parent) { parent_ = parent; }
   constexpr ParseTreeNode* GetParent() const { return parent_; }
@@ -62,10 +69,16 @@ class ParseTreeNode {
 
     return children_.back().get();
   }
+
   constexpr const std::vector<std::unique_ptr<ParseTreeNode>>& GetChildren()
       const {
     return children_;
   }
+
+  std::vector<std::unique_ptr<ParseTreeNode>>& GetChildren() {
+    return children_;
+  }
+
   std::unique_ptr<ParseTreeNode> PopChildrenAt(int index);
 
   virtual void Generate(Generator* generator) const;

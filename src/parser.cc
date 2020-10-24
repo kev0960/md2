@@ -8,6 +8,7 @@
 #include "parse_tree_nodes/header.h"
 #include "parse_tree_nodes/image.h"
 #include "parse_tree_nodes/link.h"
+#include "parse_tree_nodes/list.h"
 #include "parse_tree_nodes/paragraph.h"
 #include "parse_tree_nodes/table.h"
 #include "parse_tree_nodes/text_decoration.h"
@@ -117,7 +118,7 @@ ParseTreeNode* HoistNodeAboveParagraph(ParseTreeNode* current_node,
                                        std::unique_ptr<ParseTreeNode> node) {
   if (current_node->Start() == node->Start()) {
     current_node->SetStart(node->End());
-    current_node->GetParent()->AddChildrenFront(std::move(node));
+    current_node->GetParent()->AddChildBefore(current_node, std::move(node));
     return current_node;
   }
 
@@ -135,12 +136,142 @@ ParseTreeNode* HoistNodeAboveParagraph(ParseTreeNode* current_node,
   return current_node->GetParent()->GetLastChildren();
 }
 
+// Check whether some sentence is the start of the list. To be the start of the
+// list, it must start the sentence with optional whitespaces and followed by
+// '*' and ' '. For example,
+//    * abc <-- Start of the list.
+// *a <-- Not start of the list.
+//
+// start must be the start of the line (right after newline).
+//
+// If found, this will return the list depth (number of ' ' before *) and list
+// start (position of '*').
+std::optional<std::pair<int, int>> IsStartOfTheList(std::string_view content,
+                                                    int start) {
+  int list_depth = 0;
+  while (start < content.size()) {
+    if (content[start] == ' ') {
+      list_depth++;
+      start++;
+    } else if (content[start] == '*') {
+      if (content.substr(start, 2) != "* ") {
+        return std::nullopt;
+      } else {
+        return std::make_pair(list_depth, start);
+      }
+    } else {
+      return std::nullopt;
+    }
+  }
+
+  return std::nullopt;
+}
+
+int GetDepth(std::unique_ptr<ParseTreeNode>& child) {
+  assert(child->GetNodeType() == ParseTreeNode::LIST_ITEM);
+  return static_cast<ParseTreeListItemNode*>(child.get())->GetListDepth();
+}
+
+// Construct list from list items in range [start, end). Note that end is not
+// included.
+//
+// **children** will be moved away.
+std::unique_ptr<ParseTreeListNode> ConstructListFromListItems(
+    std::vector<std::unique_ptr<ParseTreeNode>>& children, int start, int end) {
+  // Pair of list node and the corresponding depth.
+  std::vector<std::pair<ParseTreeListNode*, int>> current_lists;
+
+  std::unique_ptr<ParseTreeListNode> top_level_list;
+
+  int list_end = children[end - 1]->End();
+
+  int current = start;
+  while (current != end) {
+    if (current_lists.empty() ||
+        current_lists.back().second < GetDepth(children[current])) {
+      auto list = std::make_unique<ParseTreeListNode>(
+          nullptr, children[current]->Start());
+      current_lists.push_back(
+          std::make_pair(list.get(), GetDepth(children[current])));
+
+      // Make current list item as the children of the list.
+      current_lists.back().first->AddChildren(std::move(children[current]));
+
+      if (current_lists.size() == 1) {
+        top_level_list = std::move(list);
+      } else {
+        list->SetParent(current_lists[current_lists.size() - 2].first);
+        current_lists[current_lists.size() - 2].first->AddChildren(
+            std::move(list));
+      }
+    } else if (current_lists.back().second == GetDepth(children[current])) {
+      // Then we can just append the current list item to the list node.
+      current_lists.back().first->AddChildren(std::move(children[current]));
+    } else if (current_lists.back().second > GetDepth(children[current])) {
+      int depth = GetDepth(children[current]);
+      while (!current_lists.empty()) {
+        if (current_lists.back().second <= depth) {
+          break;
+        }
+
+        // Otherwise mark the end of the list and pop.
+        current_lists.back().first->SetEnd(children[current]->Start());
+        current_lists.pop_back();
+      }
+
+      // Oops something went wrong.
+      if (current_lists.empty()) {
+        return nullptr;
+      }
+
+      if (current_lists.back().second == depth) {
+        current_lists.back().first->AddChildren(std::move(children[current]));
+      } else {
+        auto list = std::make_unique<ParseTreeListNode>(
+            nullptr, children[current]->Start());
+        current_lists.push_back(
+            std::make_pair(list.get(), GetDepth(children[current])));
+
+        // Make current list item as the children of the list.
+        current_lists.back().first->AddChildren(std::move(children[current]));
+        list->SetParent(current_lists[current_lists.size() - 2].first);
+        current_lists[current_lists.size() - 2].first->AddChildren(
+            std::move(list));
+      }
+    }
+
+    current++;
+  }
+
+  for (auto [current_list, depth] : current_lists) {
+    current_list->SetEnd(list_end);
+  }
+
+  return top_level_list;
+}
+
+// Returns the right after the end of the empty line if exists.
+std::optional<int> IsEmptyLine(std::string_view content, int start) {
+  while (start < content.size()) {
+    if (content[start] == ' ') {
+      start++;
+    } else if (content[start] == '\n') {
+      return start + 1;
+    } else {
+      return std::nullopt;
+    }
+  }
+
+  return content.size();
+}
+
 }  // namespace
 
 ParseTree Parser::GenerateParseTree(std::string_view content) {
   auto root = std::make_unique<ParseTreeNode>(/*parent=*/nullptr, 0);
   GenericParser(content, 0, /*end_parsing_token=*/"", root.get());
 
+  PostProcessList(root.get());
   return ParseTree(std::move(root));
 }
 
@@ -174,6 +305,18 @@ int Parser::GenericParser(std::string_view content, int start,
     }
 
     if (content[index] == '*') {
+      if (auto maybe_list = MaybeParseList(content, current_node, index, index);
+          maybe_list != nullptr) {
+        if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
+          current_node =
+              HoistNodeAboveParagraph(current_node, std::move(maybe_list));
+        } else {
+          current_node->AddChildren(std::move(maybe_list));
+        }
+
+        continue;
+      }
+
       // "**" always has a higher priority over "*" if
       //   1. Current node is not italic OR
       //   2. Current node does not have BOLD node as a parent.
@@ -274,7 +417,10 @@ int Parser::GenericParser(std::string_view content, int start,
       }
     }
 
-    if (content.substr(index, 2) == "\n\n") {
+    // Note that we should not ignore consecutive \n\n s if the end parsing
+    // token is newline (since the goal of the end parsing token is recognizing
+    // that).
+    if (end_parsing_token != "\n" && content.substr(index, 2) == "\n\n") {
       current_node = MarkEndAllTheWayUp(current_node, index);
 
       // Skip the next two \n s.
@@ -558,6 +704,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
         return nullptr;
       }
 
+      cell->SetParent(table.get());
       table->AddChildren(std::move(cell));
 
       if (cell_end >= content.size()) {
@@ -586,6 +733,153 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
 
   end = current;
   return table;
+}
+
+// Parsing the list is a bit tricky.
+//
+// First, we identify a list if the newline starts with "* ". Any space that
+// comes before * are ignored.
+//
+// List is continued until it either sees another start of the new list or the
+// double newlines. For example,
+//
+// * abc
+// * def
+//
+// Above two forms a list.
+//
+//  * abc
+//  def   <-- These three are the part of the list item
+//  ghi
+//  * abc
+//
+// The first list item will contain "abc\ndef\nghi". The second list item will
+// contain "abc".
+//
+//  * abc <-- End of the list
+//
+//  def
+//  ghi
+//
+//  * def
+//
+// The first list item will only contain "abc". Then it will be followed with
+// the paragraph. After thatm there will be a list item "def".
+//
+// Those list items will from the actual list after the post-processing part in
+// the parser.
+std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
+                                                      ParseTreeNode* parent,
+                                                      int start, int& end) {
+  int current = start;
+  if (content[current] != '*') {
+    return nullptr;
+  }
+
+  current--;
+
+  // Check if this is the start of the list. * should be the first in the
+  // sentence. e.g
+  //    *
+  //  *
+  // ab* <- not this one
+
+  // Number of ' 's before *.
+  int list_depth = 0;
+  int list_start = 0;
+  while (current >= 0) {
+    if (content[current] == '\n') {
+      list_start = current + 1;
+      break;
+    } else if (content[current] == ' ') {
+      current--;
+      list_depth++;
+    } else {
+      return nullptr;
+    }
+  }
+
+  current = start;
+
+  // Also ' ' must come after *.
+  if (content[current + 1] != ' ') {
+    return nullptr;
+  }
+
+  // Now current points the start of the list content.
+  current += 2;
+
+  // Now try to create the list item element.
+  auto list_item = std::make_unique<ParseTreeListItemNode>(nullptr, list_start);
+  list_item->SetListDepth(list_depth);
+
+  while (true) {
+    int list_end = GenericParser(content, current, "\n", list_item.get());
+    if (list_end == content.size()) {
+      list_item->SetEnd(list_end);
+      list_item->SetParent(parent);
+      end = list_end;
+      return list_item;
+    }
+
+    if (list_end != content.size() && content[list_end - 1] != '\n') {
+      return nullptr;
+    }
+
+    // if the empty new line comes right after "\n", then we can think of it as
+    // the end of the list.
+    if (auto empty_line_end = IsEmptyLine(content, list_end); empty_line_end) {
+      // List item will cover the entire empty line, including the newline at
+      // the end.
+      list_item->SetEnd(*empty_line_end);
+      list_item->SetParent(parent);
+      end = *empty_line_end;
+      return list_item;
+    } else if (auto next_list_info = IsStartOfTheList(content, list_end);
+               next_list_info.has_value()) {
+      // If the next line consists the another set of the new list, then we
+      // start a new list.
+      list_item->SetEnd(list_end);
+      list_item->SetParent(parent);
+      end = list_end;
+      return list_item;
+    }
+
+    // Otherwise, continue parsing.
+    current = list_end;
+  }
+
+  return list_item;
+}
+
+void Parser::PostProcessList(ParseTreeNode* root) {
+  // Traverse nodes and convert list_items into part of list node based on their
+  // list depth.
+  std::vector<std::unique_ptr<ParseTreeNode>>& children = root->GetChildren();
+  for (int current = 0; current != children.size(); current++) {
+    // If the list item is found, then locate the end of the list item.
+    if (children[current]->GetNodeType() == ParseTreeNode::LIST_ITEM) {
+      int list_item_end = current;
+      while (list_item_end != children.size()) {
+        if (children[list_item_end]->GetNodeType() !=
+            ParseTreeNode::LIST_ITEM) {
+          break;
+        }
+
+        list_item_end++;
+      }
+
+      auto list_node =
+          ConstructListFromListItems(children, current, list_item_end);
+      if (list_node != nullptr) {
+        // Erase the list item elements (they are already moved out anyway into
+        // the child of lists.).
+        children.erase(children.begin() + current,
+                       children.begin() + list_item_end);
+        children.insert(children.begin() + current, std::move(list_node));
+      }
+    }
+  }
 }
 
 }  // namespace md2

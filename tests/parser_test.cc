@@ -452,5 +452,160 @@ TEST(ParserTest, SimpleTable2) {
                                   {ParseTreeNode::PARAGRAPH, 28, 28, 1}}));
 }
 
+TEST(ParserTest, SimpleList) {
+  std::string content = R"(
+* a
+* b
+  c
+* d)";
+
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 16, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::LIST, 1, 16, 1},
+                                  {ParseTreeNode::LIST_ITEM, 1, 5, 2},
+                                  {ParseTreeNode::PARAGRAPH, 3, 4, 3},
+                                  {ParseTreeNode::LIST_ITEM, 5, 13, 2},
+                                  {ParseTreeNode::PARAGRAPH, 7, 8, 3},
+                                  {ParseTreeNode::PARAGRAPH, 9, 12, 3},
+                                  {ParseTreeNode::LIST_ITEM, 13, 16, 2},
+                                  {ParseTreeNode::PARAGRAPH, 15, 16, 3},
+                                  {ParseTreeNode::PARAGRAPH, 16, 16, 1}}));
+}
+
+TEST(ParserTest, SimpleNestedList) {
+  std::string content = R"(
+* a
+  * b
+    * c
+    * d
+* e)";
+
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 30, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::LIST, 1, 30, 1},
+                                  {ParseTreeNode::LIST_ITEM, 1, 5, 2},
+                                  {ParseTreeNode::PARAGRAPH, 3, 4, 3},
+                                  {ParseTreeNode::LIST, 5, 27, 2},
+                                  {ParseTreeNode::LIST_ITEM, 5, 11, 3},
+                                  {ParseTreeNode::PARAGRAPH, 9, 10, 4},
+                                  {ParseTreeNode::LIST, 11, 27, 3},
+                                  {ParseTreeNode::LIST_ITEM, 11, 19, 4},
+                                  {ParseTreeNode::PARAGRAPH, 17, 18, 5},
+                                  {ParseTreeNode::LIST_ITEM, 19, 27, 4},
+                                  {ParseTreeNode::PARAGRAPH, 25, 26, 5},
+                                  {ParseTreeNode::LIST_ITEM, 27, 30, 2},
+                                  {ParseTreeNode::PARAGRAPH, 29, 30, 3},
+                                  {ParseTreeNode::PARAGRAPH, 30, 30, 1}}));
+}
+
+TEST(ParserTest, SimpleNestedListWithSomeText) {
+  std::string content = R"(
+* a
+  a2
+  * b1
+    * c1
+    * d1
+  * b2
+    b3
+    * c2
+* e)";
+
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 61, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::LIST, 1, 61, 1},
+                                  {ParseTreeNode::LIST_ITEM, 1, 10, 2},
+                                  {ParseTreeNode::PARAGRAPH, 3, 4, 3},
+                                  {ParseTreeNode::PARAGRAPH, 5, 9, 3},
+                                  {ParseTreeNode::LIST, 10, 58, 2},
+                                  {ParseTreeNode::LIST_ITEM, 10, 17, 3},
+                                  {ParseTreeNode::PARAGRAPH, 14, 16, 4},
+                                  {ParseTreeNode::LIST, 17, 35, 3},
+                                  {ParseTreeNode::LIST_ITEM, 17, 26, 4},
+                                  {ParseTreeNode::PARAGRAPH, 23, 25, 5},
+                                  {ParseTreeNode::LIST_ITEM, 26, 35, 4},
+                                  {ParseTreeNode::PARAGRAPH, 32, 34, 5},
+                                  {ParseTreeNode::LIST_ITEM, 35, 49, 3},
+                                  {ParseTreeNode::PARAGRAPH, 39, 41, 4},
+                                  {ParseTreeNode::PARAGRAPH, 42, 48, 4},
+                                  {ParseTreeNode::LIST, 49, 58, 3},
+                                  {ParseTreeNode::LIST_ITEM, 49, 58, 4},
+                                  {ParseTreeNode::PARAGRAPH, 55, 57, 5},
+                                  {ParseTreeNode::LIST_ITEM, 58, 61, 2},
+                                  {ParseTreeNode::PARAGRAPH, 60, 61, 3},
+                                  {ParseTreeNode::PARAGRAPH, 61, 61, 1}}));
+}
+
+TEST(ParserTest, ParagraphMiddleOfList) {
+  std::string content = R"(
+* a
+
+some text
+* e)";
+
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 19, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::LIST, 1, 6, 1},
+                                  {ParseTreeNode::LIST_ITEM, 1, 6, 2},
+                                  {ParseTreeNode::PARAGRAPH, 3, 4, 3},
+                                  {ParseTreeNode::PARAGRAPH, 6, 16, 1},
+                                  {ParseTreeNode::LIST, 16, 19, 1},
+                                  {ParseTreeNode::LIST_ITEM, 16, 19, 2},
+                                  {ParseTreeNode::PARAGRAPH, 18, 19, 3},
+                                  {ParseTreeNode::PARAGRAPH, 19, 19, 1}}));
+}
+
+TEST(ParserTest, ParagraphMiddleOfListWithLongEmptyNewline) {
+  std::string content = R"(
+* a
+   
+some text
+* e)";
+
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 22, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::LIST, 1, 9, 1},
+                                  {ParseTreeNode::LIST_ITEM, 1, 9, 2},
+                                  {ParseTreeNode::PARAGRAPH, 3, 4, 3},
+                                  {ParseTreeNode::PARAGRAPH, 9, 19, 1},
+                                  {ParseTreeNode::LIST, 19, 22, 1},
+                                  {ParseTreeNode::LIST_ITEM, 19, 22, 2},
+                                  {ParseTreeNode::PARAGRAPH, 21, 22, 3},
+                                  {ParseTreeNode::PARAGRAPH, 22, 22, 1}}));
+}
+
+TEST(ParserTest, SimpleListWithVerbatim) {
+  std::string content = R"(
+* code
+```cpp
+abc
+```
+* code2 
+```cpp
+def
+```)";
+
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 46, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::LIST, 1, 46, 1},
+                                  {ParseTreeNode::LIST_ITEM, 1, 23, 2},
+                                  {ParseTreeNode::PARAGRAPH, 3, 7, 3},
+                                  {ParseTreeNode::VERBATIM, 8, 22, 3},
+                                  {ParseTreeNode::TEXT, 11, 14, 4},
+                                  {ParseTreeNode::TEXT, 15, 19, 4},
+                                  {ParseTreeNode::PARAGRAPH, 22, 22, 3},
+                                  {ParseTreeNode::LIST_ITEM, 23, 46, 2},
+                                  {ParseTreeNode::PARAGRAPH, 25, 31, 3},
+                                  {ParseTreeNode::VERBATIM, 32, 46, 3},
+                                  {ParseTreeNode::TEXT, 35, 38, 4},
+                                  {ParseTreeNode::TEXT, 39, 43, 4},
+                                  {ParseTreeNode::PARAGRAPH, 46, 46, 3},
+                                  {ParseTreeNode::PARAGRAPH, 46, 46, 1}}));
+}
 }  // namespace
 }  // namespace md2

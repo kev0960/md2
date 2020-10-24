@@ -5,12 +5,20 @@
 namespace md2 {
 
 std::unordered_map<ParseTreeNode::NodeType, std::string_view> kNodeTypeToName =
-    {{ParseTreeNode::NODE, "NODE"},     {ParseTreeNode::PARAGRAPH, "PARAGRAPH"},
-     {ParseTreeNode::TEXT, "TEXT"},     {ParseTreeNode::VERBATIM, "VERBATIM"},
-     {ParseTreeNode::BOLD, "BOLD"},     {ParseTreeNode::ITALIC, "ITALIC"},
-     {ParseTreeNode::ESCAPE, "ESCAPE"}, {ParseTreeNode::LINK, "LINK"},
-     {ParseTreeNode::IMAGE, "IMAGE"},   {ParseTreeNode::HEADER, "HEADER"},
-     {ParseTreeNode::BOX, "BOX"},       {ParseTreeNode::TABLE, "TABLE"}};
+    {{ParseTreeNode::NODE, "NODE"},
+     {ParseTreeNode::PARAGRAPH, "PARAGRAPH"},
+     {ParseTreeNode::TEXT, "TEXT"},
+     {ParseTreeNode::VERBATIM, "VERBATIM"},
+     {ParseTreeNode::BOLD, "BOLD"},
+     {ParseTreeNode::ITALIC, "ITALIC"},
+     {ParseTreeNode::ESCAPE, "ESCAPE"},
+     {ParseTreeNode::LINK, "LINK"},
+     {ParseTreeNode::IMAGE, "IMAGE"},
+     {ParseTreeNode::HEADER, "HEADER"},
+     {ParseTreeNode::BOX, "BOX"},
+     {ParseTreeNode::TABLE, "TABLE"},
+     {ParseTreeNode::LIST, "LIST"},
+     {ParseTreeNode::LIST_ITEM, "LIST-ITEM"}};
 
 std::unique_ptr<ParseTreeNode> ParseTreeNode::PopChildrenAt(int index) {
   std::unique_ptr<ParseTreeNode> child = std::move(children_[index]);
@@ -38,6 +46,16 @@ int ParseTreeNode::GetNextChildIndex(int pos) const {
   }
 
   return children_.size();
+}
+
+void ParseTreeNode::AddChildBefore(ParseTreeNode* node_to_find,
+                                   std::unique_ptr<ParseTreeNode> child) {
+  for (int i = 0; i < children_.size(); i++) {
+    if (children_[i].get() == node_to_find) {
+      children_.insert(children_.begin() + i, std::move(child));
+      return;
+    }
+  }
 }
 
 void ParseTreeNode::Generate(Generator* generator) const {
