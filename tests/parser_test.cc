@@ -559,6 +559,7 @@ some text
 }
 
 TEST(ParserTest, ParagraphMiddleOfListWithLongEmptyNewline) {
+  // Note the empty line above some text is "   \n", not just "\n".
   std::string content = R"(
 * a
    

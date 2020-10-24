@@ -1,5 +1,6 @@
 #include "parser.h"
 
+#include <cctype>
 #include <iostream>
 #include <unordered_set>
 
@@ -134,6 +135,43 @@ ParseTreeNode* HoistNodeAboveParagraph(ParseTreeNode* current_node,
   parent->AddChildren(std::make_unique<ParseTreeParagraphNode>(
       parent, new_paragraph_node_start));
   return current_node->GetParent()->GetLastChildren();
+}
+
+// start is pointing the beginning of the list.
+// (e.g position of '*' for unordered lists, or the position of '1' for the
+// ordered lists)
+//
+// Returns the list depth and the end of the list header.
+// E.g
+//
+//        1. abc
+// |<---->|  ^
+//   depth   end of list header
+//
+std::optional<std::pair<int, int>> IsCorrectListHeader(std::string_view content,
+                                                       int start) {
+  int list_depth = 0;
+
+  int current = start - 1;
+  while (current >= 0) {
+    if (content[current] == ' ') {
+      list_depth++;
+      current--;
+    } else if (content[current] == '\n') {
+      break;
+    } else {
+      return std::nullopt;
+    }
+  }
+
+  if (content.substr(start, 2) == "* ") {
+    return std::make_pair(list_depth, start + 2);
+  } else if (std::isdigit(content[start]) &&
+             content.substr(start + 1, 2) == ". ") {
+    return std::make_pair(list_depth, start + 3);
+  }
+
+  return std::nullopt;
 }
 
 // Check whether some sentence is the start of the list. To be the start of the
@@ -301,6 +339,22 @@ int Parser::GenericParser(std::string_view content, int start,
           index += 2;
           continue;
         }
+      }
+    }
+
+    // This can be the start of the ordered list. (e.g "1.")
+    if (std::isdigit(content[index]) && index + 2 < content.size() &&
+        content.substr(index + 1, 2) == ". ") {
+      if (auto maybe_list = MaybeParseList(content, current_node, index, index);
+          maybe_list != nullptr) {
+        if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
+          current_node =
+              HoistNodeAboveParagraph(current_node, std::move(maybe_list));
+        } else {
+          current_node->AddChildren(std::move(maybe_list));
+        }
+
+        continue;
       }
     }
 
@@ -764,53 +818,23 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
 //  * def
 //
 // The first list item will only contain "abc". Then it will be followed with
-// the paragraph. After thatm there will be a list item "def".
+// the paragraph. After that there will be a list item "def".
 //
 // Those list items will from the actual list after the post-processing part in
 // the parser.
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
                                                       ParseTreeNode* parent,
                                                       int start, int& end) {
-  int current = start;
-  if (content[current] != '*') {
+  auto list_header_info = IsCorrectListHeader(content, start);
+  if (!list_header_info) {
     return nullptr;
   }
 
-  current--;
-
-  // Check if this is the start of the list. * should be the first in the
-  // sentence. e.g
-  //    *
-  //  *
-  // ab* <- not this one
-
-  // Number of ' 's before *.
-  int list_depth = 0;
-  int list_start = 0;
-  while (current >= 0) {
-    if (content[current] == '\n') {
-      list_start = current + 1;
-      break;
-    } else if (content[current] == ' ') {
-      current--;
-      list_depth++;
-    } else {
-      return nullptr;
-    }
-  }
-
-  current = start;
-
-  // Also ' ' must come after *.
-  if (content[current + 1] != ' ') {
-    return nullptr;
-  }
-
-  // Now current points the start of the list content.
-  current += 2;
+  auto [list_depth, current] = *list_header_info;
 
   // Now try to create the list item element.
-  auto list_item = std::make_unique<ParseTreeListItemNode>(nullptr, list_start);
+  auto list_item =
+      std::make_unique<ParseTreeListItemNode>(nullptr, start - list_depth);
   list_item->SetListDepth(list_depth);
 
   while (true) {
