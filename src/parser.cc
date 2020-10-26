@@ -197,6 +197,9 @@ std::optional<std::pair<int, int>> IsStartOfTheList(std::string_view content,
       } else {
         return std::make_pair(list_depth, start);
       }
+    } else if (std::isdigit(content[start]) &&
+               content.substr(start + 1, 2) == ". ") {
+      return std::make_pair(list_depth, start);
     } else {
       return std::nullopt;
     }
@@ -205,8 +208,14 @@ std::optional<std::pair<int, int>> IsStartOfTheList(std::string_view content,
   return std::nullopt;
 }
 
+bool IsListItemType(const ParseTreeNode* node) {
+  return node->GetNodeType() == ParseTreeNode::LIST_ITEM ||
+         node->GetNodeType() == ParseTreeNode::ORDERED_LIST_ITEM;
+}
+
 int GetDepth(std::unique_ptr<ParseTreeNode>& child) {
-  assert(child->GetNodeType() == ParseTreeNode::LIST_ITEM);
+  assert(IsListItemType(child.get()));
+
   return static_cast<ParseTreeListItemNode*>(child.get())->GetListDepth();
 }
 
@@ -227,8 +236,10 @@ std::unique_ptr<ParseTreeListNode> ConstructListFromListItems(
   while (current != end) {
     if (current_lists.empty() ||
         current_lists.back().second < GetDepth(children[current])) {
+      bool is_ordered =
+          children[current]->GetNodeType() == ParseTreeNode::ORDERED_LIST_ITEM;
       auto list = std::make_unique<ParseTreeListNode>(
-          nullptr, children[current]->Start());
+          nullptr, children[current]->Start(), is_ordered);
       current_lists.push_back(
           std::make_pair(list.get(), GetDepth(children[current])));
 
@@ -265,8 +276,10 @@ std::unique_ptr<ParseTreeListNode> ConstructListFromListItems(
       if (current_lists.back().second == depth) {
         current_lists.back().first->AddChildren(std::move(children[current]));
       } else {
+        bool is_ordered = children[current]->GetNodeType() ==
+                          ParseTreeNode::ORDERED_LIST_ITEM;
         auto list = std::make_unique<ParseTreeListNode>(
-            nullptr, children[current]->Start());
+            nullptr, children[current]->Start(), is_ordered);
         current_lists.push_back(
             std::make_pair(list.get(), GetDepth(children[current])));
 
@@ -832,9 +845,11 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
 
   auto [list_depth, current] = *list_header_info;
 
+  bool is_ordered = content[start] != '*';
+
   // Now try to create the list item element.
-  auto list_item =
-      std::make_unique<ParseTreeListItemNode>(nullptr, start - list_depth);
+  auto list_item = std::make_unique<ParseTreeListItemNode>(
+      nullptr, start - list_depth, is_ordered);
   list_item->SetListDepth(list_depth);
 
   while (true) {
@@ -882,11 +897,10 @@ void Parser::PostProcessList(ParseTreeNode* root) {
   std::vector<std::unique_ptr<ParseTreeNode>>& children = root->GetChildren();
   for (int current = 0; current != children.size(); current++) {
     // If the list item is found, then locate the end of the list item.
-    if (children[current]->GetNodeType() == ParseTreeNode::LIST_ITEM) {
+    if (IsListItemType(children[current].get())) {
       int list_item_end = current;
       while (list_item_end != children.size()) {
-        if (children[list_item_end]->GetNodeType() !=
-            ParseTreeNode::LIST_ITEM) {
+        if (!IsListItemType(children[list_item_end].get())) {
           break;
         }
 

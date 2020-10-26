@@ -608,5 +608,66 @@ def
                                   {ParseTreeNode::PARAGRAPH, 46, 46, 3},
                                   {ParseTreeNode::PARAGRAPH, 46, 46, 1}}));
 }
+
+TEST(ParserTest, SimpleOrderedList) {
+  std::string content = R"(
+1. a
+2. b
+  c
+3. d)";
+
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 19, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::ORDERED_LIST, 1, 19, 1},
+                                  {ParseTreeNode::ORDERED_LIST_ITEM, 1, 6, 2},
+                                  {ParseTreeNode::PARAGRAPH, 4, 5, 3},
+                                  {ParseTreeNode::ORDERED_LIST_ITEM, 6, 15, 2},
+                                  {ParseTreeNode::PARAGRAPH, 9, 10, 3},
+                                  {ParseTreeNode::PARAGRAPH, 11, 14, 3},
+                                  {ParseTreeNode::ORDERED_LIST_ITEM, 15, 19, 2},
+                                  {ParseTreeNode::PARAGRAPH, 18, 19, 3},
+                                  {ParseTreeNode::PARAGRAPH, 19, 19, 1}}));
+}
+
+TEST(ParserTest, OrderedAndUnorderedMixed) {
+  std::string content = R"(
+1. a
+2. b
+  * c
+  * d
+    1. e
+    2. f
+  * g
+    * a
+3. d)";
+
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 59, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                                  {ParseTreeNode::ORDERED_LIST, 1, 59, 1},
+                                  {ParseTreeNode::ORDERED_LIST_ITEM, 1, 6, 2},
+                                  {ParseTreeNode::PARAGRAPH, 4, 5, 3},
+                                  {ParseTreeNode::ORDERED_LIST_ITEM, 6, 11, 2},
+                                  {ParseTreeNode::PARAGRAPH, 9, 10, 3},
+                                  {ParseTreeNode::LIST, 11, 55, 2},
+                                  {ParseTreeNode::LIST_ITEM, 11, 17, 3},
+                                  {ParseTreeNode::PARAGRAPH, 15, 16, 4},
+                                  {ParseTreeNode::LIST_ITEM, 17, 23, 3},
+                                  {ParseTreeNode::PARAGRAPH, 21, 22, 4},
+                                  {ParseTreeNode::ORDERED_LIST, 23, 41, 3},
+                                  {ParseTreeNode::ORDERED_LIST_ITEM, 23, 32, 4},
+                                  {ParseTreeNode::PARAGRAPH, 30, 31, 5},
+                                  {ParseTreeNode::ORDERED_LIST_ITEM, 32, 41, 4},
+                                  {ParseTreeNode::PARAGRAPH, 39, 40, 5},
+                                  {ParseTreeNode::LIST_ITEM, 41, 47, 3},
+                                  {ParseTreeNode::PARAGRAPH, 45, 46, 4},
+                                  {ParseTreeNode::LIST, 47, 55, 3},
+                                  {ParseTreeNode::LIST_ITEM, 47, 55, 4},
+                                  {ParseTreeNode::PARAGRAPH, 53, 54, 5},
+                                  {ParseTreeNode::ORDERED_LIST_ITEM, 55, 59, 2},
+                                  {ParseTreeNode::PARAGRAPH, 58, 59, 3},
+                                  {ParseTreeNode::PARAGRAPH, 59, 59, 1}}));
+}
 }  // namespace
 }  // namespace md2
