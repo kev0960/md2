@@ -1,6 +1,7 @@
 #ifndef GENERATORS_HTML_GENERATOR_H
 #define GENERATORS_HTML_GENERATOR_H
 
+#include <iostream>
 #include <vector>
 
 #include "../string_util.h"
@@ -22,9 +23,16 @@ struct HTMLImageBuilder {
 
 class HTMLGenerator : public Generator {
  public:
-  HTMLGenerator() { targets_.push_back(&target_); }
+  HTMLGenerator(std::string_view content) : Generator(content) {
+    targets_.push_back(&target_);
+  }
 
   std::string* GetCurrentTarget() { return targets_.back(); }
+
+  void Emit(int index) override { GetCurrentTarget()->push_back(md_[index]); }
+  void Emit(int from, int end) override {
+    GetCurrentTarget()->append(md_.substr(from, end - from));
+  }
 
   void EmitPStart() override { GetCurrentTarget()->append("<p>"); }
   void EmitPEnd() override { GetCurrentTarget()->append("</p>"); }
@@ -77,12 +85,55 @@ class HTMLGenerator : public Generator {
     const HTMLImageBuilder& image = images_.back();
     GetCurrentTarget()->append(
         StrCat("<figure><picture><img class='content-img' src='", image.url,
-               "' alt=", image.alt, "'>", "</picture><figcaption>",
+               "' alt='", image.alt, "'>", "</picture><figcaption>",
                image.caption, "</figcaption></figure>"));
     images_.pop_back();
   }
 
-  void EmitHeader(); 
+  void EmitHeader();
+
+  void EmitTableStart() override { GetCurrentTarget()->append("<table>"); }
+  void EmitTableEnd() override { GetCurrentTarget()->append("</table>"); }
+
+  void EmitTableHeaderStart() override {
+    GetCurrentTarget()->append("<thead>");
+  }
+  void EmitTableHeaderEnd() override { GetCurrentTarget()->append("</thead>"); }
+  void EmitTableHeaderCellStart() override {
+    GetCurrentTarget()->append("<th>");
+  }
+  void EmitTableHeaderCellEnd() override {
+    GetCurrentTarget()->append("</th>");
+  }
+
+  void EmitTableBodyStart() override { GetCurrentTarget()->append("<tbody>"); }
+  void EmitTableBodyEnd() override { GetCurrentTarget()->append("</tbody>"); }
+  void EmitTableRowStart() override { GetCurrentTarget()->append("<tr>"); }
+  void EmitTableRowEnd() override { GetCurrentTarget()->append("</tr>"); }
+  void EmitTableCellStart() override { GetCurrentTarget()->append("<td>"); }
+  void EmitTableCellEnd() override { GetCurrentTarget()->append("</td>"); }
+
+  void EmitInlineVerbatimStart() override {
+    GetCurrentTarget()->append("<code class='inline-code'>");
+  }
+
+  void EmitInlineVerbatimEnd() override {
+    GetCurrentTarget()->append("</code>");
+  }
+
+  void EmitListStart() override { GetCurrentTarget()->append("<ul>"); }
+  void EmitListEnd() override { GetCurrentTarget()->append("</ul>"); }
+  void EmitListItemStart() override { GetCurrentTarget()->append("<li>"); }
+  void EmitListItemEnd() override { GetCurrentTarget()->append("</li>"); }
+
+  void EmitOrderedListStart() override { GetCurrentTarget()->append("<ol>"); }
+  void EmitOrderedListEnd() override { GetCurrentTarget()->append("</ol>"); }
+  void EmitOrderedListItemStart() override {
+    GetCurrentTarget()->append("<li>");
+  }
+  void EmitOrderedListItemEnd() override {
+    GetCurrentTarget()->append("</li>");
+  }
 
  private:
   std::vector<HTMLLinkBuilder> links_;

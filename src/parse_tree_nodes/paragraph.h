@@ -16,7 +16,7 @@ class ParseTreeParagraphNode : public ParseTreeNode {
   void Generate(Generator* generator) const override;
 };
 
-// This node represents the simple text (not part of hte paragraph).
+// This node represents the simple text (not part of the paragraph).
 class ParseTreeTextNode : public ParseTreeNode {
  public:
   ParseTreeTextNode(ParseTreeNode* parent, int start)

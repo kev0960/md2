@@ -143,9 +143,9 @@ TEST(ParserTest, Link) {
                                   {ParseTreeNode::PARAGRAPH, 0, 19, 1},
                                   {ParseTreeNode::LINK, 0, 19, 2},
                                   {ParseTreeNode::NODE, 0, 6, 3},
-                                  {ParseTreeNode::PARAGRAPH, 1, 5, 4},
+                                  {ParseTreeNode::TEXT, 1, 5, 4},
                                   {ParseTreeNode::NODE, 6, 19, 3},
-                                  {ParseTreeNode::PARAGRAPH, 7, 18, 4}}));
+                                  {ParseTreeNode::TEXT, 7, 18, 4}}));
 }
 
 TEST(ParserTest, Link2) {
@@ -155,10 +155,10 @@ TEST(ParserTest, Link2) {
                                   {ParseTreeNode::PARAGRAPH, 0, 23, 1},
                                   {ParseTreeNode::LINK, 0, 23, 2},
                                   {ParseTreeNode::NODE, 0, 10, 3},
-                                  {ParseTreeNode::PARAGRAPH, 1, 9, 4},
+                                  {ParseTreeNode::TEXT, 1, 9, 4},
                                   {ParseTreeNode::ITALIC, 6, 9, 5},
                                   {ParseTreeNode::NODE, 10, 23, 3},
-                                  {ParseTreeNode::PARAGRAPH, 11, 22, 4}}));
+                                  {ParseTreeNode::TEXT, 11, 22, 4}}));
 }
 
 TEST(ParserTest, Link3) {
@@ -167,9 +167,9 @@ TEST(ParserTest, Link3) {
                                   {ParseTreeNode::PARAGRAPH, 0, 18, 1},
                                   {ParseTreeNode::LINK, 9, 18, 2},
                                   {ParseTreeNode::NODE, 9, 12, 3},
-                                  {ParseTreeNode::PARAGRAPH, 10, 11, 4},
+                                  {ParseTreeNode::TEXT, 10, 11, 4},
                                   {ParseTreeNode::NODE, 12, 18, 3},
-                                  {ParseTreeNode::PARAGRAPH, 13, 17, 4}}));
+                                  {ParseTreeNode::TEXT, 13, 17, 4}}));
 }
 
 TEST(ParserTest, InvalidLink) {
@@ -197,25 +197,25 @@ TEST(ParserTest, Image) {
   DoParserTest("![alttext](http://img)",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 22, 0},
                                   {ParseTreeNode::PARAGRAPH, 0, 22, 1},
-                                  {ParseTreeNode::IMAGE, 1, 22, 2},
-                                  {ParseTreeNode::NODE, 1, 10, 3},
-                                  {ParseTreeNode::PARAGRAPH, 2, 9, 4},
+                                  {ParseTreeNode::IMAGE, 0, 22, 2},
+                                  {ParseTreeNode::NODE, 0, 10, 3},
+                                  {ParseTreeNode::TEXT, 2, 9, 4},
                                   {ParseTreeNode::TEXT, 2, 9, 5},  // Alt text
                                   {ParseTreeNode::NODE, 10, 22, 3},
-                                  {ParseTreeNode::PARAGRAPH, 11, 21, 4}}));
+                                  {ParseTreeNode::TEXT, 11, 21, 4}}));
 }
 
 TEST(ParserTest, ImageWithCaption) {
   DoParserTest("![alttext caption=abc](http://img)",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 34, 0},
                                   {ParseTreeNode::PARAGRAPH, 0, 34, 1},
-                                  {ParseTreeNode::IMAGE, 1, 34, 2},
-                                  {ParseTreeNode::NODE, 1, 22, 3},
-                                  {ParseTreeNode::PARAGRAPH, 2, 21, 4},
+                                  {ParseTreeNode::IMAGE, 0, 34, 2},
+                                  {ParseTreeNode::NODE, 0, 22, 3},
+                                  {ParseTreeNode::TEXT, 2, 21, 4},
                                   {ParseTreeNode::TEXT, 2, 10, 5},   // Alt text
                                   {ParseTreeNode::TEXT, 18, 21, 5},  // Caption
                                   {ParseTreeNode::NODE, 22, 34, 3},
-                                  {ParseTreeNode::PARAGRAPH, 23, 33, 4}}));
+                                  {ParseTreeNode::TEXT, 23, 33, 4}}));
 }
 
 TEST(ParserTest, ImageWithCaptionBold) {
@@ -223,14 +223,14 @@ TEST(ParserTest, ImageWithCaptionBold) {
       "![alttext caption=some**aa**](http://img)",
       ParseTreeComparer({{ParseTreeNode::NODE, 0, 41, 0},
                          {ParseTreeNode::PARAGRAPH, 0, 41, 1},
-                         {ParseTreeNode::IMAGE, 1, 41, 2},
-                         {ParseTreeNode::NODE, 1, 29, 3},
-                         {ParseTreeNode::PARAGRAPH, 2, 28, 4},
+                         {ParseTreeNode::IMAGE, 0, 41, 2},
+                         {ParseTreeNode::NODE, 0, 29, 3},
+                         {ParseTreeNode::TEXT, 2, 28, 4},
                          {ParseTreeNode::TEXT, 2, 10, 5},   // Alt text
                          {ParseTreeNode::TEXT, 18, 28, 5},  // Caption
                          {ParseTreeNode::BOLD, 22, 28, 6},  // Caption BOLD
                          {ParseTreeNode::NODE, 29, 41, 3},
-                         {ParseTreeNode::PARAGRAPH, 30, 40, 4}}));
+                         {ParseTreeNode::TEXT, 30, 40, 4}}));
 }
 
 TEST(ParserTest, ImageWithCaptionBold2) {
@@ -239,14 +239,14 @@ TEST(ParserTest, ImageWithCaptionBold2) {
       "![alttext caption=some**caption=**](http://img)",
       ParseTreeComparer({{ParseTreeNode::NODE, 0, 47, 0},
                          {ParseTreeNode::PARAGRAPH, 0, 47, 1},
-                         {ParseTreeNode::IMAGE, 1, 47, 2},
-                         {ParseTreeNode::NODE, 1, 35, 3},
-                         {ParseTreeNode::PARAGRAPH, 2, 34, 4},
+                         {ParseTreeNode::IMAGE, 0, 47, 2},
+                         {ParseTreeNode::NODE, 0, 35, 3},
+                         {ParseTreeNode::TEXT, 2, 34, 4},
                          {ParseTreeNode::TEXT, 2, 10, 5},   // Alt text
                          {ParseTreeNode::TEXT, 18, 34, 5},  // Caption
                          {ParseTreeNode::BOLD, 22, 34, 6},  // Caption BOLD
                          {ParseTreeNode::NODE, 35, 47, 3},
-                         {ParseTreeNode::PARAGRAPH, 36, 46, 4}}));
+                         {ParseTreeNode::TEXT, 36, 46, 4}}));
 }
 
 TEST(ParserTest, ImageWithCaptionComplex) {
@@ -255,15 +255,15 @@ TEST(ParserTest, ImageWithCaptionComplex) {
       "![alttext caption=some**cap***a*](http://img)",
       ParseTreeComparer({{ParseTreeNode::NODE, 0, 45, 0},
                          {ParseTreeNode::PARAGRAPH, 0, 45, 1},
-                         {ParseTreeNode::IMAGE, 1, 45, 2},
-                         {ParseTreeNode::NODE, 1, 33, 3},
-                         {ParseTreeNode::PARAGRAPH, 2, 32, 4},
+                         {ParseTreeNode::IMAGE, 0, 45, 2},
+                         {ParseTreeNode::NODE, 0, 33, 3},
+                         {ParseTreeNode::TEXT, 2, 32, 4},
                          {ParseTreeNode::TEXT, 2, 10, 5},     // Alt text
                          {ParseTreeNode::TEXT, 18, 32, 5},    // Caption
                          {ParseTreeNode::BOLD, 22, 29, 6},    // Caption BOLD
                          {ParseTreeNode::ITALIC, 29, 32, 6},  // Caption Italic
                          {ParseTreeNode::NODE, 33, 45, 3},
-                         {ParseTreeNode::PARAGRAPH, 34, 44, 4}}));
+                         {ParseTreeNode::TEXT, 34, 44, 4}}));
 }
 
 TEST(ParserTest, ImageWithCaptionAndSize) {
@@ -271,14 +271,14 @@ TEST(ParserTest, ImageWithCaptionAndSize) {
   DoParserTest("![alttext caption=cap size=123x123](http://img)",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 47, 0},
                                   {ParseTreeNode::PARAGRAPH, 0, 47, 1},
-                                  {ParseTreeNode::IMAGE, 1, 47, 2},
-                                  {ParseTreeNode::NODE, 1, 35, 3},
-                                  {ParseTreeNode::PARAGRAPH, 2, 34, 4},
+                                  {ParseTreeNode::IMAGE, 0, 47, 2},
+                                  {ParseTreeNode::NODE, 0, 35, 3},
+                                  {ParseTreeNode::TEXT, 2, 34, 4},
                                   {ParseTreeNode::TEXT, 2, 10, 5},   // Alt text
                                   {ParseTreeNode::TEXT, 18, 22, 5},  // Caption
                                   {ParseTreeNode::TEXT, 27, 34, 5},  // Size
                                   {ParseTreeNode::NODE, 35, 47, 3},
-                                  {ParseTreeNode::PARAGRAPH, 36, 46, 4}}));
+                                  {ParseTreeNode::TEXT, 36, 46, 4}}));
 }
 
 TEST(ParserTest, ImageWithCaptionItalicAndSize) {
@@ -287,15 +287,15 @@ TEST(ParserTest, ImageWithCaptionItalicAndSize) {
       "![alttext caption=*a* size=123x123](http://img)",
       ParseTreeComparer({{ParseTreeNode::NODE, 0, 47, 0},
                          {ParseTreeNode::PARAGRAPH, 0, 47, 1},
-                         {ParseTreeNode::IMAGE, 1, 47, 2},
-                         {ParseTreeNode::NODE, 1, 35, 3},
-                         {ParseTreeNode::PARAGRAPH, 2, 34, 4},
+                         {ParseTreeNode::IMAGE, 0, 47, 2},
+                         {ParseTreeNode::NODE, 0, 35, 3},
+                         {ParseTreeNode::TEXT, 2, 34, 4},
                          {ParseTreeNode::TEXT, 2, 10, 5},     // Alt text
                          {ParseTreeNode::TEXT, 18, 22, 5},    // Caption
                          {ParseTreeNode::ITALIC, 18, 21, 6},  // Caption Italic
                          {ParseTreeNode::TEXT, 27, 34, 5},    // Size
                          {ParseTreeNode::NODE, 35, 47, 3},
-                         {ParseTreeNode::PARAGRAPH, 36, 46, 4}}));
+                         {ParseTreeNode::TEXT, 36, 46, 4}}));
 }
 
 TEST(ParserTest, ImageWithCaptionItalicAndSizeNoAlt) {
@@ -304,15 +304,15 @@ TEST(ParserTest, ImageWithCaptionItalicAndSizeNoAlt) {
       "![caption=*a* size=123x123](http://img)",
       ParseTreeComparer({{ParseTreeNode::NODE, 0, 39, 0},
                          {ParseTreeNode::PARAGRAPH, 0, 39, 1},
-                         {ParseTreeNode::IMAGE, 1, 39, 2},
-                         {ParseTreeNode::NODE, 1, 27, 3},
-                         {ParseTreeNode::PARAGRAPH, 2, 26, 4},
+                         {ParseTreeNode::IMAGE, 0, 39, 2},
+                         {ParseTreeNode::NODE, 0, 27, 3},
+                         {ParseTreeNode::TEXT, 2, 26, 4},
                          {ParseTreeNode::TEXT, 2, 2, 5},    // Alt Text (empty)
                          {ParseTreeNode::TEXT, 10, 14, 5},  // Caption
                          {ParseTreeNode::ITALIC, 10, 13, 6},  // Caption Italic
                          {ParseTreeNode::TEXT, 19, 26, 5},    // Size
                          {ParseTreeNode::NODE, 27, 39, 3},
-                         {ParseTreeNode::PARAGRAPH, 28, 38, 4}}));
+                         {ParseTreeNode::TEXT, 28, 38, 4}}));
 }
 
 TEST(ParserTest, HeaderSimple) {

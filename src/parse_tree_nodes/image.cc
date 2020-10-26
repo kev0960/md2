@@ -15,7 +15,7 @@ void ParseTreeImageNode::Generate(Generator* generator) const {
   assert(desc_node->GetNodeType() == ParseTreeNode::NODE);
 
   ParseTreeNode* desc = desc_node->GetChildren()[0].get();
-  assert(desc->GetNodeType() == ParseTreeNode::PARAGRAPH);
+  assert(desc->GetNodeType() == ParseTreeNode::TEXT);
 
   generator->StartImage();
 
@@ -54,7 +54,7 @@ void ParseTreeImageNode::SetKeywordNodes(
   assert(desc_node->GetNodeType() == ParseTreeNode::NODE);
 
   ParseTreeNode* desc = desc_node->GetChildren()[0].get();
-  assert(desc->GetNodeType() == ParseTreeNode::PARAGRAPH);
+  assert(desc->GetNodeType() == ParseTreeNode::TEXT);
 
   std::vector<std::pair<std::unique_ptr<ParseTreeNode>, std::string>>
       nodes_and_keyword;

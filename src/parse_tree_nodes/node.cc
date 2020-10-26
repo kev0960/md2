@@ -65,23 +65,30 @@ void ParseTreeNode::Generate(Generator* generator) const {
     child->Generate(generator);
   }
 }
-void ParseTreeNode ::GenerateWithDefaultAction(
+void ParseTreeNode::GenerateWithDefaultAction(
     Generator* generator,
     std::function<void(Generator*, int index)> default_action) const {
+  GenerateWithDefaultActionSpan(generator, default_action, start_, end_);
+}
+
+void ParseTreeNode::GenerateWithDefaultActionSpan(
+    Generator* generator,
+    std::function<void(Generator*, int index)> default_action, int start,
+    int end) const {
   ParseTreeNode* next = nullptr;
-  int current = start_;
-  while (current != end_) {
+  int current = start;
+  while (current < end) {
     next = GetNext(current);
 
     // If there is no children next to "current", then just emit every remaining
     // chars.
     if (next == nullptr) {
-      while (current != end_) {
+      while (current < end) {
         default_action(generator, current++);
       }
     } else {
       // Print until it sees the next child.
-      while (current != next->Start()) {
+      while (current < next->Start()) {
         default_action(generator, current++);
       }
 

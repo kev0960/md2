@@ -9,13 +9,13 @@ void ParseTreeLinkNode::Generate(Generator* generator) const {
 
   generator->StartLink();
 
-  generator->EmitLinkUrlStart();
-  children_[0]->Generate(generator);
-  generator->EmitLinkUrlEnd();
-
   generator->EmitLinkDescStart();
-  children_[1]->Generate(generator);
+  children_[0]->Generate(generator);
   generator->EmitLinkDescEnd();
+
+  generator->EmitLinkUrlStart();
+  children_[1]->Generate(generator);
+  generator->EmitLinkUrlEnd();
 
   generator->EndLink();
 }

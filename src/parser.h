@@ -21,8 +21,10 @@ class Parser {
   // sees the end_parsing_token. If end_parsing_token is empty, then it tries to
   // parse until the end of the content.
   // Returns the location RIGHT AFTER the end parsing token.
+  // If use_text is true, then it will use TEXT instead of PARAGRAPH.
   int GenericParser(std::string_view content, int start,
-                    std::string_view end_parsing_token, ParseTreeNode* root);
+                    std::string_view end_parsing_token, ParseTreeNode* root,
+                    bool use_text = false);
 
   // Try to parse the markdown that starts with '['. The parsing can fail if it
   // does not construct the proper link. In such case, this will return nullptr

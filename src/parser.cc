@@ -328,7 +328,7 @@ ParseTree Parser::GenerateParseTree(std::string_view content) {
 
 int Parser::GenericParser(std::string_view content, int start,
                           std::string_view end_parsing_token,
-                          ParseTreeNode* root) {
+                          ParseTreeNode* root, bool use_text) {
   ParseTreeNode* current_node = root;
 
   int index = start;
@@ -336,7 +336,12 @@ int Parser::GenericParser(std::string_view content, int start,
     // If current node is the root node, then create the Paragraph node as a
     // default.
     if (current_node->GetParent() == nullptr) {
-      current_node = CreateNewNode<ParseTreeParagraphNode>(current_node, index);
+      if (use_text) {
+        current_node = CreateNewNode<ParseTreeTextNode>(current_node, index);
+      } else {
+        current_node =
+            CreateNewNode<ParseTreeParagraphNode>(current_node, index);
+      }
     }
 
     // We should skip the escape character.
@@ -510,7 +515,8 @@ int Parser::GenericParser(std::string_view content, int start,
 
     // End parsing token must be checked at the paragraph level.
     if (!end_parsing_token.empty() &&
-        current_node->GetNodeType() == ParseTreeNode::PARAGRAPH &&
+        (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH ||
+         (use_text && current_node->GetNodeType() == ParseTreeNode::TEXT)) &&
         content.substr(index, end_parsing_token.size()) == end_parsing_token) {
       // Walk up the node and mark its end.
       // NOTE that all the child nodes does not include the start of the end
@@ -534,14 +540,21 @@ int Parser::GenericParser(std::string_view content, int start,
 template <typename LinkNodeType>
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
                                                       int start, int& end) {
-  auto root = std::make_unique<LinkNodeType>(nullptr, start);
+  int node_start = start;
+  if constexpr (std::is_same_v<LinkNodeType, ParseTreeImageNode>) {
+    // Need to include the preceding '!'.
+    node_start--;
+  }
+
+  auto root = std::make_unique<LinkNodeType>(nullptr, node_start);
 
   // We should not specify the parent as Link yet (otherwise checking the end
   // parsing token would not work.)
-  auto desc = std::make_unique<ParseTreeNode>(nullptr, start);
+  auto desc = std::make_unique<ParseTreeNode>(nullptr, node_start);
 
   // Note that parsing starts after "[" (to prevent infinite loop).
-  int desc_end = GenericParser(content, start + 1, "]", desc.get());
+  int desc_end =
+      GenericParser(content, start + 1, "]", desc.get(), /*use_text=*/true);
 
   if (content.substr(desc_end - 1, 2) != "](") {
     return nullptr;
@@ -551,7 +564,8 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
   auto url = std::make_unique<ParseTreeNode>(nullptr, desc_end);
 
   // Parsing starts after "(".
-  int url_end = GenericParser(content, desc_end + 1, ")", url.get());
+  int url_end =
+      GenericParser(content, desc_end + 1, ")", url.get(), /*use_text=*/true);
   if (content.substr(url_end - 1, 1) != ")") {
     return nullptr;
   }
@@ -581,7 +595,7 @@ void Parser::ParseImageDescriptionMetadata(std::string_view content,
   assert(desc_node->GetNodeType() == ParseTreeNode::NODE);
 
   ParseTreeNode* desc = desc_node->GetChildren()[0].get();
-  assert(desc->GetNodeType() == ParseTreeNode::PARAGRAPH);
+  assert(desc->GetNodeType() == ParseTreeNode::TEXT);
 
   nodes_per_keyword["alt"] =
       std::make_unique<ParseTreeTextNode>(nullptr, desc->Start());

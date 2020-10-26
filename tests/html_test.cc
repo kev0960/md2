@@ -1,0 +1,318 @@
+#include "../src/generators/html_generator.h"
+#include "../src/parser.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
+namespace md2 {
+namespace md {
+
+using ::testing::Eq;
+
+void DoHtmlTest(std::string content, std::string expected) {
+  Parser parser;
+  ParseTree tree = parser.GenerateParseTree(content);
+
+  HTMLGenerator generator(content);
+  tree.Generate(&generator);
+
+  EXPECT_EQ(std::string(generator.ShowOutput()), expected);
+}
+
+TEST(HtmlTest, Paragraph) { DoHtmlTest("a", "<p>a</p>"); }
+TEST(HtmlTest, ParagraphLongerLines) { DoHtmlTest("abc", "<p>abc</p>"); }
+TEST(HtmlTest, TwoParagraphs) { DoHtmlTest("a\n\nb", "<p>a</p><p>b</p>"); }
+TEST(HtmlTest, BoldInParagraph) {
+  DoHtmlTest("a**b**c", "<p>a<span class='font-weight-bold'>b</span>c</p>");
+}
+
+TEST(HtmlTest, ItalicInParagraph) {
+  DoHtmlTest("a*b*c", "<p>a<span class='font-italic'>b</span>c</p>");
+}
+
+TEST(HtmlTest, ItalicInBold) {
+  DoHtmlTest("***a***",
+             "<p><span class='font-weight-bold'><span "
+             "class='font-italic'>a</span></span></p>");
+}
+
+TEST(HtmlTest, ItalicInBold2) {
+  // a<b>b<i>c</i><i>d</i></b>
+  DoHtmlTest("a**b*c**d***",
+             "<p>a<span class='font-weight-bold'>b<span "
+             "class='font-italic'>c</span><span "
+             "class='font-italic'>d</span></span></p>");
+}
+
+TEST(HtmlTest, ItalicInBold3) {
+  // a<b>b<i>c</i><i>d</i></b>
+  DoHtmlTest("a**b*c**d***",
+             "<p>a<span class='font-weight-bold'>b<span "
+             "class='font-italic'>c</span><span "
+             "class='font-italic'>d</span></span></p>");
+}
+
+TEST(HtmlTest, ItalicInBold4) {
+  // a<b><i>b</i><i>c</i></b><b>a</b>
+  DoHtmlTest("a***b**c*****a**",
+             "<p>a<span class='font-weight-bold'><span "
+             "class='font-italic'>b</span><span "
+             "class='font-italic'>c</span></span><span "
+             "class='font-weight-bold'>a</span></p>");
+}
+
+TEST(HtmlTest, BoldInItalic) {
+  // <i>a<b>b</b></i>
+  DoHtmlTest("*a**b***",
+             "<p><span class='font-italic'>a<span "
+             "class='font-weight-bold'>b</span></span></p>");
+}
+
+TEST(HtmlTest, BoldInItalic2) {
+  // <i>a<b>b</b><b>c</b></i><b>e</b>
+  DoHtmlTest("*a**b****c***",
+             "<p><span class='font-italic'>a<span "
+             "class='font-weight-bold'>b</span><span "
+             "class='font-weight-bold'>c</span></span></p>");
+}
+
+TEST(HtmlTest, Link) {
+  DoHtmlTest("[link](http://link)", "<p><a href='http://link'>link</a></p>");
+}
+
+TEST(HtmlTest, Link2) {
+  // "]" inside of the ** should be ignored.
+  DoHtmlTest("[link *]*](http://link)",
+             "<p><a href='http://link'>link <span "
+             "class='font-italic'>]</span></a></p>");
+}
+
+TEST(HtmlTest, Link3) {
+  DoHtmlTest("arr[0][1][2](link)", "<p>arr[0][1]<a href='link'>2</a></p>");
+}
+
+TEST(HtmlTest, InvalidLink) {
+  DoHtmlTest("[link] (http://link)", "<p>[link] (http://link)</p>");
+}
+
+TEST(HtmlTest, InvalidLink2) {
+  DoHtmlTest("arr[0][1][2]", "<p>arr[0][1][2]</p>");
+}
+
+TEST(HtmlTest, EscapeChar) {
+  // \b and \note are not escaped.
+  DoHtmlTest(R"(\*\b\\\note)", R"(<p>*\b\\note</p>)");
+}
+
+TEST(HtmlTest, Image) {
+  DoHtmlTest("![alttext](http://img)",
+             "<p><figure><picture><img class='content-img' src='http://img' "
+             "alt='alttext'></picture><figcaption></figcaption></figure></p>");
+}
+
+TEST(HtmlTest, ImageWithCaption) {
+  DoHtmlTest(
+      "![alttext caption=abc](http://img)",
+      "<p><figure><picture><img class='content-img' src='http://img' "
+      "alt='alttext '></picture><figcaption>abc</figcaption></figure></p>");
+}
+
+TEST(HtmlTest, ImageWithCaptionBold) {
+  DoHtmlTest("![alttext caption=some**aa**](http://img)",
+             "<p><figure><picture><img class='content-img' src='http://img' "
+             "alt='alttext '></picture><figcaption>some<span "
+             "class='font-weight-bold'>aa</span></figcaption></figure></p>");
+}
+
+TEST(HtmlTest, ImageWithCaptionComplex) {
+  // "caption=" inside of ** should be ignored.
+  DoHtmlTest("![alttext caption=some**cap***a*](http://img)",
+             "<p><figure><picture><img class='content-img' src='http://img' "
+             "alt='alttext '></picture><figcaption>some<span "
+             "class='font-weight-bold'>cap</span><span "
+             "class='font-italic'>a</span></figcaption></figure></p>");
+}
+
+TEST(HtmlTest, ImageWithCaptionAndSize) {
+  // "caption=" inside of ** should be ignored.
+  DoHtmlTest(
+      "![alttext caption=cap size=123x123](http://img)",
+      "<p><figure><picture><img class='content-img' src='http://img' "
+      "alt='alttext '></picture><figcaption>cap </figcaption></figure></p>");
+}
+
+TEST(HtmlTest, ImageWithCaptionItalicAndSize) {
+  // "caption=" inside of ** should be ignored.
+  DoHtmlTest("![alttext caption=*a* size=123x123](http://img)",
+             "<p><figure><picture><img class='content-img' src='http://img' "
+             "alt='alttext '></picture><figcaption><span "
+             "class='font-italic'>a</span> </figcaption></figure></p>");
+}
+
+TEST(HtmlTest, ImageWithCaptionItalicAndSizeNoAlt) {
+  // "caption=" inside of ** should be ignored.
+  DoHtmlTest("![caption=*a* size=123x123](http://img)",
+             "<p><figure><picture><img class='content-img' src='http://img' "
+             "alt=''></picture><figcaption><span class='font-italic'>a</span> "
+             "</figcaption></figure></p>");
+}
+
+/*
+TEST(HtmlTest, HeaderSimple) { DoHtmlTest("### header", ""); }
+
+TEST(HtmlTest, HeaderSimple2) { DoHtmlTest("a\n### header", ""); }
+
+TEST(HtmlTest, NotHeader) { DoHtmlTest("a### header", ""); }
+
+TEST(HtmlTest, SimpleVerbatim) { DoHtmlTest("a `code` a", ""); }
+
+TEST(HtmlTest, SimpleCode) {
+  DoHtmlTest(R"(
+```cpp
+hello;
+```)",
+             "");
+}
+
+TEST(HtmlTest, NestedBox) {
+  std::string content = R"(
+```box
+hello;
+```box
+*a*
+```
+b
+```)";
+
+  DoHtmlTest(content, "");
+}
+
+*/
+
+TEST(HtmlTest, SimpleTable) {
+  std::string content = R"(
+|a|b|c|
+|-|-|-|
+|a|b|c|
+abc)";
+
+  DoHtmlTest(content,
+             "<p>\n</p><table><thead><tr><th><p>a</p></th><th><p>b</p></"
+             "th><th><p>c</p></th></tr></thead><tbody><tr><td><p>a</p></td></"
+             "tr><td><p>b</p></td><td><p>c</p></td></tbody></table><p>abc</p>");
+}
+
+TEST(HtmlTest, SimpleTable2) {
+  std::string content = R"(
+|*a*|**b**|
+|-|-|
+|\|a|`b`|)";
+
+  DoHtmlTest(content,
+             "<p>\n</p><table><thead><tr><th><p><span "
+             "class='font-italic'>a</span></p></th><th><p><span "
+             "class='font-weight-bold'>b</span></p></th></tr></"
+             "thead><tbody><tr><td><p>|a</p></td></tr><td><p><code "
+             "class='inline-code'>`b`</code></p></td></tbody></table><p></p>");
+}
+
+/*
+TEST(HtmlTest, SimpleList) {
+  std::string content = R"(
+* a
+* b
+  c
+* d)";
+
+  DoHtmlTest(content, "");
+}
+
+TEST(HtmlTest, SimpleNestedList) {
+  std::string content = R"(
+* a
+  * b
+    * c
+    * d
+* e)";
+
+  DoHtmlTest(content, "");
+}
+
+TEST(HtmlTest, SimpleNestedListWithSomeText) {
+  std::string content = R"(
+* a
+  a2
+  * b1
+    * c1
+    * d1
+  * b2
+    b3
+    * c2
+* e)";
+
+  DoHtmlTest(content, "");
+}
+
+TEST(HtmlTest, ParagraphMiddleOfList) {
+  std::string content = R"(
+* a
+
+some text
+* e)";
+
+  DoHtmlTest(content, "");
+}
+
+TEST(HtmlTest, ParagraphMiddleOfListWithLongEmptyNewline) {
+  // Note the empty line above some text is "   \n", not just "\n".
+  std::string content = R"(
+* a
+
+some text
+* e)";
+
+  DoHtmlTest(content, "");
+}
+
+TEST(HtmlTest, SimpleListWithVerbatim) {
+  std::string content = R"(
+* code
+```cpp
+abc
+```
+* code2
+```cpp
+def
+```)";
+
+  DoHtmlTest(content, "");
+}
+
+TEST(HtmlTest, SimpleOrderedList) {
+  std::string content = R"(
+1. a
+2. b
+  c
+3. d)";
+
+  DoHtmlTest(content, "");
+}
+
+TEST(HtmlTest, OrderedAndUnorderedMixed) {
+  std::string content = R"(
+1. a
+2. b
+  * c
+  * d
+    1. e
+    2. f
+  * g
+    * a
+3. d)";
+
+  DoHtmlTest(content, "");
+}
+
+*/
+
+}  // namespace md
+}  // namespace md2

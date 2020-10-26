@@ -109,6 +109,11 @@ class ParseTreeNode {
       Generator* generator,
       std::function<void(Generator*, int index)> default_action) const;
 
+  void GenerateWithDefaultActionSpan(
+      Generator* generator,
+      std::function<void(Generator*, int index)> default_action, int start,
+      int end) const;
+
   std::vector<std::unique_ptr<ParseTreeNode>> children_;
 
   ParseTreeNode* parent_;
