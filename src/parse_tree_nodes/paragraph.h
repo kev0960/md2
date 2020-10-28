@@ -12,8 +12,6 @@ class ParseTreeParagraphNode : public ParseTreeNode {
       : ParseTreeNode(parent, start) {}
 
   NodeType GetNodeType() const override { return ParseTreeNode::PARAGRAPH; }
-
-  void Generate(Generator* generator) const override;
 };
 
 // This node represents the simple text (not part of the paragraph).
@@ -23,8 +21,6 @@ class ParseTreeTextNode : public ParseTreeNode {
       : ParseTreeNode(parent, start) {}
 
   NodeType GetNodeType() const override { return ParseTreeNode::TEXT; }
-
-  void Generate(Generator* generator) const override;
 };
 
 }  // namespace md2

@@ -11,7 +11,6 @@ class ParseTreeBoxNode : public ParseTreeNode {
       : ParseTreeNode(parent, start) {}
 
   NodeType GetNodeType() const override { return ParseTreeNode::BOX; }
-  void Generate(Generator* generator) const override;
 };
 
 }  // namespace md2

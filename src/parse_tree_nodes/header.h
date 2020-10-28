@@ -12,10 +12,8 @@ class ParseTreeHeaderNode : public ParseTreeNode {
 
   NodeType GetNodeType() const override { return ParseTreeNode::HEADER; }
 
-  void Generate(Generator* generator) const override;
   void SetHeader(std::string_view header);
 
- private:
   enum HeaderTypes {
     NORMAL_HEADER,
     FANCY_HEADER_FOR_REF,
@@ -23,6 +21,9 @@ class ParseTreeHeaderNode : public ParseTreeNode {
     TEMPLATE
   };
 
+  constexpr HeaderTypes GetHeaderType() const { return header_types_; }
+
+ private:
   HeaderTypes header_types_;
   std::string_view header_;
 };

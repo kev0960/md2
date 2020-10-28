@@ -14,11 +14,11 @@ class ParseTreeTableNode : public ParseTreeNode {
 
   NodeType GetNodeType() const override { return ParseTreeNode::TABLE; }
 
-  void Generate(Generator* generator) const override;
-
   // The number of current children will be set as the row size.
   // Will be only set once.
   void SetRowSizeIfNotSpecified();
+
+  constexpr int GetRowSize() const { return row_size_; }
 
  private:
   int row_size_ = 0;

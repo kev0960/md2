@@ -11,7 +11,6 @@ class ParseTreeBoldNode : public ParseTreeNode {
       : ParseTreeNode(parent, start) {}
 
   NodeType GetNodeType() const override { return ParseTreeNode::BOLD; }
-  void Generate(Generator* generator) const override;
 };
 
 class ParseTreeItalicNode : public ParseTreeNode {
@@ -20,7 +19,6 @@ class ParseTreeItalicNode : public ParseTreeNode {
       : ParseTreeNode(parent, start) {}
 
   NodeType GetNodeType() const override { return ParseTreeNode::ITALIC; }
-  void Generate(Generator* generator) const override;
 };
 
 }  // namespace md2

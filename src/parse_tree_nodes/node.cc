@@ -60,44 +60,6 @@ void ParseTreeNode::AddChildBefore(ParseTreeNode* node_to_find,
   }
 }
 
-void ParseTreeNode::Generate(Generator* generator) const {
-  for (const auto& child : children_) {
-    child->Generate(generator);
-  }
-}
-void ParseTreeNode::GenerateWithDefaultAction(
-    Generator* generator,
-    std::function<void(Generator*, int index)> default_action) const {
-  GenerateWithDefaultActionSpan(generator, default_action, start_, end_);
-}
-
-void ParseTreeNode::GenerateWithDefaultActionSpan(
-    Generator* generator,
-    std::function<void(Generator*, int index)> default_action, int start,
-    int end) const {
-  ParseTreeNode* next = nullptr;
-  int current = start;
-  while (current < end) {
-    next = GetNext(current);
-
-    // If there is no children next to "current", then just emit every remaining
-    // chars.
-    if (next == nullptr) {
-      while (current < end) {
-        default_action(generator, current++);
-      }
-    } else {
-      // Print until it sees the next child.
-      while (current < next->Start()) {
-        default_action(generator, current++);
-      }
-
-      next->Generate(generator);
-      current = next->End();
-    }
-  }
-}
-
 void ParseTreeNode::Print(int depth) const {
   std::cout << "Node[" << kNodeTypeToName[GetNodeType()] << "] (" << start_
             << ", " << end_ << "), Depth : " << depth << std::endl;

@@ -21,8 +21,5 @@ void ParseTreeHeaderNode::SetHeader(std::string_view header) {
   header_types_ = NORMAL_HEADER;
 }
 
-void ParseTreeHeaderNode::Generate(Generator* generator) const {
-}
-
 }  // namespace md2
 

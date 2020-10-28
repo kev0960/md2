@@ -12,7 +12,6 @@ class ParseTreeEscapeNode : public ParseTreeNode {
       : ParseTreeNode(parent, start, /*is_leaf_node=*/true) {}
 
   NodeType GetNodeType() const override { return ParseTreeNode::ESCAPE; }
-  void Generate(Generator* generator) const override;
 };
 
 }  // namespace md2

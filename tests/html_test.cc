@@ -13,7 +13,7 @@ void DoHtmlTest(std::string content, std::string expected) {
   ParseTree tree = parser.GenerateParseTree(content);
 
   HTMLGenerator generator(content);
-  tree.Generate(&generator);
+  generator.Generate(tree);
 
   EXPECT_EQ(std::string(generator.ShowOutput()), expected);
 }
@@ -156,15 +156,22 @@ TEST(HtmlTest, ImageWithCaptionItalicAndSizeNoAlt) {
              "</figcaption></figure></p>");
 }
 
+TEST(HtmlTest, HeaderSimple) {
+  DoHtmlTest("### header", "<h3 class='header-general'> header</h3><p></p>");
+}
+
+TEST(HtmlTest, HeaderSimple2) {
+  DoHtmlTest("a\n### header",
+             "<p>a\n</p><h3 class='header-general'> header</h3><p></p>");
+}
+
+TEST(HtmlTest, NotHeader) { DoHtmlTest("a### header", "<p>a### header</p>"); }
+
+TEST(HtmlTest, SimpleVerbatim) {
+  DoHtmlTest("a `code` a", "<p>a <code class='inline-code'>code</code> a</p>");
+}
+
 /*
-TEST(HtmlTest, HeaderSimple) { DoHtmlTest("### header", ""); }
-
-TEST(HtmlTest, HeaderSimple2) { DoHtmlTest("a\n### header", ""); }
-
-TEST(HtmlTest, NotHeader) { DoHtmlTest("a### header", ""); }
-
-TEST(HtmlTest, SimpleVerbatim) { DoHtmlTest("a `code` a", ""); }
-
 TEST(HtmlTest, SimpleCode) {
   DoHtmlTest(R"(
 ```cpp
@@ -212,10 +219,9 @@ TEST(HtmlTest, SimpleTable2) {
              "class='font-italic'>a</span></p></th><th><p><span "
              "class='font-weight-bold'>b</span></p></th></tr></"
              "thead><tbody><tr><td><p>|a</p></td></tr><td><p><code "
-             "class='inline-code'>`b`</code></p></td></tbody></table><p></p>");
+             "class='inline-code'>b</code></p></td></tbody></table><p></p>");
 }
 
-/*
 TEST(HtmlTest, SimpleList) {
   std::string content = R"(
 * a
@@ -223,7 +229,9 @@ TEST(HtmlTest, SimpleList) {
   c
 * d)";
 
-  DoHtmlTest(content, "");
+  DoHtmlTest(content,
+             "<p>\n</p><ul><li><p>a</p></li><li><p>b</p><p>  "
+             "c</p></li><li><p>d</p></li></ul><p></p>");
 }
 
 TEST(HtmlTest, SimpleNestedList) {
@@ -234,7 +242,9 @@ TEST(HtmlTest, SimpleNestedList) {
     * d
 * e)";
 
-  DoHtmlTest(content, "");
+  DoHtmlTest(content,
+             "<p>\n</p><ul><li><p>a</p></li><ul><li><p>b</p></li><ul><li><p>c</"
+             "p></li><li><p>d</p></li></ul></ul><li><p>e</p></li></ul><p></p>");
 }
 
 TEST(HtmlTest, SimpleNestedListWithSomeText) {
@@ -249,7 +259,12 @@ TEST(HtmlTest, SimpleNestedListWithSomeText) {
     * c2
 * e)";
 
-  DoHtmlTest(content, "");
+  DoHtmlTest(content,
+             "<p>\n</p><ul><li><p>a</p><p>  "
+             "a2</p></li><ul><li><p>b1</p></li><ul><li><p>c1</p></"
+             "li><li><p>d1</p></li></ul><li><p>b2</p><p>    "
+             "b3</p></li><ul><li><p>c2</p></li></ul></ul><li><p>e</p></li></"
+             "ul><p></p>");
 }
 
 TEST(HtmlTest, ParagraphMiddleOfList) {
@@ -259,7 +274,9 @@ TEST(HtmlTest, ParagraphMiddleOfList) {
 some text
 * e)";
 
-  DoHtmlTest(content, "");
+  DoHtmlTest(content,
+             "<p>\n</p><ul><li><p>a</p></li></ul><p>some "
+             "text\n</p><ul><li><p>e</p></li></ul><p></p>");
 }
 
 TEST(HtmlTest, ParagraphMiddleOfListWithLongEmptyNewline) {
@@ -270,9 +287,12 @@ TEST(HtmlTest, ParagraphMiddleOfListWithLongEmptyNewline) {
 some text
 * e)";
 
-  DoHtmlTest(content, "");
+  DoHtmlTest(content,
+             "<p>\n</p><ul><li><p>a</p></li></ul><p>some "
+             "text\n</p><ul><li><p>e</p></li></ul><p></p>");
 }
 
+/*
 TEST(HtmlTest, SimpleListWithVerbatim) {
   std::string content = R"(
 * code
@@ -286,6 +306,7 @@ def
 
   DoHtmlTest(content, "");
 }
+*/
 
 TEST(HtmlTest, SimpleOrderedList) {
   std::string content = R"(
@@ -294,7 +315,9 @@ TEST(HtmlTest, SimpleOrderedList) {
   c
 3. d)";
 
-  DoHtmlTest(content, "");
+  DoHtmlTest(content,
+             "<p>\n</p><ol><li><p>a</p></li><li><p>b</p><p>  "
+             "c</p></li><li><p>d</p></li></ol><p></p>");
 }
 
 TEST(HtmlTest, OrderedAndUnorderedMixed) {
@@ -309,10 +332,8 @@ TEST(HtmlTest, OrderedAndUnorderedMixed) {
     * a
 3. d)";
 
-  DoHtmlTest(content, "");
+  DoHtmlTest(content, "<p>\n</p><ol><li><p>a</p></li><li><p>b</p></li><ul><li><p>c</p></li><li><p>d</p></li><ol><li><p>e</p></li><li><p>f</p></li></ol><li><p>g</p></li><ul><li><p>a</p></li></ul></ul><li><p>d</p></li></ol><p></p>");
 }
-
-*/
 
 }  // namespace md
 }  // namespace md2

@@ -7,8 +7,6 @@
 #include <memory>
 #include <vector>
 
-#include "../generators/generator.h"
-
 namespace md2 {
 
 class ParseTreeNode {
@@ -83,8 +81,6 @@ class ParseTreeNode {
 
   std::unique_ptr<ParseTreeNode> PopChildrenAt(int index);
 
-  virtual void Generate(Generator* generator) const;
-
   constexpr int Size() const { return end_ - start_; }
   constexpr int Start() const { return start_; }
   constexpr int End() const { return end_; }
@@ -102,18 +98,6 @@ class ParseTreeNode {
   void Print(int depth = 0) const;
 
  protected:
-  // For the elements that are not part of the child nodes, it runs the
-  // default_action(g, index); Otherwise, it just calls the Generate of the
-  // child node.
-  void GenerateWithDefaultAction(
-      Generator* generator,
-      std::function<void(Generator*, int index)> default_action) const;
-
-  void GenerateWithDefaultActionSpan(
-      Generator* generator,
-      std::function<void(Generator*, int index)> default_action, int start,
-      int end) const;
-
   std::vector<std::unique_ptr<ParseTreeNode>> children_;
 
   ParseTreeNode* parent_;

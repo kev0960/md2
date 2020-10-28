@@ -3,83 +3,39 @@
 
 #include <string>
 
+#include "parse_tree.h"
+
 namespace md2 {
 
 // Generates the converted markdown file in a target language.
 class Generator {
  public:
-  Generator(std::string_view md) : md_(md) {}
-
-  virtual void Emit(int index) { target_.push_back(md_[index]); }
-  virtual void Emit(int from, int end) {
-    target_.append(md_.substr(from, end - from));
-  }
-
-  // Emit the paragraph start character.
-  virtual void EmitPStart() {}
-  virtual void EmitPEnd() {}
-
-  virtual void EmitBoldStart() {}
-  virtual void EmitBoldEnd() {}
-
-  virtual void EmitItalicStart() {}
-  virtual void EmitItalicEnd() {}
-
-  virtual void StartLink() {}
-  virtual void EmitLinkUrlStart() {}
-  virtual void EmitLinkUrlEnd() {}
-  virtual void EmitLinkDescStart() {}
-  virtual void EmitLinkDescEnd() {}
-  virtual void EndLink() {}
-
-  virtual void StartImage() {}
-  virtual void EmitImageUrlStart() {}
-  virtual void EmitImageUrlEnd() {}
-  virtual void EmitImageAltStart() {}  // Alt tag of the image.
-  virtual void EmitImageAltEnd() {}
-  virtual void EmitImageCaptionStart() {}
-  virtual void EmitImageCaptionEnd() {}
-  virtual void EmitImageSizeStart() {}
-  virtual void EmitImageSizeEnd() {}
-  virtual void EndImage() {}
-
-  virtual void EmitRegularHeader(int header_size) {}
-  virtual void EmitLectureHeader(int start, int end) {}
-  virtual void EmitTemplate() {}
-
-  virtual void EmitTableStart() {}
-  virtual void EmitTableEnd() {}
-
-  virtual void EmitTableHeaderStart() {}
-  virtual void EmitTableHeaderEnd() {}
-  virtual void EmitTableHeaderCellStart() {}
-  virtual void EmitTableHeaderCellEnd() {}
-
-  virtual void EmitTableBodyStart() {}
-  virtual void EmitTableBodyEnd() {}
-  virtual void EmitTableRowStart() {}
-  virtual void EmitTableRowEnd() {}
-  virtual void EmitTableCellStart() {}
-  virtual void EmitTableCellEnd() {}
-
-  virtual void EmitInlineVerbatimStart() {}
-  virtual void EmitInlineVerbatimEnd() {}
-
-  virtual void EmitListStart() {}
-  virtual void EmitListEnd() {}
-  virtual void EmitListItemStart() {}
-  virtual void EmitListItemEnd() {}
-
-  virtual void EmitOrderedListStart() {}
-  virtual void EmitOrderedListEnd() {}
-  virtual void EmitOrderedListItemStart() {}
-  virtual void EmitOrderedListItemEnd() {}
-
+  Generator(std::string_view md) : md_(md) { targets_.push_back(&target_); }
   std::string_view ShowOutput() const { return target_; }
 
+  std::string_view Generate(const ParseTree& parse_tree);
+
  protected:
+  virtual void HandleParseTreeNode(const ParseTreeNode& node) {}
+
+  // For the elements that are not part of the child nodes, it runs the
+  // default_action(g, index); Otherwise, it just calls the HandleParseTreeNode
+  // of the child node.
+  void GenerateWithDefaultAction(const ParseTreeNode& node,
+                                 std::function<void(int index)> default_action);
+
+  void GenerateWithDefaultActionSpan(
+      const ParseTreeNode& node, std::function<void(int index)> default_action,
+      int start, int end);
+
+  std::string* GetCurrentTarget() { return targets_.back(); }
+
   std::string_view md_;
   std::string target_;
+
+  // The last target (targets_.back()) is the current target that we are working
+  // on. It will be merged into the top most target (=target_) in the end.
+  std::vector<std::string*> targets_;
 };
 
 }  // namespace md2

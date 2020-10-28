@@ -17,7 +17,7 @@ class ParseTreeListNode : public ParseTreeNode {
     return ParseTreeNode::LIST;
   }
 
-  void Generate(Generator* generator) const override;
+  constexpr bool IsOrdered() const { return is_ordered_; }
 
  private:
   bool is_ordered_ = false;
@@ -35,10 +35,10 @@ class ParseTreeListItemNode : public ParseTreeNode {
 
     return ParseTreeNode::LIST_ITEM;
   }
-  void Generate(Generator* generator) const override;
 
   void SetListDepth(int list_depth) { list_depth_ = list_depth; }
-  int GetListDepth() const { return list_depth_; }
+  constexpr int GetListDepth() const { return list_depth_; }
+  constexpr bool IsOrdered() const { return is_ordered_; }
 
  private:
   int list_depth_;  // Number of spaces before '*'.

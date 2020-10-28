@@ -11,11 +11,14 @@ class ParseTreeImageNode : public ParseTreeNode {
       : ParseTreeNode(parent, start) {}
 
   NodeType GetNodeType() const override { return ParseTreeNode::IMAGE; }
-  void Generate(Generator* generator) const override;
 
   void SetKeywordNodes(
       std::unordered_map<std::string, std::unique_ptr<ParseTreeNode>>&
           nodes_per_keyword);
+
+  const std::unordered_map<std::string, int>& GetKeywordToIndex() const {
+    return keyword_to_index_;
+  }
 
  private:
   // Parse the metadata in the image description.
