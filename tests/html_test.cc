@@ -75,6 +75,16 @@ TEST(HtmlTest, BoldInItalic2) {
              "class='font-weight-bold'>c</span></span></p>");
 }
 
+TEST(HtmlTest, StrikeThrough) {
+  DoHtmlTest("~~ab~~", "<p><span class='font-strike'>ab</span></p>");
+}
+
+TEST(HtmlTest, StrikeThrough2) {
+  DoHtmlTest("a~~a*b*~~c",
+             "<p>a<span class='font-strike'>a<span "
+             "class='font-italic'>b</span></span>c</p>");
+}
+
 TEST(HtmlTest, Link) {
   DoHtmlTest("[link](http://link)", "<p><a href='http://link'>link</a></p>");
 }

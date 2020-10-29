@@ -58,6 +58,9 @@ void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
     case ParseTreeNode::COMMAND:
       HandleCommand(CastNodeTypes<ParseTreeCommandNode>(node));
       break;
+    case ParseTreeNode::STRIKE_THROUGH:
+      HandleStrikeThrough(CastNodeTypes<ParseTreeStrikeThroughNode>(node));
+      break;
     default:
       break;
   }
@@ -93,6 +96,17 @@ void HTMLGenerator::HandleItalic(const ParseTreeItalicNode& node) {
   GenerateWithDefaultActionSpan(
       node, [this](int index) { GetCurrentTarget()->push_back(md_[index]); },
       node.Start() + 1, node.End() - 1);
+
+  GetCurrentTarget()->append("</span>");
+}
+
+void HTMLGenerator::HandleStrikeThrough(
+    const ParseTreeStrikeThroughNode& node) {
+  GetCurrentTarget()->append("<span class='font-strike'>");
+
+  GenerateWithDefaultActionSpan(
+      node, [this](int index) { GetCurrentTarget()->push_back(md_[index]); },
+      node.Start() + 2, node.End() - 2);
 
   GetCurrentTarget()->append("</span>");
 }
@@ -264,7 +278,25 @@ void HTMLGenerator::HandleCommand(const ParseTreeCommandNode& node) {
     GetCurrentTarget()->append("<aside class='sidenote'>");
     HandleParseTreeNode(*node.GetChildren()[0]);
     GetCurrentTarget()->append("</aside>");
+  } else if (command == "sc") {
+    GetCurrentTarget()->append("<span class='font-smallcaps'>");
+    HandleParseTreeNode(*node.GetChildren()[0]);
+    GetCurrentTarget()->append("</span>");
+  } else if (command == "serif") {
+    GetCurrentTarget()->append("<span class='font-serif-italic'>");
+    HandleParseTreeNode(*node.GetChildren()[0]);
+    GetCurrentTarget()->append("</span>");
+  } else if (command == "htmlonly") {
+    HandleParseTreeNode(*node.GetChildren()[0]);
+  } else if (command == "escape") {
+    HandleParseTreeNode(*node.GetChildren()[0]);
+  } else if (command == "footnote") {
+    GetCurrentTarget()->append("<sup>");
+    HandleParseTreeNode(*node.GetChildren()[0]);
+    GetCurrentTarget()->append("</sup>");
   } else if (command == "tooltip") {
+    assert(node.GetChildren().size() == 2);
+
     GetCurrentTarget()->append("<span class='page-tooltip' data-tooltip='");
     HandleParseTreeNode(*node.GetChildren()[0]);
     GetCurrentTarget()->append("' data-tooltip-position='bottom'>");

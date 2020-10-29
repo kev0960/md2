@@ -137,6 +137,21 @@ TEST(ParserTest, BoldInItalic2) {
                                   {ParseTreeNode::BOLD, 7, 12, 3}}));
 }
 
+TEST(ParserTest, StrikeThrough) {
+  DoParserTest("~~ab~~",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 6, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 6, 1},
+                                  {ParseTreeNode::STRIKE_THROUGH, 0, 6, 2}}));
+}
+
+TEST(ParserTest, StrikeThrough2) {
+  DoParserTest("a~~a*b*~~c",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 10, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 10, 1},
+                                  {ParseTreeNode::STRIKE_THROUGH, 1, 9, 2},
+                                  {ParseTreeNode::ITALIC, 4, 7, 3}}));
+}
+
 TEST(ParserTest, Link) {
   DoParserTest("[link](http://link)",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 19, 0},

@@ -42,6 +42,7 @@ class HTMLGenerator : public Generator {
   void HandleText(const ParseTreeTextNode& node);
   void HandleBold(const ParseTreeBoldNode& node);
   void HandleItalic(const ParseTreeItalicNode& node);
+  void HandleStrikeThrough(const ParseTreeStrikeThroughNode& node);
   void HandleLink(const ParseTreeLinkNode& node);
   void HandleImage(const ParseTreeImageNode& node);
   void HandleTable(const ParseTreeTableNode& node);

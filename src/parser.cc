@@ -389,6 +389,19 @@ int Parser::GenericParser(std::string_view content, int start,
       }
     }
 
+    if (content.substr(index, 2) == "~~") {
+      if (current_node->GetNodeType() == ParseTreeNode::STRIKE_THROUGH) {
+        current_node->SetEnd(index + 2);
+        current_node = current_node->GetParent();
+      } else {
+        current_node =
+            CreateNewNode<ParseTreeStrikeThroughNode>(current_node, index);
+      }
+
+      index += 2;
+      continue;
+    }
+
     if (content[index] == '*') {
       if (auto maybe_list = MaybeParseList(content, current_node, index, index);
           maybe_list != nullptr) {

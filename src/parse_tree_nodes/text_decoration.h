@@ -21,6 +21,16 @@ class ParseTreeItalicNode : public ParseTreeNode {
   NodeType GetNodeType() const override { return ParseTreeNode::ITALIC; }
 };
 
+class ParseTreeStrikeThroughNode : public ParseTreeNode {
+ public:
+  ParseTreeStrikeThroughNode(ParseTreeNode* parent, int start)
+      : ParseTreeNode(parent, start) {}
+
+  NodeType GetNodeType() const override {
+    return ParseTreeNode::STRIKE_THROUGH;
+  }
+};
+
 }  // namespace md2
 
 #endif
