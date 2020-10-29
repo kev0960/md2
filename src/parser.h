@@ -59,6 +59,11 @@ class Parser {
                                                 ParseTreeNode* parent,
                                                 int start, int& end);
 
+  // Try to parse the command.
+  std::unique_ptr<ParseTreeNode> MaybeParseCommand(std::string_view content,
+                                                   ParseTreeNode* parent,
+                                                   int start, int& end);
+
   // Construct List node from the consecutive list items.
   void PostProcessList(ParseTreeNode* root);
 };

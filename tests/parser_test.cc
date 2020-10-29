@@ -669,5 +669,42 @@ TEST(ParserTest, OrderedAndUnorderedMixed) {
                                   {ParseTreeNode::PARAGRAPH, 58, 59, 3},
                                   {ParseTreeNode::PARAGRAPH, 59, 59, 1}}));
 }
+
+TEST(ParserTest, SimpleCommand) {
+  std::string content = R"(\sidenote{this *is* a sidenote})";
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 31, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 31, 1},
+                                  {ParseTreeNode::COMMAND, 0, 31, 2},
+                                  {ParseTreeNode::NODE, 10, 30, 3},
+                                  {ParseTreeNode::TEXT, 10, 30, 4},
+                                  {ParseTreeNode::ITALIC, 15, 19, 5}}));
+}
+
+TEST(ParserTest, MultipleArgCommand) {
+  std::string content = R"(\tooltip{**a**}{some `code`})";
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 28, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 28, 1},
+                                  {ParseTreeNode::COMMAND, 0, 28, 2},
+                                  {ParseTreeNode::NODE, 9, 14, 3},
+                                  {ParseTreeNode::TEXT, 9, 14, 4},
+                                  {ParseTreeNode::BOLD, 9, 14, 5},
+                                  {ParseTreeNode::NODE, 16, 27, 3},
+                                  {ParseTreeNode::TEXT, 16, 27, 4},
+                                  {ParseTreeNode::VERBATIM, 21, 27, 5}}));
+}
+
+TEST(ParserTest, CommandAndInvalidCommand) {
+  std::string content = R"(\tooltip{a}{b} \tooltip{a})";
+  DoParserTest(content, ParseTreeComparer({{ParseTreeNode::NODE, 0, 26, 0},
+                                           {ParseTreeNode::PARAGRAPH, 0, 26, 1},
+                                           {ParseTreeNode::COMMAND, 0, 14, 2},
+                                           {ParseTreeNode::NODE, 9, 10, 3},
+                                           {ParseTreeNode::TEXT, 9, 10, 4},
+                                           {ParseTreeNode::NODE, 12, 13, 3},
+                                           {ParseTreeNode::TEXT, 12, 13, 4}}));
+}
+
 }  // namespace
 }  // namespace md2

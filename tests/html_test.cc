@@ -332,7 +332,34 @@ TEST(HtmlTest, OrderedAndUnorderedMixed) {
     * a
 3. d)";
 
-  DoHtmlTest(content, "<p>\n</p><ol><li><p>a</p></li><li><p>b</p></li><ul><li><p>c</p></li><li><p>d</p></li><ol><li><p>e</p></li><li><p>f</p></li></ol><li><p>g</p></li><ul><li><p>a</p></li></ul></ul><li><p>d</p></li></ol><p></p>");
+  DoHtmlTest(content,
+             "<p>\n</p><ol><li><p>a</p></li><li><p>b</p></li><ul><li><p>c</p></"
+             "li><li><p>d</p></li><ol><li><p>e</p></li><li><p>f</p></li></"
+             "ol><li><p>g</p></li><ul><li><p>a</p></li></ul></ul><li><p>d</p></"
+             "li></ol><p></p>");
+}
+
+TEST(HtmlTest, SimpleCommand) {
+  std::string content = R"(\sidenote{this *is* a sidenote})";
+  DoHtmlTest(content,
+             "<p><aside class='sidenote'>this <span "
+             "class='font-italic'>is</span> a sidenote</aside></p>");
+}
+
+TEST(HtmlTest, MultipleArgCommand) {
+  std::string content = R"(\tooltip{**a**}{some `code`})";
+  DoHtmlTest(
+      content,
+      "<p><span class='page-tooltip' data-tooltip='<span "
+      "class='font-weight-bold'>a</span>' data-tooltip-position='bottom'>some "
+      "<code class='inline-code'>code</code></span></p>");
+}
+
+TEST(HtmlTest, CommandAndInvalidCommand) {
+  std::string content = R"(\tooltip{a}{b} \tooltip{a})";
+  DoHtmlTest(content,
+             "<p><span class='page-tooltip' data-tooltip='a' "
+             "data-tooltip-position='bottom'>b</span> \\tooltip{a}</p>");
 }
 
 }  // namespace md

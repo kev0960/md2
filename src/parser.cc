@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #include "parse_tree_nodes/box.h"
+#include "parse_tree_nodes/command.h"
 #include "parse_tree_nodes/escape.h"
 #include "parse_tree_nodes/header.h"
 #include "parse_tree_nodes/image.h"
@@ -24,6 +25,11 @@ static std::unordered_set<std::string> kSourceCodeBoxNames = {"cpp", "py"};
 // "alt" is not here because alt text is just a default when no xxx= is
 // specified.
 static std::unordered_set<std::string> kImageDescKeywords = {"caption", "size"};
+
+static std::unordered_map<std::string, int> kCommandToNumArgs = {
+    {"sidenote", 1}, {"sc", 1},       {"newline", 1},
+    {"serif", 1},    {"htmlonly", 1}, {"latexonly", 1},
+    {"footnote", 1}, {"esc", 1},      {"tooltip", 2}};
 
 // Create a new node that starts at the given parameter.
 template <typename NewNodeType>
@@ -344,7 +350,7 @@ int Parser::GenericParser(std::string_view content, int start,
       }
     }
 
-    // We should skip the escape character.
+    // Handle the escape character or the command.
     if (content[index] == '\\') {
       if (index + 1 < content.size()) {
         char c = content[index + 1];
@@ -356,6 +362,13 @@ int Parser::GenericParser(std::string_view content, int start,
 
           index += 2;
           continue;
+        } else {
+          auto maybe_command =
+              MaybeParseCommand(content, current_node, index, index);
+          if (maybe_command != nullptr) {
+            current_node->AddChildren(std::move(maybe_command));
+            continue;
+          }
         }
       }
     }
@@ -903,6 +916,63 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
   }
 
   return list_item;
+}
+
+std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
+    std::string_view content, ParseTreeNode* parent, int start, int& end) {
+  // Commands are in form \command{}{}..{}
+  // Number of {} s can be vary.
+  std::string_view command_name;
+  int num_arg = 0;
+
+  int command_start = start + 1;
+  for (const auto& [name, arg] : kCommandToNumArgs) {
+    if (content.substr(command_start, name.size()) == name &&
+        command_start + name.size() < content.size() &&
+        content[command_start + name.size()] == '{') {
+      command_name = name;
+      num_arg = arg;
+      break;
+    }
+  }
+
+  if (command_name.empty()) {
+    return nullptr;
+  }
+
+  auto command = std::make_unique<ParseTreeCommandNode>(parent, start);
+  command->SetCommandName(command_name);
+
+  // current now points {.
+  int current = command_start + command_name.size();
+
+  while (num_arg--) {
+    if (current >= content.size() || content[current] != '{') {
+      return nullptr;
+    }
+
+    // Arg does not include {.
+    current++;
+
+    auto arg = std::make_unique<ParseTreeNode>(nullptr, current);
+    current = GenericParser(content, current, "}", arg.get(), true);
+
+    if (content[current - 1] != '}') {
+      return nullptr;
+    }
+
+    if (num_arg > 0 && content[current] != '{') {
+      return nullptr;
+    }
+
+    // Arg does not include }.
+    arg->SetEnd(current - 1);
+    command->AddChildren(std::move(arg));
+  }
+
+  end = current;
+  command->SetEnd(current);
+  return command;
 }
 
 void Parser::PostProcessList(ParseTreeNode* root) {

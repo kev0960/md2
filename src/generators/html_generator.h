@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 
+#include "../parse_tree_nodes/command.h"
 #include "../parse_tree_nodes/escape.h"
 #include "../parse_tree_nodes/header.h"
 #include "../parse_tree_nodes/image.h"
@@ -49,6 +50,7 @@ class HTMLGenerator : public Generator {
   void HandleHeader(const ParseTreeHeaderNode& node);
   void HandleVerbatim(const ParseTreeVerbatimNode& node);
   void HandleEscape(const ParseTreeEscapeNode& node);
+  void HandleCommand(const ParseTreeCommandNode& node);
 
   std::vector<HTMLLinkBuilder> links_;
   std::vector<HTMLImageBuilder> images_;

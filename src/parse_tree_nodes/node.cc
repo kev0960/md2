@@ -20,7 +20,8 @@ std::unordered_map<ParseTreeNode::NodeType, std::string_view> kNodeTypeToName =
      {ParseTreeNode::LIST, "LIST"},
      {ParseTreeNode::LIST_ITEM, "LIST-ITEM"},
      {ParseTreeNode::ORDERED_LIST, "ORDERED-LIST"},
-     {ParseTreeNode::ORDERED_LIST_ITEM, "ORDERED-LIST-ITEM"}};
+     {ParseTreeNode::ORDERED_LIST_ITEM, "ORDERED-LIST-ITEM"},
+     {ParseTreeNode::COMMAND, "COMMAND"}};
 
 std::unique_ptr<ParseTreeNode> ParseTreeNode::PopChildrenAt(int index) {
   std::unique_ptr<ParseTreeNode> child = std::move(children_[index]);

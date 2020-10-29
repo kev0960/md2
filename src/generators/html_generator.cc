@@ -55,6 +55,9 @@ void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
     case ParseTreeNode::ESCAPE:
       HandleEscape(CastNodeTypes<ParseTreeEscapeNode>(node));
       break;
+    case ParseTreeNode::COMMAND:
+      HandleCommand(CastNodeTypes<ParseTreeCommandNode>(node));
+      break;
     default:
       break;
   }
@@ -253,6 +256,21 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
 
 void HTMLGenerator::HandleEscape(const ParseTreeEscapeNode& node) {
   GetCurrentTarget()->push_back(md_[node.Start() + 1]);
+}
+
+void HTMLGenerator::HandleCommand(const ParseTreeCommandNode& node) {
+  std::string_view command = node.GetCommandName();
+  if (command == "sidenote") {
+    GetCurrentTarget()->append("<aside class='sidenote'>");
+    HandleParseTreeNode(*node.GetChildren()[0]);
+    GetCurrentTarget()->append("</aside>");
+  } else if (command == "tooltip") {
+    GetCurrentTarget()->append("<span class='page-tooltip' data-tooltip='");
+    HandleParseTreeNode(*node.GetChildren()[0]);
+    GetCurrentTarget()->append("' data-tooltip-position='bottom'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</span>");
+  }
 }
 
 }  // namespace md2
