@@ -34,6 +34,11 @@ std::string StrCat(const String& s, Strings... strs) {
   return concat_str;
 }
 
+// Strip ' '.
+std::string_view LStrip(std::string_view s);
+std::string_view RStrip(std::string_view s);
+std::string_view Strip(std::string_view s);
+
 }  // namespace md2
 
 #endif

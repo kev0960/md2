@@ -66,26 +66,32 @@ void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
   }
 }
 
+void HTMLGenerator::EmitChar(int index) {
+  GetCurrentTarget()->push_back(md_[index]);
+}
+
+void HTMLGenerator::EmitChar(int from, int to) {
+  GetCurrentTarget()->append(md_.substr(from, to - from));
+}
+
 void HTMLGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
   GetCurrentTarget()->append("<p>");
 
-  GenerateWithDefaultAction(
-      node, [this](int index) { GetCurrentTarget()->push_back(md_[index]); });
+  GenerateWithDefaultAction(node, [this](int index) { EmitChar(index); });
 
   GetCurrentTarget()->append("</p>");
 }
 
 void HTMLGenerator::HandleText(const ParseTreeTextNode& node) {
-  GenerateWithDefaultAction(
-      node, [this](int index) { GetCurrentTarget()->push_back(md_[index]); });
+  GenerateWithDefaultAction(node, [this](int index) { EmitChar(index); });
 }
 
 void HTMLGenerator::HandleBold(const ParseTreeBoldNode& node) {
   GetCurrentTarget()->append("<span class='font-weight-bold'>");
 
   GenerateWithDefaultActionSpan(
-      node, [this](int index) { GetCurrentTarget()->push_back(md_[index]); },
-      node.Start() + 2, node.End() - 2);
+      node, [this](int index) { EmitChar(index); }, node.Start() + 2,
+      node.End() - 2);
 
   GetCurrentTarget()->append("</span>");
 }
@@ -94,8 +100,8 @@ void HTMLGenerator::HandleItalic(const ParseTreeItalicNode& node) {
   GetCurrentTarget()->append("<span class='font-italic'>");
 
   GenerateWithDefaultActionSpan(
-      node, [this](int index) { GetCurrentTarget()->push_back(md_[index]); },
-      node.Start() + 1, node.End() - 1);
+      node, [this](int index) { EmitChar(index); }, node.Start() + 1,
+      node.End() - 1);
 
   GetCurrentTarget()->append("</span>");
 }
@@ -105,8 +111,8 @@ void HTMLGenerator::HandleStrikeThrough(
   GetCurrentTarget()->append("<span class='font-strike'>");
 
   GenerateWithDefaultActionSpan(
-      node, [this](int index) { GetCurrentTarget()->push_back(md_[index]); },
-      node.Start() + 2, node.End() - 2);
+      node, [this](int index) { EmitChar(index); }, node.Start() + 2,
+      node.End() - 2);
 
   GetCurrentTarget()->append("</span>");
 }
@@ -260,16 +266,13 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
   if (node.GetChildren().empty()) {
     // Then this is the inline.
     GetCurrentTarget()->append("<code class='inline-code'>");
-
-    // [start + 1 ~ end - 1)
-    GetCurrentTarget()->append(
-        md_.substr(node.Start() + 1, node.End() - node.Start() - 2));
+    EmitChar(node.Start() + 1, node.End() - 1);
     GetCurrentTarget()->append("</code>");
   }
 }
 
 void HTMLGenerator::HandleEscape(const ParseTreeEscapeNode& node) {
-  GetCurrentTarget()->push_back(md_[node.Start() + 1]);
+  EmitChar(node.Start() + 1);
 }
 
 void HTMLGenerator::HandleCommand(const ParseTreeCommandNode& node) {

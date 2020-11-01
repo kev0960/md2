@@ -36,6 +36,10 @@ class HTMLGenerator : public Generator {
   HTMLGenerator(std::string_view content) : Generator(content) {}
 
  private:
+  void EmitChar(int index);
+
+  // [from, to)
+  void EmitChar(int from, int to);
   void HandleParseTreeNode(const ParseTreeNode& node) override;
 
   void HandleParagraph(const ParseTreeParagraphNode& node);
