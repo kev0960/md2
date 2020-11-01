@@ -2,11 +2,20 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "metadata_repo.h"
 
 namespace md2 {
 namespace {
 
 using ::testing::ElementsAre;
+using ::testing::IsNull;
+using ::testing::Not;
+
+Metadata ConstructMetadata(std::string_view content) {
+  int end;
+  auto metadata_or = MetadataFactory::ParseMetadata(content, end);
+  return *metadata_or;
+}
 
 TEST(MetadataTest, SimpleMetadata) {
   std::string_view content = R"(
@@ -61,6 +70,47 @@ ref_name : string, std::string, std::string_view,  string_view
       metadata_or->GetRefNames(),
       ElementsAre("string", "std::string", "std::string_view", "string_view"));
   EXPECT_EQ(end, content.size());
+}
+
+TEST(MetadataRepoTest, ConstructRepo) {
+  std::string_view content = R"(
+----------------
+title : a
+ref_name : string, std::string, std::string_view,  string_view
+path : C++
+----------------
+)";
+
+  Metadata metadata1 = ConstructMetadata(content);
+
+  std::string_view content2 = R"(
+----------------
+title :b 
+ref_name : std::string, string_view, some_func, other_func
+path : C Reference
+----------------
+)";
+
+  Metadata metadata2 = ConstructMetadata(content2);
+
+  MetadataRepo repo;
+  repo.RegisterMetadata("a", metadata1);
+  repo.RegisterMetadata("b", metadata2);
+
+  const Metadata* candidate = repo.FindMetadata("std::string");
+  ASSERT_THAT(candidate, Not(IsNull()));
+  EXPECT_EQ(candidate->GetTitle(), "a");
+
+  const Metadata* candidate2 = repo.FindMetadata("some_func");
+  ASSERT_THAT(candidate2, Not(IsNull()));
+  EXPECT_EQ(candidate2->GetTitle(), "b");
+
+  const Metadata* candidate3 = repo.FindMetadata("not_existing");
+  ASSERT_THAT(candidate3, IsNull());
+
+  const Metadata* candidate4 = repo.FindMetadata("std::string", "C Reference");
+  ASSERT_THAT(candidate4, Not(IsNull()));
+  EXPECT_EQ(candidate4->GetTitle(), "b");
 }
 
 }  // namespace
