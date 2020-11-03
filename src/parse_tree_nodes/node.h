@@ -7,6 +7,8 @@
 #include <memory>
 #include <vector>
 
+#include "assert.h"
+
 namespace md2 {
 
 class ParseTreeNode {
@@ -42,7 +44,7 @@ class ParseTreeNode {
   // Override in case adding a children is not valid.
   void AddChildren(std::unique_ptr<ParseTreeNode> child) {
     if (is_leaf_node_) {
-      assert(("This node is the leaf node.", false));
+      ASSERT(false, "This node is the leaf node.");
       return;
     }
 
@@ -51,7 +53,7 @@ class ParseTreeNode {
 
   void AddChildrenFront(std::unique_ptr<ParseTreeNode> child) {
     if (is_leaf_node_) {
-      assert(("This node is the leaf node.", false));
+      ASSERT(false, "This node is the leaf node.");
       return;
     }
 

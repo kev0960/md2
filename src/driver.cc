@@ -39,7 +39,8 @@ void Driver::ReadFilesInDirectory(const std::vector<std::string>& dirs) {
         continue;
       }
 
-      file_contents_[path.filename()] = ReadFileContent(path);
+      file_contents_[path.filename()] =
+          std::make_pair(ReadFileContent(path), 0);
     }
   }
 }
@@ -52,6 +53,26 @@ std::string Driver::ParseFile(std::string_view content) {
   generator.Generate(tree);
 
   return std::move(generator).ReleaseGeneratedTarget();
+}
+
+void Driver::BuildFileMetadataRepo() {
+  for (auto& [file_name, content_and_pos] : file_contents_) {
+    auto& [content, read_pos] = content_and_pos;
+    auto metadata_or = MetadataFactory::ParseMetadata(content, read_pos);
+    if (metadata_or) {
+      repo_.RegisterMetadata(file_name, metadata_or.value());
+    }
+  }
+}
+
+void Driver::DoParse() {
+  for (auto& [file_name, content_and_pos] : file_contents_) {
+    std::string_view content =
+        content_and_pos.first.substr(content_and_pos.second);
+
+    Parser parser;
+    ParseTree tree = parser.GenerateParseTree(content);
+  }
 }
 
 }  // namespace md2

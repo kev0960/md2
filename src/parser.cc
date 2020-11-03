@@ -193,7 +193,7 @@ std::optional<std::pair<int, int>> IsCorrectListHeader(std::string_view content,
 std::optional<std::pair<int, int>> IsStartOfTheList(std::string_view content,
                                                     int start) {
   int list_depth = 0;
-  while (start < content.size()) {
+  while (start < static_cast<int>(content.size())) {
     if (content[start] == ' ') {
       list_depth++;
       start++;
@@ -220,7 +220,7 @@ bool IsListItemType(const ParseTreeNode* node) {
 }
 
 int GetDepth(std::unique_ptr<ParseTreeNode>& child) {
-  assert(IsListItemType(child.get()));
+  ASSERT(IsListItemType(child.get()), "");
 
   return static_cast<ParseTreeListItemNode*>(child.get())->GetListDepth();
 }
@@ -309,7 +309,7 @@ std::unique_ptr<ParseTreeListNode> ConstructListFromListItems(
 
 // Returns the right after the end of the empty line if exists.
 std::optional<int> IsEmptyLine(std::string_view content, int start) {
-  while (start < content.size()) {
+  while (start < static_cast<int>(content.size())) {
     if (content[start] == ' ') {
       start++;
     } else if (content[start] == '\n') {
@@ -332,12 +332,12 @@ ParseTree Parser::GenerateParseTree(std::string_view content) {
   return ParseTree(std::move(root));
 }
 
-int Parser::GenericParser(std::string_view content, int start,
-                          std::string_view end_parsing_token,
-                          ParseTreeNode* root, bool use_text) {
+size_t Parser::GenericParser(std::string_view content, size_t start,
+                             std::string_view end_parsing_token,
+                             ParseTreeNode* root, bool use_text) {
   ParseTreeNode* current_node = root;
 
-  int index = start;
+  size_t index = start;
   while (index != content.size()) {
     // If current node is the root node, then create the Paragraph node as a
     // default.
@@ -565,7 +565,8 @@ int Parser::GenericParser(std::string_view content, int start,
 // Link has the form [link-desc](url)
 template <typename LinkNodeType>
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
-                                                      int start, int& end) {
+                                                      size_t start,
+                                                      size_t& end) {
   int node_start = start;
   if constexpr (std::is_same_v<LinkNodeType, ParseTreeImageNode>) {
     // Need to include the preceding '!'.
@@ -618,10 +619,10 @@ void Parser::ParseImageDescriptionMetadata(std::string_view content,
   // Go through the strings in the paragraph that are not part of the any
   // child node. If it contains xxx= kind of the form, check what xxx is.
   ParseTreeNode* desc_node = image->GetChildren()[0].get();
-  assert(desc_node->GetNodeType() == ParseTreeNode::NODE);
+  ASSERT(desc_node->GetNodeType() == ParseTreeNode::NODE, "");
 
   ParseTreeNode* desc = desc_node->GetChildren()[0].get();
-  assert(desc->GetNodeType() == ParseTreeNode::TEXT);
+  ASSERT(desc->GetNodeType() == ParseTreeNode::TEXT, "");
 
   nodes_per_keyword["alt"] =
       std::make_unique<ParseTreeTextNode>(nullptr, desc->Start());
@@ -632,7 +633,7 @@ void Parser::ParseImageDescriptionMetadata(std::string_view content,
   while (start < desc->End()) {
     int next_child_index = desc->GetNextChildIndex(start);
 
-    if (next_child_index == desc->GetChildren().size()) {
+    if (next_child_index == static_cast<int>(desc->GetChildren().size())) {
       // There is no child node from [start ~ ].  Then [start ~ desc->End())
       // forms the string that is not part of the child node.
       std::string_view raw_str = content.substr(start, desc->End() - start);
@@ -662,7 +663,8 @@ void Parser::ParseImageDescriptionMetadata(std::string_view content,
 }
 
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
-    std::string_view content, ParseTreeNode* parent, int start, int& end) {
+    std::string_view content, ParseTreeNode* parent, size_t start,
+    size_t& end) {
   // Header must be start from the new line.
   if (start != 0 && content[start - 1] != '\n') {
     return nullptr;
@@ -670,7 +672,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
 
   // Check that the header token only contains # and @ until it sees the space.
   int header_token_end = start;
-  while (header_token_end != content.size()) {
+  while (header_token_end != static_cast<int>(content.size())) {
     if (content[header_token_end] == ' ') {
       break;
     }
@@ -704,7 +706,8 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
 
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
                                                      ParseTreeNode* parent,
-                                                     int start, int& end) {
+                                                     size_t start,
+                                                     size_t& end) {
   if (start != 0 && content[start - 1] != '\n') {
     return nullptr;
   }
@@ -719,7 +722,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
   }
 
   // Try to read the box name.
-  int box_name_end = start + 3;
+  size_t box_name_end = start + 3;
   while (content[box_name_end] != '\n' && box_name_end != content.size()) {
     box_name_end++;
   }
@@ -768,7 +771,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
   auto box_content_node =
       std::make_unique<ParseTreeNode>(nullptr, box_name_end);
 
-  int box_content_end =
+  size_t box_content_end =
       GenericParser(content, box_name_end, "```", box_content_node.get());
 
   if (content.substr(box_content_end - 4, 4) != "\n```") {
@@ -788,7 +791,8 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
 
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
                                                        ParseTreeNode* parent,
-                                                       int start, int& end) {
+                                                       size_t start,
+                                                       size_t& end) {
   // Table must start with newline.
   if (start != 0 && content[start - 1] != '\n') {
     return nullptr;
@@ -800,11 +804,11 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
 
   auto table = std::make_unique<ParseTreeTableNode>(parent, start);
 
-  int current = start + 1;
+  size_t current = start + 1;
   while (true) {
     while (true) {
       auto cell = std::make_unique<ParseTreeNode>(nullptr, current);
-      int cell_end = GenericParser(content, current, "|", cell.get());
+      size_t cell_end = GenericParser(content, current, "|", cell.get());
 
       // Not a valid table.
       if (content[cell_end - 1] != '|') {
@@ -877,7 +881,8 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
 // the parser.
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
                                                       ParseTreeNode* parent,
-                                                      int start, int& end) {
+                                                      size_t start,
+                                                      size_t& end) {
   auto list_header_info = IsCorrectListHeader(content, start);
   if (!list_header_info) {
     return nullptr;
@@ -893,7 +898,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
   list_item->SetListDepth(list_depth);
 
   while (true) {
-    int list_end = GenericParser(content, current, "\n", list_item.get());
+    size_t list_end = GenericParser(content, current, "\n", list_item.get());
     if (list_end == content.size()) {
       list_item->SetEnd(list_end);
       list_item->SetParent(parent);
@@ -932,13 +937,14 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
 }
 
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
-    std::string_view content, ParseTreeNode* parent, int start, int& end) {
+    std::string_view content, ParseTreeNode* parent, size_t start,
+    size_t& end) {
   // Commands are in form \command{}{}..{}
   // Number of {} s can be vary.
   std::string_view command_name;
   int num_arg = 0;
 
-  int command_start = start + 1;
+  size_t command_start = start + 1;
   for (const auto& [name, arg] : kCommandToNumArgs) {
     if (content.substr(command_start, name.size()) == name &&
         command_start + name.size() < content.size() &&
@@ -957,7 +963,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
   command->SetCommandName(command_name);
 
   // current now points {.
-  int current = command_start + command_name.size();
+  size_t current = command_start + command_name.size();
 
   while (num_arg--) {
     if (current >= content.size() || content[current] != '{') {
@@ -992,10 +998,10 @@ void Parser::PostProcessList(ParseTreeNode* root) {
   // Traverse nodes and convert list_items into part of list node based on their
   // list depth.
   std::vector<std::unique_ptr<ParseTreeNode>>& children = root->GetChildren();
-  for (int current = 0; current != children.size(); current++) {
+  for (size_t current = 0; current != children.size(); current++) {
     // If the list item is found, then locate the end of the list item.
     if (IsListItemType(children[current].get())) {
-      int list_item_end = current;
+      size_t list_item_end = current;
       while (list_item_end != children.size()) {
         if (!IsListItemType(children[list_item_end].get())) {
           break;

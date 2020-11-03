@@ -43,7 +43,7 @@ ParseTreeNode* ParseTreeNode::GetNext(int pos) const {
 }
 
 int ParseTreeNode::GetNextChildIndex(int pos) const {
-  for (int i = 0; i < children_.size(); i++) {
+  for (size_t i = 0; i < children_.size(); i++) {
     // Return the first element whose Start() covers current index.
     if (pos <= children_[i]->Start()) {
       return i;
@@ -55,7 +55,7 @@ int ParseTreeNode::GetNextChildIndex(int pos) const {
 
 void ParseTreeNode::AddChildBefore(ParseTreeNode* node_to_find,
                                    std::unique_ptr<ParseTreeNode> child) {
-  for (int i = 0; i < children_.size(); i++) {
+  for (size_t i = 0; i < children_.size(); i++) {
     if (children_[i].get() == node_to_find) {
       children_.insert(children_.begin() + i, std::move(child));
       return;

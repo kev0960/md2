@@ -6,10 +6,6 @@ namespace md2 {
 namespace {
 
 TEST(DriverTest, RunParseFile) {
-  Driver d;
-  d.ParseFile("hi");
-
-  EXPECT_EQ(1, 1);
 }
 
 }  // namespace

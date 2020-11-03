@@ -24,7 +24,7 @@ std::vector<std::string> SplitString(std::string_view line) {
   int current = 0;
 
   while (true) {
-    int end = 0;
+    size_t end = 0;
 
     // We should escape , with \.
     while (true) {
@@ -53,7 +53,7 @@ std::vector<std::string> SplitString(std::string_view line) {
 
 std::optional<Metadata> MetadataFactory::ParseMetadata(std::string_view content,
                                                        int& end) {
-  int current = 0;
+  size_t current = 0;
 
   // Ignore until it sees non whitespace.
   while (std::isspace(content[current])) {
@@ -77,7 +77,7 @@ std::optional<Metadata> MetadataFactory::ParseMetadata(std::string_view content,
 
   Metadata metadata;
   while (true) {
-    int line_end = content.find('\n', current);
+    size_t line_end = content.find('\n', current);
     if (line_end == std::string_view::npos) {
       return std::nullopt;
     }

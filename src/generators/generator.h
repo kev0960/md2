@@ -19,7 +19,7 @@ class Generator {
   std::string&& ReleaseGeneratedTarget() && { return std::move(target_); }
 
  protected:
-  virtual void HandleParseTreeNode(const ParseTreeNode& node) {}
+  virtual void HandleParseTreeNode(const ParseTreeNode& node) = 0;
 
   // For the elements that are not part of the child nodes, it runs the
   // default_action(g, index); Otherwise, it just calls the HandleParseTreeNode

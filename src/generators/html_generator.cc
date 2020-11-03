@@ -118,7 +118,7 @@ void HTMLGenerator::HandleStrikeThrough(
 }
 
 void HTMLGenerator::HandleLink(const ParseTreeLinkNode& node) {
-  assert(("Number of children is not two", node.GetChildren().size() == 2));
+  ASSERT(node.GetChildren().size() == 2, "Number of children is not two");
 
   links_.push_back(HTMLLinkBuilder());
 
@@ -137,14 +137,13 @@ void HTMLGenerator::HandleLink(const ParseTreeLinkNode& node) {
 }
 
 void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
-  assert(("(Image) Number of children is not two",
-          node.GetChildren().size() == 2));
+  ASSERT(node.GetChildren().size() == 2, "Number of children is not two");
 
   const ParseTreeNode* desc_node = node.GetChildren()[0].get();
-  assert(desc_node->GetNodeType() == ParseTreeNode::NODE);
+  ASSERT(desc_node->GetNodeType() == ParseTreeNode::NODE, "");
 
   const ParseTreeNode* desc = desc_node->GetChildren()[0].get();
-  assert(desc->GetNodeType() == ParseTreeNode::TEXT);
+  ASSERT(desc->GetNodeType() == ParseTreeNode::TEXT, "");
 
   images_.push_back(HTMLImageBuilder());
 
@@ -199,7 +198,7 @@ void HTMLGenerator::HandleTable(const ParseTreeTableNode& node) {
   // The second row of the table always indicates the alignment of the cells.
   // TODO Set the alignmnent of the columns.
 
-  for (int i = 2 * row_size; i < node.GetChildren().size(); i++) {
+  for (size_t i = 2 * row_size; i < node.GetChildren().size(); i++) {
     if (i % row_size == 0) {
       GetCurrentTarget()->append("<tr>");
     }
@@ -245,7 +244,7 @@ void HTMLGenerator::HandleListItem(const ParseTreeListItemNode& node) {
 }
 
 void HTMLGenerator::HandleHeader(const ParseTreeHeaderNode& node) {
-  assert(node.GetChildren().size() == 2);
+  ASSERT(node.GetChildren().size() == 2, "");
 
   if (node.GetHeaderType() == ParseTreeHeaderNode::NORMAL_HEADER) {
     const auto& header_symbol = node.GetChildren()[0];
@@ -298,7 +297,7 @@ void HTMLGenerator::HandleCommand(const ParseTreeCommandNode& node) {
     HandleParseTreeNode(*node.GetChildren()[0]);
     GetCurrentTarget()->append("</sup>");
   } else if (command == "tooltip") {
-    assert(node.GetChildren().size() == 2);
+    ASSERT(node.GetChildren().size() == 2, "");
 
     GetCurrentTarget()->append("<span class='page-tooltip' data-tooltip='");
     HandleParseTreeNode(*node.GetChildren()[0]);

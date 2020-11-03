@@ -13,10 +13,10 @@ void ParseTreeImageNode::SetKeywordNodes(
         nodes_per_keyword) {
   // Image description node.
   ParseTreeNode* desc_node = children_[0].get();
-  assert(desc_node->GetNodeType() == ParseTreeNode::NODE);
+  ASSERT(desc_node->GetNodeType() == ParseTreeNode::NODE, "");
 
   ParseTreeNode* desc = desc_node->GetChildren()[0].get();
-  assert(desc->GetNodeType() == ParseTreeNode::TEXT);
+  ASSERT(desc->GetNodeType() == ParseTreeNode::TEXT, "");
 
   std::vector<std::pair<std::unique_ptr<ParseTreeNode>, std::string>>
       nodes_and_keyword;

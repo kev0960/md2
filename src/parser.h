@@ -22,9 +22,9 @@ class Parser {
   // parse until the end of the content.
   // Returns the location RIGHT AFTER the end parsing token.
   // If use_text is true, then it will use TEXT instead of PARAGRAPH.
-  int GenericParser(std::string_view content, int start,
-                    std::string_view end_parsing_token, ParseTreeNode* root,
-                    bool use_text = false);
+  size_t GenericParser(std::string_view content, size_t start,
+                       std::string_view end_parsing_token, ParseTreeNode* root,
+                       bool use_text = false);
 
   // Try to parse the markdown that starts with '['. The parsing can fail if it
   // does not construct the proper link. In such case, this will return nullptr
@@ -33,7 +33,7 @@ class Parser {
   // link.
   template <typename LinkNodeType>
   std::unique_ptr<ParseTreeNode> MaybeParseLink(std::string_view content,
-                                                int start, int& end);
+                                                size_t start, size_t& end);
 
   // Parse the image description of the Image node.
   void ParseImageDescriptionMetadata(std::string_view content,
@@ -43,26 +43,26 @@ class Parser {
   // first in the line (so the preceding character must be '\n'.
   std::unique_ptr<ParseTreeNode> MaybeParseHeader(std::string_view content,
                                                   ParseTreeNode* parent,
-                                                  int start, int& end);
+                                                  size_t start, size_t& end);
 
   // Try to parse a box (starts with ```).
   std::unique_ptr<ParseTreeNode> MaybeParseBox(std::string_view content,
-                                               ParseTreeNode* parent, int start,
-                                               int& end);
+                                               ParseTreeNode* parent,
+                                               size_t start, size_t& end);
 
   // Try to parse the table.
   std::unique_ptr<ParseTreeNode> MaybeParseTable(std::string_view content,
                                                  ParseTreeNode* parent,
-                                                 int start, int& end);
+                                                 size_t start, size_t& end);
   // Try to parse the list.
   std::unique_ptr<ParseTreeNode> MaybeParseList(std::string_view content,
                                                 ParseTreeNode* parent,
-                                                int start, int& end);
+                                                size_t start, size_t& end);
 
   // Try to parse the command.
   std::unique_ptr<ParseTreeNode> MaybeParseCommand(std::string_view content,
                                                    ParseTreeNode* parent,
-                                                   int start, int& end);
+                                                   size_t start, size_t& end);
 
   // Construct List node from the consecutive list items.
   void PostProcessList(ParseTreeNode* root);
