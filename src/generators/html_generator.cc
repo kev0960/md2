@@ -1,5 +1,7 @@
 #include "html_generator.h"
 
+#include "logger.h"
+
 namespace md2 {
 namespace {
 
@@ -296,14 +298,20 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
       code_name_node->Start(), code_name_node->End() - code_name_node->Start());
 
   const auto& code_node = node.GetChildren()[1];
-  std::string_view code =
-      md_.substr(code_node->Start(), code_node->End() - code_node->Start());
   if (code_name == "cpp") {
+    ASSERT(code_node->GetNodeType() == ParseTreeNode::TEXT, "");
+    std::string_view formatted_cpp = context_->GetClangFormatted(
+        &CastNodeTypes<ParseTreeTextNode>(*code_node), md_);
+
     GetCurrentTarget()->append("<pre class='chroma lang-cpp plain-code'>");
-    GetCurrentTarget()->append(code);
+    GetCurrentTarget()->append(formatted_cpp);
+    GetCurrentTarget()->append("</pre>");
+  } else if (code_name == "cpp-formatted") {
+    GetCurrentTarget()->append("<pre class='chroma lang-cpp plain-code'>");
+    EmitChar(code_node->Start(), code_node->End());
     GetCurrentTarget()->append("</pre>");
   } else if (code_name == "embed") {
-    GetCurrentTarget()->append(code);
+    EmitChar(code_node->Start(), code_node->End());
   }
 }
 

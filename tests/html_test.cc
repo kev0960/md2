@@ -12,7 +12,8 @@ void DoHtmlTest(std::string content, std::string expected) {
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
 
-  HTMLGenerator generator(content);
+  GeneratorContext context;
+  HTMLGenerator generator(content, context);
   generator.Generate(tree);
 
   EXPECT_EQ(std::string(generator.ShowOutput()), expected);

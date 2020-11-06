@@ -4,12 +4,12 @@
 #include <iostream>
 #include <vector>
 
+#include "../parse_tree_nodes/box.h"
 #include "../parse_tree_nodes/command.h"
 #include "../parse_tree_nodes/escape.h"
 #include "../parse_tree_nodes/header.h"
 #include "../parse_tree_nodes/image.h"
 #include "../parse_tree_nodes/link.h"
-#include "../parse_tree_nodes/box.h"
 #include "../parse_tree_nodes/list.h"
 #include "../parse_tree_nodes/paragraph.h"
 #include "../parse_tree_nodes/table.h"
@@ -34,7 +34,8 @@ struct HTMLImageBuilder {
 
 class HTMLGenerator : public Generator {
  public:
-  HTMLGenerator(std::string_view content) : Generator(content) {}
+  HTMLGenerator(std::string_view content, GeneratorContext& context)
+      : Generator(content, context) {}
 
  private:
   void EmitChar(int index);
@@ -62,7 +63,7 @@ class HTMLGenerator : public Generator {
 
   std::vector<HTMLLinkBuilder> links_;
   std::vector<HTMLImageBuilder> images_;
-  
+
   bool should_escape_html_ = true;
 };
 

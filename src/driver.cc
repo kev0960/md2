@@ -72,7 +72,8 @@ std::string Driver::ParseFile(std::string_view content) {
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
 
-  HTMLGenerator generator(content);
+  GeneratorContext context;
+  HTMLGenerator generator(content, context);
   generator.Generate(tree);
 
   return std::move(generator).ReleaseGeneratedTarget();
@@ -98,8 +99,9 @@ void Driver::DoParse() {
     fmt::print("Parsing [{}] \n", file_name);
     ParseTree tree = parser.GenerateParseTree(content);
 
+    GeneratorContext context;
     if (options_.generate_html) {
-      HTMLGenerator generator(content);
+      HTMLGenerator generator(content, context);
       generator.Generate(tree);
 
       std::string output_file_name =

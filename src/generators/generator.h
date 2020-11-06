@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "generator_context.h"
 #include "parse_tree.h"
 
 namespace md2 {
@@ -10,7 +11,10 @@ namespace md2 {
 // Generates the converted markdown file in a target language.
 class Generator {
  public:
-  Generator(std::string_view md) : md_(md) { targets_.push_back(&target_); }
+  Generator(std::string_view md, GeneratorContext& context)
+      : md_(md), context_(&context) {
+    targets_.push_back(&target_);
+  }
   std::string_view ShowOutput() const { return target_; }
 
   std::string_view Generate(const ParseTree& parse_tree);
@@ -39,6 +43,8 @@ class Generator {
   // The last target (targets_.back()) is the current target that we are working
   // on. It will be merged into the top most target (=target_) in the end.
   std::vector<std::string*> targets_;
+
+  GeneratorContext* context_;
 };
 
 }  // namespace md2
