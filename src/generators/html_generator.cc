@@ -61,17 +61,37 @@ void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
     case ParseTreeNode::STRIKE_THROUGH:
       HandleStrikeThrough(CastNodeTypes<ParseTreeStrikeThroughNode>(node));
       break;
+    case ParseTreeNode::MATH:
+      HandleMath(CastNodeTypes<ParseTreeMathNode>(node));
+      break;
+    case ParseTreeNode::BOX:
+      HandleBox(CastNodeTypes<ParseTreeBoxNode>(node));
+      break;
     default:
       break;
   }
 }
 
 void HTMLGenerator::EmitChar(int index) {
-  GetCurrentTarget()->push_back(md_[index]);
+  if (should_escape_html_) {
+    if (md_[index] == '<') {
+      GetCurrentTarget()->append("&lt;");
+    } else if (md_[index] == '>') {
+      GetCurrentTarget()->append("&gt;");
+    } else if (md_[index] == '&') {
+      GetCurrentTarget()->append("&amp;");
+    } else {
+      GetCurrentTarget()->push_back(md_[index]);
+    }
+  } else {
+    GetCurrentTarget()->push_back(md_[index]);
+  }
 }
 
 void HTMLGenerator::EmitChar(int from, int to) {
-  GetCurrentTarget()->append(md_.substr(from, to - from));
+  for (int i = from; i < to; i++) {
+    EmitChar(i);
+  }
 }
 
 void HTMLGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
@@ -267,6 +287,23 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
     GetCurrentTarget()->append("<code class='inline-code'>");
     EmitChar(node.Start() + 1, node.End() - 1);
     GetCurrentTarget()->append("</code>");
+    return;
+  }
+
+  ASSERT(node.GetChildren().size() == 2, "Verbatim does not have two nodes.");
+  const auto& code_name_node = node.GetChildren()[0];
+  std::string_view code_name = md_.substr(
+      code_name_node->Start(), code_name_node->End() - code_name_node->Start());
+
+  const auto& code_node = node.GetChildren()[1];
+  std::string_view code =
+      md_.substr(code_node->Start(), code_node->End() - code_node->Start());
+  if (code_name == "cpp") {
+    GetCurrentTarget()->append("<pre class='chroma lang-cpp plain-code'>");
+    GetCurrentTarget()->append(code);
+    GetCurrentTarget()->append("</pre>");
+  } else if (code_name == "embed") {
+    GetCurrentTarget()->append(code);
   }
 }
 
@@ -300,10 +337,71 @@ void HTMLGenerator::HandleCommand(const ParseTreeCommandNode& node) {
     ASSERT(node.GetChildren().size() == 2, "");
 
     GetCurrentTarget()->append("<span class='page-tooltip' data-tooltip='");
-    HandleParseTreeNode(*node.GetChildren()[0]);
-    GetCurrentTarget()->append("' data-tooltip-position='bottom'>");
     HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("' data-tooltip-position='bottom'>");
+    HandleParseTreeNode(*node.GetChildren()[0]);
     GetCurrentTarget()->append("</span>");
+  }
+}
+
+void HTMLGenerator::HandleMath(const ParseTreeMathNode& node) {
+  GetCurrentTarget()->append("<span class='math-latex'>");
+  // Math should be enclosed by $$.
+  EmitChar(node.Start() + 1, node.End() - 1);
+  GetCurrentTarget()->append("</span>");
+}
+
+void HTMLGenerator::HandleBox(const ParseTreeBoxNode& node) {
+  ASSERT(node.GetChildren().size() == 2, "");
+  const auto& box_name_node = node.GetChildren()[0];
+
+  std::string_view box_name = md_.substr(
+      box_name_node->Start(), box_name_node->End() - box_name_node->Start());
+
+  if (box_name == "info-text") {
+    GetCurrentTarget()->append("<div class='info'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</div>");
+  } else if (box_name == "exec") {
+    GetCurrentTarget()->append(
+        "<p class='exec-preview-title'>실행 결과</p><pre "
+        "class='exec-preview'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</pre>");
+  } else if (box_name == "warning") {
+    GetCurrentTarget()->append("<div class='warning warning-text'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</div>");
+  } else if (box_name == "lec-warning") {
+    GetCurrentTarget()->append(
+        "<p class='compiler-warning-title'><i class='xi-warning'></i>주의 "
+        "사항</p><div class='lec-warning'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</div>");
+  } else if (box_name == "lec-info") {
+    GetCurrentTarget()->append(
+        "<p class='lec-info-title'><i class='xi-info'></i>참고 사항</p><div "
+        "class='lec-info'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</div>");
+  } else if (box_name == "lec-summary") {
+    GetCurrentTarget()->append(
+        "<div class='lec-summary'><h3>뭘 배웠지?</h3><div "
+        "class='lec-summary-content'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</div></div>");
+  } else if (box_name == "html-only") {
+    HandleParseTreeNode(*node.GetChildren()[1]);
+  } else if (box_name == "latex-only") {
+    return;
+  } else if (box_name == "sidenote") {
+    GetCurrentTarget()->append("<aside class='sidenote'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</aside>");
+  } else if (box_name == "note") {
+    GetCurrentTarget()->append("<div class='inline-note'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</div>");
   }
 }
 

@@ -2,28 +2,32 @@
 
 #include <iostream>
 
+#include "../logger.h"
+
 namespace md2 {
 
 std::unordered_map<ParseTreeNode::NodeType, std::string_view> kNodeTypeToName =
-    {{ParseTreeNode::NODE, "NODE"},
-     {ParseTreeNode::PARAGRAPH, "PARAGRAPH"},
-     {ParseTreeNode::TEXT, "TEXT"},
-     {ParseTreeNode::VERBATIM, "VERBATIM"},
-     {ParseTreeNode::BOLD, "BOLD"},
-     {ParseTreeNode::ITALIC, "ITALIC"},
-     {ParseTreeNode::ESCAPE, "ESCAPE"},
-     {ParseTreeNode::LINK, "LINK"},
-     {ParseTreeNode::IMAGE, "IMAGE"},
-     {ParseTreeNode::HEADER, "HEADER"},
-     {ParseTreeNode::BOX, "BOX"},
-     {ParseTreeNode::TABLE, "TABLE"},
-     {ParseTreeNode::LIST, "LIST"},
-     {ParseTreeNode::LIST_ITEM, "LIST-ITEM"},
-     {ParseTreeNode::ORDERED_LIST, "ORDERED-LIST"},
-     {ParseTreeNode::ORDERED_LIST_ITEM, "ORDERED-LIST-ITEM"},
-     {ParseTreeNode::COMMAND, "COMMAND"},
-     {ParseTreeNode::STRIKE_THROUGH, "STRIKE-THROUGH"},
-    };
+    {
+        {ParseTreeNode::NODE, "NODE"},
+        {ParseTreeNode::PARAGRAPH, "PARAGRAPH"},
+        {ParseTreeNode::TEXT, "TEXT"},
+        {ParseTreeNode::VERBATIM, "VERBATIM"},
+        {ParseTreeNode::BOLD, "BOLD"},
+        {ParseTreeNode::ITALIC, "ITALIC"},
+        {ParseTreeNode::ESCAPE, "ESCAPE"},
+        {ParseTreeNode::LINK, "LINK"},
+        {ParseTreeNode::IMAGE, "IMAGE"},
+        {ParseTreeNode::HEADER, "HEADER"},
+        {ParseTreeNode::BOX, "BOX"},
+        {ParseTreeNode::TABLE, "TABLE"},
+        {ParseTreeNode::LIST, "LIST"},
+        {ParseTreeNode::LIST_ITEM, "LIST-ITEM"},
+        {ParseTreeNode::ORDERED_LIST, "ORDERED-LIST"},
+        {ParseTreeNode::ORDERED_LIST_ITEM, "ORDERED-LIST-ITEM"},
+        {ParseTreeNode::COMMAND, "COMMAND"},
+        {ParseTreeNode::STRIKE_THROUGH, "STRIKE-THROUGH"},
+        {ParseTreeNode::MATH, "MATH"},
+};
 
 std::unique_ptr<ParseTreeNode> ParseTreeNode::PopChildrenAt(int index) {
   std::unique_ptr<ParseTreeNode> child = std::move(children_[index]);
@@ -64,8 +68,8 @@ void ParseTreeNode::AddChildBefore(ParseTreeNode* node_to_find,
 }
 
 void ParseTreeNode::Print(int depth) const {
-  std::cout << "Node[" << kNodeTypeToName[GetNodeType()] << "] (" << start_
-            << ", " << end_ << "), Depth : " << depth << std::endl;
+  LOG(1) << "Node[" << kNodeTypeToName[GetNodeType()] << "] (" << start_ << ", "
+         << end_ << "), Depth : " << depth;
   for (const auto& child : children_) {
     child->Print(depth + 1);
   }

@@ -31,7 +31,8 @@ class ParseTreeNode {
     ORDERED_LIST,
     ORDERED_LIST_ITEM,
     COMMAND,
-    STRIKE_THROUGH
+    STRIKE_THROUGH,
+    MATH
   };
 
   ParseTreeNode(ParseTreeNode* parent, int start, bool is_leaf_node = false)

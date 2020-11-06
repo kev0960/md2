@@ -9,6 +9,7 @@
 #include "../parse_tree_nodes/header.h"
 #include "../parse_tree_nodes/image.h"
 #include "../parse_tree_nodes/link.h"
+#include "../parse_tree_nodes/box.h"
 #include "../parse_tree_nodes/list.h"
 #include "../parse_tree_nodes/paragraph.h"
 #include "../parse_tree_nodes/table.h"
@@ -56,9 +57,13 @@ class HTMLGenerator : public Generator {
   void HandleVerbatim(const ParseTreeVerbatimNode& node);
   void HandleEscape(const ParseTreeEscapeNode& node);
   void HandleCommand(const ParseTreeCommandNode& node);
+  void HandleMath(const ParseTreeMathNode& node);
+  void HandleBox(const ParseTreeBoxNode& node);
 
   std::vector<HTMLLinkBuilder> links_;
   std::vector<HTMLImageBuilder> images_;
+  
+  bool should_escape_html_ = true;
 };
 
 }  // namespace md2

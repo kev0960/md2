@@ -10,7 +10,10 @@
 namespace md2 {
 
 struct DriverOptions {
+  std::vector<std::string> input_dirs;
+  std::vector<std::string> input_files;
   std::string output_dir;
+
   bool should_log_db;
   bool generate_html = true;
   bool generate_latex = true;
@@ -20,8 +23,12 @@ class Driver {
  public:
   Driver(const DriverOptions& options) : options_(options) {}
 
+  // Run the driver.
+  void Run();
+
+ private:
   // Read files in the dirs.
-  void ReadFilesInDirectory(const std::vector<std::string>& dirs);
+  void ReadFilesInDirectory();
 
   // Build the file metadata repository.
   void BuildFileMetadataRepo();
@@ -30,7 +37,6 @@ class Driver {
 
   void DoParse();
 
- private:
   DriverOptions options_;
 
   // Map between file name to the file content and the current reading position.

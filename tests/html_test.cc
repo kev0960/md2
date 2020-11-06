@@ -357,20 +357,36 @@ TEST(HtmlTest, SimpleCommand) {
 }
 
 TEST(HtmlTest, MultipleArgCommand) {
-  std::string content = R"(\tooltip{**a**}{some `code`})";
-  DoHtmlTest(
-      content,
-      "<p><span class='page-tooltip' data-tooltip='<span "
-      "class='font-weight-bold'>a</span>' data-tooltip-position='bottom'>some "
-      "<code class='inline-code'>code</code></span></p>");
+  std::string content = R"(\tooltip{**a**}{**})";
+  DoHtmlTest(content,
+             "<p><span class='page-tooltip' data-tooltip='**' "
+             "data-tooltip-position='bottom'><span "
+             "class='font-weight-bold'>a</span></span></p>");
 }
 
 TEST(HtmlTest, CommandAndInvalidCommand) {
   std::string content = R"(\tooltip{a}{b} \tooltip{a})";
   DoHtmlTest(content,
-             "<p><span class='page-tooltip' data-tooltip='a' "
-             "data-tooltip-position='bottom'>b</span> \\tooltip{a}</p>");
+             "<p><span class='page-tooltip' data-tooltip='b' "
+             "data-tooltip-position='bottom'>a</span> \\tooltip{a}</p>");
 }
 
+TEST(HtmlTest, Math) {
+  std::string content = R"(some $$1+2*3$$ math)";
+  DoHtmlTest(content,
+             "<p>some <span class='math-latex'>$1+2*3$</span> math</p>");
+}
+
+TEST(HtmlTest, SideNote) {
+  std::string content = R"(
+```sidenote
+1. a
+2. b
+```
+)";
+  DoHtmlTest(content,
+             "<p>\n</p><aside class='sidenote'><li><p>a</p></li><p>2. "
+             "b\n</p></aside><p>\n</p>");
+}
 }  // namespace md
 }  // namespace md2

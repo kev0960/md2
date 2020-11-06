@@ -31,6 +31,14 @@ class ParseTreeStrikeThroughNode : public ParseTreeNode {
   }
 };
 
+class ParseTreeMathNode : public ParseTreeNode {
+ public:
+  ParseTreeMathNode(ParseTreeNode* parent, int start)
+      : ParseTreeNode(parent, start) {}
+
+  NodeType GetNodeType() const override { return ParseTreeNode::MATH; }
+};
+
 }  // namespace md2
 
 #endif

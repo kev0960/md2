@@ -1,5 +1,8 @@
 #include "driver.h"
 
+#include <fmt/color.h>
+#include <fmt/core.h>
+
 #include <filesystem>
 #include <fstream>
 
@@ -27,21 +30,41 @@ std::string ReadFileContent(const std::string& file_path) {
   return file_content;
 }
 
+std::string GenerateOutputPath(std::string_view file_name,
+                               std::string_view output_dir,
+                               std::string_view ext) {
+  fs::path p(file_name);
+  return StrCat(output_dir, "/", p.stem().c_str(), ".", ext);
+}
+
 }  // namespace
 
-void Driver::ReadFilesInDirectory(const std::vector<std::string>& dirs) {
-  for (const auto& dir : dirs) {
+void Driver::Run() {
+  fmt::print(fmt::fg(fmt::color::red), "Starting driver \n");
+  ReadFilesInDirectory();
+  BuildFileMetadataRepo();
+  DoParse();
+}
+
+void Driver::ReadFilesInDirectory() {
+  fmt::print(fmt::fg(fmt::color::green), "Reading files... \n");
+  for (const auto& dir : options_.input_dirs) {
     for (const auto& entry : fs::recursive_directory_iterator(dir)) {
       const fs::path& path = entry.path();
 
       // Only handle md files.
-      if (path.extension() != "md") {
+      if (path.extension() != ".md") {
         continue;
       }
 
       file_contents_[path.filename()] =
           std::make_pair(ReadFileContent(path), 0);
     }
+  }
+
+  for (const auto& file : options_.input_files) {
+    const fs::path path(file);
+    file_contents_[path.filename()] = std::make_pair(ReadFileContent(path), 0);
   }
 }
 
@@ -66,12 +89,26 @@ void Driver::BuildFileMetadataRepo() {
 }
 
 void Driver::DoParse() {
+  fmt::print(fmt::fg(fmt::color::green), "Start parsing ... \n");
   for (auto& [file_name, content_and_pos] : file_contents_) {
-    std::string_view content =
-        content_and_pos.first.substr(content_and_pos.second);
+    auto& [file_content, pos] = content_and_pos;
+    std::string_view content(file_content.c_str() + pos);
 
     Parser parser;
+    fmt::print("Parsing [{}] \n", file_name);
     ParseTree tree = parser.GenerateParseTree(content);
+
+    if (options_.generate_html) {
+      HTMLGenerator generator(content);
+      generator.Generate(tree);
+
+      std::string output_file_name =
+          GenerateOutputPath(file_name, options_.output_dir, "html");
+      fmt::print("Generating [{}] to [{}] \n", file_name, output_file_name);
+
+      std::ofstream out(output_file_name);
+      out << generator.ShowOutput();
+    }
   }
 }
 

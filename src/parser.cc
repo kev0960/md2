@@ -1,9 +1,9 @@
 #include "parser.h"
 
 #include <cctype>
-#include <iostream>
 #include <unordered_set>
 
+#include "logger.h"
 #include "parse_tree_nodes/box.h"
 #include "parse_tree_nodes/command.h"
 #include "parse_tree_nodes/escape.h"
@@ -20,7 +20,13 @@ namespace md2 {
 namespace {
 
 static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\', '|'};
-static std::unordered_set<std::string> kSourceCodeBoxNames = {"cpp", "py"};
+
+// Box names that should be always treated as verbatim (nested not allowed).
+static std::unordered_set<std::string> kVerbatimBoxNames = {
+    "cpp",           "py",        "asm",
+    "cpp-formatted", "embed",     "compiler-warning",
+    "info",          "info-verb", "info-term",
+    "info-format"};
 
 // "alt" is not here because alt text is just a default when no xxx= is
 // specified.
@@ -30,6 +36,11 @@ static std::unordered_map<std::string, int> kCommandToNumArgs = {
     {"sidenote", 1}, {"sc", 1},       {"newline", 1},
     {"serif", 1},    {"htmlonly", 1}, {"latexonly", 1},
     {"footnote", 1}, {"esc", 1},      {"tooltip", 2}};
+
+// Commands that take verbatim stuff in the argument (should not parse whatever
+// that's inside {}) and the index of those args.
+static std::unordered_map<std::string, std::unordered_set<size_t>>
+    kVerbatimCommands = {{"htmlonly", {0}}, {"tooltip", {1}}};
 
 // Create a new node that starts at the given parameter.
 template <typename NewNodeType>
@@ -334,11 +345,12 @@ ParseTree Parser::GenerateParseTree(std::string_view content) {
 
 size_t Parser::GenericParser(std::string_view content, size_t start,
                              std::string_view end_parsing_token,
-                             ParseTreeNode* root, bool use_text) {
+                             ParseTreeNode* root, bool use_text,
+                             bool must_inline) {
   ParseTreeNode* current_node = root;
 
   size_t index = start;
-  while (index != content.size()) {
+  while (index < content.size()) {
     // If current node is the root node, then create the Paragraph node as a
     // default.
     if (current_node->GetParent() == nullptr) {
@@ -348,6 +360,10 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
         current_node =
             CreateNewNode<ParseTreeParagraphNode>(current_node, index);
       }
+    }
+
+    if (must_inline && content[index] == '\n') {
+      return start;
     }
 
     // Handle the escape character or the command.
@@ -399,6 +415,21 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
       }
 
       index += 2;
+      continue;
+    }
+
+    if (content.substr(index, 2) == "$$") {
+      size_t start = index;
+      size_t current = index + 2;
+      while (content.substr(current, 2) != "$$" && current < content.size()) {
+        current++;
+      }
+
+      if (current != content.size()) {
+        auto* node = CreateNewNode<ParseTreeMathNode>(current_node, start);
+        node->SetEnd(current + 2);
+        index = current + 2;
+      }
       continue;
     }
 
@@ -488,10 +519,20 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
       }
     }
 
+    if (content.substr(index, 3) == "```") {
+      if (index >= 1 && content.substr(index - 1, 5) == "\n```\n") {
+        // Then this is the absolute end token.
+        MarkEndAllTheWayUp(current_node, index);
+        root->SetEnd(index + 3);
+        return index + 3;
+      }
+    }
+
     if (content[index] == '`') {
       auto maybe_box = MaybeParseBox(content, current_node, index, index);
       if (maybe_box) {
-        if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
+        if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH ||
+            current_node->GetNodeType() == ParseTreeNode::TEXT) {
           current_node =
               HoistNodeAboveParagraph(current_node, std::move(maybe_box));
         } else {
@@ -503,8 +544,8 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
         index++;
 
         // Try to find the end `.
-        while (true) {
-          if (content[index] == '`' && content[index - 1] != '\n') {
+        while (index < content.size()) {
+          if (content[index] == '`') {
             current_node->AddChildren(std::make_unique<ParseTreeVerbatimNode>(
                 current_node, verbatim_start));
             current_node->GetLastChildren()->SetEnd(index + 1);
@@ -512,6 +553,8 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
           }
           index++;
         }
+        index++;
+        continue;
       }
     }
 
@@ -567,6 +610,7 @@ template <typename LinkNodeType>
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
                                                       size_t start,
                                                       size_t& end) {
+  LOG(3) << "Maybe link : " << content.substr(start, 10) << " -- " << start;
   int node_start = start;
   if constexpr (std::is_same_v<LinkNodeType, ParseTreeImageNode>) {
     // Need to include the preceding '!'.
@@ -580,10 +624,10 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
   auto desc = std::make_unique<ParseTreeNode>(nullptr, node_start);
 
   // Note that parsing starts after "[" (to prevent infinite loop).
-  int desc_end =
-      GenericParser(content, start + 1, "]", desc.get(), /*use_text=*/true);
+  size_t desc_end = GenericParser(content, start + 1, "]", desc.get(),
+                                  /*use_text=*/true, /*must_inline=*/true);
 
-  if (content.substr(desc_end - 1, 2) != "](") {
+  if (start == desc_end || content.substr(desc_end - 1, 2) != "](") {
     return nullptr;
   }
   desc->SetEnd(desc_end);
@@ -591,9 +635,9 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
   auto url = std::make_unique<ParseTreeNode>(nullptr, desc_end);
 
   // Parsing starts after "(".
-  int url_end =
-      GenericParser(content, desc_end + 1, ")", url.get(), /*use_text=*/true);
-  if (content.substr(url_end - 1, 1) != ")") {
+  size_t url_end = GenericParser(content, desc_end + 1, ")", url.get(),
+                                 /*use_text=*/true, /*must_inline=*/true);
+  if (url_end == desc_end + 1 || content.substr(url_end - 1, 1) != ")") {
     return nullptr;
   }
   url->SetEnd(url_end);
@@ -708,6 +752,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
                                                      ParseTreeNode* parent,
                                                      size_t start,
                                                      size_t& end) {
+  LOG(3) << "start : " << start << " : " << content.substr(start, 10);
   if (start != 0 && content[start - 1] != '\n') {
     return nullptr;
   }
@@ -723,7 +768,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
 
   // Try to read the box name.
   size_t box_name_end = start + 3;
-  while (content[box_name_end] != '\n' && box_name_end != content.size()) {
+  while (content[box_name_end] != '\n' && box_name_end < content.size()) {
     box_name_end++;
   }
 
@@ -734,11 +779,16 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
   }
 
   std::string box_name(content.substr(start + 3, box_name_end - (start + 3)));
-  if (kSourceCodeBoxNames.count(box_name)) {
+  if (kVerbatimBoxNames.count(box_name)) {
     // Then the nested ```s are not allowed. Just find the end of the box.
     end = box_name_end + 1;
     while (content.substr(end, 3) != "```") {
       end++;
+
+      if (end >= content.size()) {
+        end = start;
+        return nullptr;
+      }
     }
 
     auto code = std::make_unique<ParseTreeVerbatimNode>(parent, start);
@@ -767,13 +817,16 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
   box->GetLastChildren()->SetEnd(box_name_end);
 
   // We should not specify the parent as Box yet (otherwise checking the end
-  // parsing token would not work.)
+  // parsing token would not work.) Note that start of the box content does not
+  // contain the \n of the box name.
   auto box_content_node =
-      std::make_unique<ParseTreeNode>(nullptr, box_name_end);
+      std::make_unique<ParseTreeNode>(nullptr, box_name_end + 1);
 
   size_t box_content_end =
-      GenericParser(content, box_name_end, "```", box_content_node.get());
+      GenericParser(content, box_name_end + 1, "```", box_content_node.get());
 
+  LOG(3) << "box content end : [" << content.substr(box_content_end - 4, 4)
+         << "]";
   if (content.substr(box_content_end - 4, 4) != "\n```") {
     return nullptr;
   }
@@ -786,6 +839,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
   end = box_content_end;
   box->SetEnd(end);
 
+  LOG(3) << "End box " << box_name << "!\n";
   return box;
 }
 
@@ -939,6 +993,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
     std::string_view content, ParseTreeNode* parent, size_t start,
     size_t& end) {
+  LOG(3) << "Maybe Command : " << content.substr(start, 5) << "--" << start;
   // Commands are in form \command{}{}..{}
   // Number of {} s can be vary.
   std::string_view command_name;
@@ -965,6 +1020,13 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
   // current now points {.
   size_t current = command_start + command_name.size();
 
+  std::unordered_set<size_t> verbatim_args;
+  if (const auto itr = kVerbatimCommands.find(std::string(command_name));
+      itr != kVerbatimCommands.end()) {
+    verbatim_args = itr->second;
+  }
+
+  size_t arg_index = 0;
   while (num_arg--) {
     if (current >= content.size() || content[current] != '{') {
       return nullptr;
@@ -973,20 +1035,41 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
     // Arg does not include {.
     current++;
 
-    auto arg = std::make_unique<ParseTreeNode>(nullptr, current);
-    current = GenericParser(content, current, "}", arg.get(), true);
+    // In this case, we should treat current argument as a verbatim. Do not
+    // parse whatever that is inside {}.
+    if (verbatim_args.count(arg_index)) {
+      size_t arg_start = current;
+      while (current < content.size()) {
+        if (content[current] == '}' && content[current - 1] != '\\') {
+          auto arg = std::make_unique<ParseTreeTextNode>(nullptr, arg_start);
+          arg->SetEnd(current);
 
-    if (content[current - 1] != '}') {
-      return nullptr;
+          command->AddChildren(std::move(arg));
+
+          // Current now points after '}'.
+          current++;
+          break;
+        }
+        current++;
+      }
+    } else {
+      auto arg = std::make_unique<ParseTreeNode>(nullptr, current);
+      current = GenericParser(content, current, "}", arg.get(), true);
+
+      if (content[current - 1] != '}') {
+        return nullptr;
+      }
+
+      if (num_arg > 0 && content[current] != '{') {
+        return nullptr;
+      }
+
+      // Arg does not include }.
+      arg->SetEnd(current - 1);
+      command->AddChildren(std::move(arg));
     }
 
-    if (num_arg > 0 && content[current] != '{') {
-      return nullptr;
-    }
-
-    // Arg does not include }.
-    arg->SetEnd(current - 1);
-    command->AddChildren(std::move(arg));
+    arg_index++;
   }
 
   end = current;

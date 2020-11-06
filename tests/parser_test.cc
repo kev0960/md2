@@ -2,6 +2,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "logger.h"
 #include "parse_tree_builder.h"
 
 namespace md2 {
@@ -16,6 +17,7 @@ void DoParserTest(std::string content, ParseTreeComparer comparer,
   ParseTree tree = parser.GenerateParseTree(content);
 
   if (show_tree) {
+    Logger::GetLogger().SetLoggingLevel(3);
     tree.Print();
   }
   comparer.Compare(tree);
@@ -393,12 +395,12 @@ b
                          {ParseTreeNode::PARAGRAPH, 0, 1, 1},
                          {ParseTreeNode::BOX, 1, 35, 1},
                          {ParseTreeNode::TEXT, 4, 7, 2},  // Box name
-                         {ParseTreeNode::NODE, 7, 35, 2},
-                         {ParseTreeNode::PARAGRAPH, 7, 15, 3},  // "\nhello;\n"
+                         {ParseTreeNode::NODE, 8, 35, 2},
+                         {ParseTreeNode::PARAGRAPH, 8, 15, 3},  // "hello;\n"
                          {ParseTreeNode::BOX, 15, 29, 3},
                          {ParseTreeNode::TEXT, 18, 21, 4},  // Box name
-                         {ParseTreeNode::NODE, 21, 29, 4},
-                         {ParseTreeNode::PARAGRAPH, 21, 26, 5},  // "\n*a*\n"
+                         {ParseTreeNode::NODE, 22, 29, 4},
+                         {ParseTreeNode::PARAGRAPH, 22, 26, 5},  // "*a*\n"
                          {ParseTreeNode::ITALIC, 22, 25, 6},
                          {ParseTreeNode::PARAGRAPH, 29, 32, 3},  // "\nb\n"
                          {ParseTreeNode::PARAGRAPH, 35, 35, 1}}));
@@ -698,16 +700,13 @@ TEST(ParserTest, SimpleCommand) {
 
 TEST(ParserTest, MultipleArgCommand) {
   std::string content = R"(\tooltip{**a**}{some `code`})";
-  DoParserTest(content,
-               ParseTreeComparer({{ParseTreeNode::NODE, 0, 28, 0},
-                                  {ParseTreeNode::PARAGRAPH, 0, 28, 1},
-                                  {ParseTreeNode::COMMAND, 0, 28, 2},
-                                  {ParseTreeNode::NODE, 9, 14, 3},
-                                  {ParseTreeNode::TEXT, 9, 14, 4},
-                                  {ParseTreeNode::BOLD, 9, 14, 5},
-                                  {ParseTreeNode::NODE, 16, 27, 3},
-                                  {ParseTreeNode::TEXT, 16, 27, 4},
-                                  {ParseTreeNode::VERBATIM, 21, 27, 5}}));
+  DoParserTest(content, ParseTreeComparer({{ParseTreeNode::NODE, 0, 28, 0},
+                                           {ParseTreeNode::PARAGRAPH, 0, 28, 1},
+                                           {ParseTreeNode::COMMAND, 0, 28, 2},
+                                           {ParseTreeNode::NODE, 9, 14, 3},
+                                           {ParseTreeNode::TEXT, 9, 14, 4},
+                                           {ParseTreeNode::BOLD, 9, 14, 5},
+                                           {ParseTreeNode::TEXT, 16, 27, 3}}));
 }
 
 TEST(ParserTest, CommandAndInvalidCommand) {
@@ -717,8 +716,15 @@ TEST(ParserTest, CommandAndInvalidCommand) {
                                            {ParseTreeNode::COMMAND, 0, 14, 2},
                                            {ParseTreeNode::NODE, 9, 10, 3},
                                            {ParseTreeNode::TEXT, 9, 10, 4},
-                                           {ParseTreeNode::NODE, 12, 13, 3},
-                                           {ParseTreeNode::TEXT, 12, 13, 4}}));
+                                           {ParseTreeNode::TEXT, 12, 13, 3}}));
+}
+
+TEST(ParserTest, Math) {
+  std::string content = R"(some $$1+2*3$$ math)";
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 19, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 19, 1},
+                                  {ParseTreeNode::MATH, 5, 14, 2}}));
 }
 
 }  // namespace
