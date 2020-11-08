@@ -23,7 +23,7 @@ constexpr std::string_view kChewingCppEnd = R"(
 )";
 
 constexpr std::string_view kCppRefStart = R"(
-div class='cpp-ref-start'><p class='cpp-ref-link'>이 레퍼런스의 모든 내용은 <a href="https://cppreference.com">여기</a>를 기초로 하여 작성하였습니다.</p><p class='cpp-lec-introduce'>아직 C++ 에 친숙하지 않다면 <a href="https://modoocode.com/135">씹어먹는 C++</a> 은 어때요?</p></div>
+<div class='cpp-ref-start'><p class='cpp-ref-link'>이 레퍼런스의 모든 내용은 <a href="https://cppreference.com">여기</a>를 기초로 하여 작성하였습니다.</p><p class='cpp-lec-introduce'>아직 C++ 에 친숙하지 않다면 <a href="https://modoocode.com/135">씹어먹는 C++</a> 은 어때요?</p></div>
 )";
 
 template <typename To, typename From>
@@ -249,10 +249,10 @@ void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
 void HTMLGenerator::HandleTable(const ParseTreeTableNode& node) {
   GetCurrentTarget()->append("<table><thead><tr>");
 
-  const int row_size = node.GetRowSize();
+  const size_t row_size = node.GetRowSize();
 
   // The first row is always the header.
-  for (int i = 0; i < row_size; i++) {
+  for (size_t i = 0; i < row_size; i++) {
     GetCurrentTarget()->append("<th>");
     HandleParseTreeNode(*node.GetChildren()[i]);
     GetCurrentTarget()->append("</th>");
@@ -272,7 +272,7 @@ void HTMLGenerator::HandleTable(const ParseTreeTableNode& node) {
     HandleParseTreeNode(*node.GetChildren()[i]);
     GetCurrentTarget()->append("</td>");
 
-    if (i % row_size == 0) {
+    if (i % row_size == row_size - 1) {
       GetCurrentTarget()->append("</tr>");
     }
   }
@@ -367,20 +367,40 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
 
   ASSERT(node.GetChildren().size() == 2, "Verbatim does not have two nodes.");
   const auto& code_name_node = node.GetChildren()[0];
-  std::string_view code_name = md_.substr(
+  std::string_view name = md_.substr(
       code_name_node->Start(), code_name_node->End() - code_name_node->Start());
 
-  const auto& code_node = node.GetChildren()[1];
-  ASSERT(code_node->GetNodeType() == ParseTreeNode::TEXT, "");
-  if (code_name == "cpp" || code_name == "py" || code_name == "asm") {
+  const auto& content_node = node.GetChildren()[1];
+  ASSERT(content_node->GetNodeType() == ParseTreeNode::TEXT, "");
+  if (name == "cpp") {
     std::string_view formatted_cpp = context_->GetClangFormatted(
-        &CastNodeTypes<ParseTreeTextNode>(*code_node), md_);
-    GetCurrentTarget()->append(RunSyntaxHighlighter(formatted_cpp, code_name));
-  } else if (code_name == "cpp-formatted") {
+        &CastNodeTypes<ParseTreeTextNode>(*content_node), md_);
+    GetCurrentTarget()->append(RunSyntaxHighlighter(formatted_cpp, name));
+  } else if (name == "py" || name == "asm") {
     GetCurrentTarget()->append(
-        RunSyntaxHighlighter(GetStringInNode(code_node.get()), "cpp"));
-  } else if (code_name == "embed") {
-    EmitChar(code_node->Start(), code_node->End());
+        RunSyntaxHighlighter(GetStringInNode(content_node.get()), name));
+  } else if (name == "cpp-formatted") {
+    GetCurrentTarget()->append(
+        RunSyntaxHighlighter(GetStringInNode(content_node.get()), "cpp"));
+  } else if (name == "compiler-warning") {
+    GetCurrentTarget()->append(
+        "<p class='compiler-warning-title'><i class='xi-warning'></i>컴파일 "
+        "오류</p><pre class='compiler-warning'>");
+    EmitChar(content_node->Start(), content_node->End());
+    GetCurrentTarget()->append("</pre>");
+  } else if (name == "embed") {
+    EmitChar(content_node->Start(), content_node->End());
+  } else if (name == "exec") {
+    GetCurrentTarget()->append(
+        "<p class='exec-preview-title'>실행 결과</p><pre "
+        "class='exec-preview'>");
+    EmitChar(content_node->Start(), content_node->End());
+    GetCurrentTarget()->append("</pre>");
+  } else if (name == "info" || name == "info-term" || name == "info-verb") {
+    GetCurrentTarget()->append(fmt::format("<pre class='{}'>", name));
+    EmitChar(content_node->Start(), content_node->End());
+    GetCurrentTarget()->append("</pre>");
+  } else if (name == "info-format") {
   }
 }
 
@@ -439,12 +459,6 @@ void HTMLGenerator::HandleBox(const ParseTreeBoxNode& node) {
     GetCurrentTarget()->append("<div class='info'>");
     HandleParseTreeNode(*node.GetChildren()[1]);
     GetCurrentTarget()->append("</div>");
-  } else if (box_name == "exec") {
-    GetCurrentTarget()->append(
-        "<p class='exec-preview-title'>실행 결과</p><pre "
-        "class='exec-preview'>");
-    HandleParseTreeNode(*node.GetChildren()[1]);
-    GetCurrentTarget()->append("</pre>");
   } else if (box_name == "warning") {
     GetCurrentTarget()->append("<div class='warning warning-text'>");
     HandleParseTreeNode(*node.GetChildren()[1]);

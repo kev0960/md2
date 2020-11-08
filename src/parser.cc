@@ -26,7 +26,7 @@ static std::unordered_set<std::string> kVerbatimBoxNames = {
     "cpp",           "py",        "asm",
     "cpp-formatted", "embed",     "compiler-warning",
     "info",          "info-verb", "info-term",
-    "info-format"};
+    "info-format",   "exec"};
 
 // "alt" is not here because alt text is just a default when no xxx= is
 // specified.

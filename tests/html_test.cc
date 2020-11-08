@@ -168,12 +168,15 @@ TEST(HtmlTest, ImageWithCaptionItalicAndSizeNoAlt) {
 }
 
 TEST(HtmlTest, HeaderSimple) {
-  DoHtmlTest("### header", "<h3 class='header-general'> header</h3><p></p>");
+  DoHtmlTest(
+      "### header",
+      "<h3 id='page-heading-0' class='header-general'> header</h3><p></p>");
 }
 
 TEST(HtmlTest, HeaderSimple2) {
   DoHtmlTest("a\n### header",
-             "<p>a\n</p><h3 class='header-general'> header</h3><p></p>");
+             "<p>a\n</p><h3 id='page-heading-0' class='header-general'> "
+             "header</h3><p></p>");
 }
 
 TEST(HtmlTest, NotHeader) { DoHtmlTest("a### header", "<p>a### header</p>"); }
@@ -213,10 +216,11 @@ TEST(HtmlTest, SimpleTable) {
 |a|b|c|
 abc)";
 
-  DoHtmlTest(content,
-             "<p>\n</p><table><thead><tr><th><p>a</p></th><th><p>b</p></"
-             "th><th><p>c</p></th></tr></thead><tbody><tr><td><p>a</p></td></"
-             "tr><td><p>b</p></td><td><p>c</p></td></tbody></table><p>abc</p>");
+  DoHtmlTest(
+      content,
+      "<p>\n</p><table><thead><tr><th><p>a</p></th><th><p>b</p></th><th><p>c</"
+      "p></th></tr></thead><tbody><tr><td><p>a</p></td><td><p>b</p></"
+      "td><td><p>c</p></td></tr></tbody></table><p>abc</p>");
 }
 
 TEST(HtmlTest, SimpleTable2) {
@@ -225,12 +229,13 @@ TEST(HtmlTest, SimpleTable2) {
 |-|-|
 |\|a|`b`|)";
 
-  DoHtmlTest(content,
-             "<p>\n</p><table><thead><tr><th><p><span "
-             "class='font-italic'>a</span></p></th><th><p><span "
-             "class='font-weight-bold'>b</span></p></th></tr></"
-             "thead><tbody><tr><td><p>|a</p></td></tr><td><p><code "
-             "class='inline-code'>b</code></p></td></tbody></table><p></p>");
+  DoHtmlTest(
+      content,
+      "<p>\n</p><table><thead><tr><th><p><span "
+      "class='font-italic'>a</span></p></th><th><p><span "
+      "class='font-weight-bold'>b</span></p></th></tr></"
+      "thead><tbody><tr><td><p>|a</p></td><td><p><code "
+      "class='inline-code'>b</code></p></td></tr></tbody></table><p></p>");
 }
 
 TEST(HtmlTest, SimpleList) {
