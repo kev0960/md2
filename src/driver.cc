@@ -49,7 +49,15 @@ void Driver::Run() {
 }
 
 void Driver::ReadFilesInDirectory() {
-  fmt::print(fmt::fg(fmt::color::green), "Reading files... \n");
+  fmt::print("Start reading files -- \n");
+
+  int total_files = 0;
+  for (const auto& dir : options_.input_dirs) {
+    total_files += std::distance(fs::recursive_directory_iterator(dir),
+                                 fs::recursive_directory_iterator());
+  }
+
+  int num_read = 0;
   for (const auto& dir : options_.input_dirs) {
     for (const auto& entry : fs::recursive_directory_iterator(dir)) {
       const fs::path& path = entry.path();
@@ -61,6 +69,10 @@ void Driver::ReadFilesInDirectory() {
 
       file_contents_[path.filename()] =
           std::make_pair(ReadFileContent(path), 0);
+
+      fmt::print(fmt::fg(fmt::color::green), "Reading files... [{}/{}]\n",
+                 ++num_read, total_files);
+      fmt::print("\033[A\33[2KT\rT");
     }
   }
 

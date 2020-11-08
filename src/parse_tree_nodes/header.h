@@ -12,8 +12,6 @@ class ParseTreeHeaderNode : public ParseTreeNode {
 
   NodeType GetNodeType() const override { return ParseTreeNode::HEADER; }
 
-  void SetHeader(std::string_view header);
-
   enum HeaderTypes {
     NORMAL_HEADER,
     FANCY_HEADER_FOR_REF,

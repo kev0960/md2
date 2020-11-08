@@ -1,5 +1,7 @@
 #include "html_generator.h"
 
+#include <fmt/core.h>
+
 #include "asm_syntax_highlighter.h"
 #include "cpp_syntax_highlighter.h"
 #include "logger.h"
@@ -7,6 +9,22 @@
 
 namespace md2 {
 namespace {
+
+constexpr std::string_view kChewingCEnd = R"(
+<div class='next-lecture-box'>강좌를 보다가 조금이라도 <span class='font-weight-bold'>궁금한 것이나 이상한 점이 있다면 꼭 댓글</span>을 남겨주시기 바랍니다. 그 외에도 강좌에 관련된 것이라면 어떠한 것도 질문해 주셔도 상관 없습니다. 생각해 볼 문제도 정 모르겠다면 댓글을 달아주세요. <br><br>
+현재 여러분이 보신 강좌는 <span class='font-italic lecture-title'>&lt;{}&gt;</span> 입니다. 이번 강좌의 모든 예제들의 코드를 보지 않고 짤 수준까지 강좌를 읽어 보시기 전까지 다음 강좌로 넘어가지 말아주세요
+<div class="next-lecture"><a href="/notice/15">다음 강좌 보러가기</a></div></div>
+)";
+
+constexpr std::string_view kChewingCppEnd = R"(
+<div class='next-lecture-box'>강좌를 보다가 조금이라도 <span class='font-weight-bold'>궁금한 것이나 이상한 점이 있다면 꼭 댓글</span>을 남겨주시기 바랍니다. 그 외에도 강좌에 관련된 것이라면 어떠한 것도 질문해 주셔도 상관 없습니다. 생각해 볼 문제도 정 모르겠다면 댓글을 달아주세요. <br><br>
+현재 여러분이 보신 강좌는 <span class='font-italic lecture-title'>&lt;{}&gt;</span> 입니다. 이번 강좌의 모든 예제들의 코드를 보지 않고 짤 수준까지 강좌를 읽어 보시기 전까지 다음 강좌로 넘어가지 말아주세요
+<div class="next-lecture"><a href="/135">다음 강좌 보러가기</a></div></div>
+)";
+
+constexpr std::string_view kCppRefStart = R"(
+div class='cpp-ref-start'><p class='cpp-ref-link'>이 레퍼런스의 모든 내용은 <a href="https://cppreference.com">여기</a>를 기초로 하여 작성하였습니다.</p><p class='cpp-lec-introduce'>아직 C++ 에 친숙하지 않다면 <a href="https://modoocode.com/135">씹어먹는 C++</a> 은 어때요?</p></div>
+)";
 
 template <typename To, typename From>
 const To& CastNodeTypes(const From& node) {
@@ -293,15 +311,45 @@ void HTMLGenerator::HandleListItem(const ParseTreeListItemNode& node) {
 void HTMLGenerator::HandleHeader(const ParseTreeHeaderNode& node) {
   ASSERT(node.GetChildren().size() == 2, "");
 
-  if (node.GetHeaderType() == ParseTreeHeaderNode::NORMAL_HEADER) {
-    const auto& header_symbol = node.GetChildren()[0];
-    GetCurrentTarget()->append(StrCat(
-        "<h", std::to_string(header_symbol->End() - header_symbol->Start()),
-        " class='header-general'>"));
+  std::string_view header_symbol = GetStringInNode(node.GetChildren()[0].get());
+
+  if (std::all_of(header_symbol.begin(), header_symbol.end(),
+                  [](const char c) { return c == '#'; })) {
+    std::string header_id =
+        StrCat("id='page-heading-", std::to_string(header_index_++), "'");
+    GetCurrentTarget()->append(StrCat("<h",
+                                      std::to_string(header_symbol.size()), " ",
+                                      header_id, " class='header-general'>"));
     HandleParseTreeNode(*node.GetChildren()[1]);
-    GetCurrentTarget()->append(StrCat(
-        "</h", std::to_string(header_symbol->End() - header_symbol->Start()),
-        ">"));
+    GetCurrentTarget()->append(
+        StrCat("</h", std::to_string(header_symbol.size()), ">"));
+    return;
+  }
+
+  if (header_symbol == "#@") {
+    std::string header_id =
+        StrCat("id='page-heading-", std::to_string(header_index_++), "'");
+    GetCurrentTarget()->append(
+        StrCat("<h2 class='ref-header' ", header_id, ">"));
+    EmitChar(node.GetChildren()[1]->Start(), node.GetChildren()[1]->End());
+    GetCurrentTarget()->append("</h2>");
+  } else if (header_symbol == "##@") {
+    std::string_view header_content =
+        Strip(GetStringInNode(node.GetChildren()[1].get()));
+    if (header_content == "chewing-c-end") {
+      GetCurrentTarget()->append(fmt::format(kChewingCEnd, GetFileTitle()));
+    } else if (header_content == "chewing-cpp-end") {
+      GetCurrentTarget()->append(fmt::format(kChewingCppEnd, GetFileTitle()));
+    } else if (header_content == "cpp-ref-start") {
+      GetCurrentTarget()->append(kCppRefStart);
+    }
+  } else if (header_symbol == "###@") {
+    std::string header_id =
+        StrCat("id='page-heading-", std::to_string(header_index_++), "'");
+    GetCurrentTarget()->append(StrCat("<h3 class='lecture-header' ", header_id,
+                                      " class='header-general'>"));
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</h3>");
   }
 }
 
@@ -324,23 +372,13 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
 
   const auto& code_node = node.GetChildren()[1];
   ASSERT(code_node->GetNodeType() == ParseTreeNode::TEXT, "");
-  if (code_name == "cpp") {
+  if (code_name == "cpp" || code_name == "py" || code_name == "asm") {
     std::string_view formatted_cpp = context_->GetClangFormatted(
         &CastNodeTypes<ParseTreeTextNode>(*code_node), md_);
-
-    GetCurrentTarget()->append("<pre class='chroma lang-cpp plain-code'>");
     GetCurrentTarget()->append(RunSyntaxHighlighter(formatted_cpp, code_name));
-    GetCurrentTarget()->append("</pre>");
   } else if (code_name == "cpp-formatted") {
-    GetCurrentTarget()->append("<pre class='chroma lang-cpp plain-code'>");
     GetCurrentTarget()->append(
         RunSyntaxHighlighter(GetStringInNode(code_node.get()), "cpp"));
-    GetCurrentTarget()->append("</pre>");
-  } else if (code_name == "py") {
-    GetCurrentTarget()->append("<pre class='chroma lang-cpp plain-code'>");
-    GetCurrentTarget()->append(
-        RunSyntaxHighlighter(GetStringInNode(code_node.get()), "cpp"));
-    GetCurrentTarget()->append("</pre>");
   } else if (code_name == "embed") {
     EmitChar(code_node->Start(), code_node->End());
   }

@@ -751,8 +751,6 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
   header->AddChildren(
       std::make_unique<ParseTreeTextNode>(header.get(), header_token_end));
   header->GetLastChildren()->SetEnd(end);
-
-  header->SetHeader(content.substr(start, header_token_end - start));
   header->SetEnd(end);
 
   return header;

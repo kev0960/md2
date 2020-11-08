@@ -15,6 +15,8 @@ namespace {
 static char kClangFormatName[] = "clang-format";
 static char kClangFormatConfig[] = "-style=google";
 
+constexpr size_t kBufferSize = 4096;
+
 void DoClangFormat(std::string_view code, std::string* formatted_code) {
   int pipe_p2c[2], pipe_c2p[2];
   if (pipe(pipe_p2c) != 0 || pipe(pipe_c2p) != 0) {
@@ -41,9 +43,9 @@ void DoClangFormat(std::string_view code, std::string* formatted_code) {
 
     // Retrieve the formatted code from the child process.
 
-    char buf[1024];
+    char buf[kBufferSize];
     int read_cnt;
-    while ((read_cnt = read(pipe_c2p[0], buf, 1024)) > 0) {
+    while ((read_cnt = read(pipe_c2p[0], buf, kBufferSize)) > 0) {
       auto current_size = formatted_code->size();
       formatted_code->reserve(current_size + read_cnt + 1);
       for (int i = 0; i < read_cnt; i++) {

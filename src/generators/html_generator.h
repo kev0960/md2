@@ -65,6 +65,8 @@ class HTMLGenerator : public Generator {
   std::vector<HTMLImageBuilder> images_;
 
   bool should_escape_html_ = true;
+
+  int header_index_ = 0;
 };
 
 }  // namespace md2

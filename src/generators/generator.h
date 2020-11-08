@@ -35,6 +35,9 @@ class Generator {
       const ParseTreeNode& node, std::function<void(int index)> default_action,
       int start, int end);
 
+  // TODO Implement
+  std::string_view GetFileTitle() const { return ""; }
+
   std::string* GetCurrentTarget() { return targets_.back(); }
 
   template <typename Node>
