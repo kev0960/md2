@@ -37,6 +37,11 @@ class Generator {
 
   std::string* GetCurrentTarget() { return targets_.back(); }
 
+  template <typename Node>
+  std::string_view GetStringInNode(Node* node) {
+    return md_.substr(node->Start(), node->End() - node->Start());
+  }
+
   std::string_view md_;
   std::string target_;
 

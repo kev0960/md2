@@ -1,6 +1,9 @@
 #include "html_generator.h"
 
+#include "asm_syntax_highlighter.h"
+#include "cpp_syntax_highlighter.h"
 #include "logger.h"
+#include "py_syntax_highlighter.h"
 
 namespace md2 {
 namespace {
@@ -8,6 +11,28 @@ namespace {
 template <typename To, typename From>
 const To& CastNodeTypes(const From& node) {
   return *static_cast<const To*>(&node);
+}
+
+std::string RunSyntaxHighlighter(std::string_view code,
+                                 std::string_view language) {
+  std::string str_code(code);
+  std::string str_lang(language);
+
+  std::unique_ptr<SyntaxHighlighter> highlighter;
+  if (language == "cpp") {
+    highlighter = std::make_unique<CppSyntaxHighlighter>(str_code, str_lang);
+  } else if (language == "py") {
+    highlighter = std::make_unique<PySyntaxHighlighter>(str_code, str_lang);
+  } else if (language == "asm") {
+    highlighter = std::make_unique<AsmSyntaxHighlighter>(
+        str_code, str_lang, AsmSyntaxHighlighter::INTEL);
+  } else {
+    return str_code;
+  }
+
+  highlighter->ParseCode();
+  highlighter->ColorMerge();
+  return highlighter->GenerateHighlightedHTML();
 }
 
 }  // namespace
@@ -298,17 +323,23 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
       code_name_node->Start(), code_name_node->End() - code_name_node->Start());
 
   const auto& code_node = node.GetChildren()[1];
+  ASSERT(code_node->GetNodeType() == ParseTreeNode::TEXT, "");
   if (code_name == "cpp") {
-    ASSERT(code_node->GetNodeType() == ParseTreeNode::TEXT, "");
     std::string_view formatted_cpp = context_->GetClangFormatted(
         &CastNodeTypes<ParseTreeTextNode>(*code_node), md_);
 
     GetCurrentTarget()->append("<pre class='chroma lang-cpp plain-code'>");
-    GetCurrentTarget()->append(formatted_cpp);
+    GetCurrentTarget()->append(RunSyntaxHighlighter(formatted_cpp, code_name));
     GetCurrentTarget()->append("</pre>");
   } else if (code_name == "cpp-formatted") {
     GetCurrentTarget()->append("<pre class='chroma lang-cpp plain-code'>");
-    EmitChar(code_node->Start(), code_node->End());
+    GetCurrentTarget()->append(
+        RunSyntaxHighlighter(GetStringInNode(code_node.get()), "cpp"));
+    GetCurrentTarget()->append("</pre>");
+  } else if (code_name == "py") {
+    GetCurrentTarget()->append("<pre class='chroma lang-cpp plain-code'>");
+    GetCurrentTarget()->append(
+        RunSyntaxHighlighter(GetStringInNode(code_node.get()), "cpp"));
     GetCurrentTarget()->append("</pre>");
   } else if (code_name == "embed") {
     EmitChar(code_node->Start(), code_node->End());
