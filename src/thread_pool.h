@@ -11,6 +11,8 @@
 #include <thread>
 #include <vector>
 
+namespace md2 {
+
 class ThreadPool {
  public:
   ThreadPool(size_t);
@@ -81,6 +83,8 @@ inline ThreadPool::~ThreadPool() {
   }
   condition_.notify_all();
   for (std::thread& worker : workers_) worker.join();
+}
+
 }
 
 #endif

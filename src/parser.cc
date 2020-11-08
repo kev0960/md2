@@ -346,7 +346,7 @@ ParseTree Parser::GenerateParseTree(std::string_view content) {
 size_t Parser::GenericParser(std::string_view content, size_t start,
                              std::string_view end_parsing_token,
                              ParseTreeNode* root, bool use_text,
-                             bool must_inline) {
+                             bool must_inline, bool no_link) {
   ParseTreeNode* current_node = root;
 
   size_t index = start;
@@ -481,7 +481,7 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
       continue;
     }
 
-    if (content[index] == '[') {
+    if (content[index] == '[' && !no_link) {
       auto maybe_link =
           MaybeParseLink<ParseTreeLinkNode>(content, index, index);
 
@@ -623,9 +623,19 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
   // parsing token would not work.)
   auto desc = std::make_unique<ParseTreeNode>(nullptr, node_start);
 
+  bool no_nested_link = true;
+
+  // TODO Allow nested_link for image when md files are fixed.
+  /*
+  if constexpr (std::is_same_v<LinkNodeType, ParseTreeLinkNode>) {
+    no_nested_link = true;
+  }
+  */
+
   // Note that parsing starts after "[" (to prevent infinite loop).
-  size_t desc_end = GenericParser(content, start + 1, "]", desc.get(),
-                                  /*use_text=*/true, /*must_inline=*/true);
+  size_t desc_end =
+      GenericParser(content, start + 1, "]", desc.get(),
+                    /*use_text=*/true, /*must_inline=*/true, no_nested_link);
 
   if (start == desc_end || content.substr(desc_end - 1, 2) != "](") {
     return nullptr;

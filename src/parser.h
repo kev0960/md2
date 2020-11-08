@@ -22,10 +22,12 @@ class Parser {
   // parse until the end of the content.
   // Returns the location RIGHT AFTER the end parsing token.
   // If use_text is true, then it will use TEXT instead of PARAGRAPH.
-  // If must_inline is set, then seeing "\n" in the middle of processing will incur the error.
+  // If must_inline is set, then seeing "\n" in the middle of processing will
+  // incur the error.
   size_t GenericParser(std::string_view content, size_t start,
                        std::string_view end_parsing_token, ParseTreeNode* root,
-                       bool use_text = false, bool must_inline = false);
+                       bool use_text = false, bool must_inline = false,
+                       bool no_link = false);
 
   // Try to parse the markdown that starts with '['. The parsing can fail if it
   // does not construct the proper link. In such case, this will return nullptr

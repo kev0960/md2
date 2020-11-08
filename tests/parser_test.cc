@@ -189,6 +189,17 @@ TEST(ParserTest, Link3) {
                                   {ParseTreeNode::TEXT, 13, 17, 4}}));
 }
 
+TEST(ParserTest, Link4) {
+  DoParserTest("some [arr[2[3 blah](abc)",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 24, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 24, 1},
+                                  {ParseTreeNode::LINK, 5, 24, 2},
+                                  {ParseTreeNode::NODE, 5, 19, 3},
+                                  {ParseTreeNode::TEXT, 6, 18, 4},
+                                  {ParseTreeNode::NODE, 19, 24, 3},
+                                  {ParseTreeNode::TEXT, 20, 23, 4}}));
+}
+
 TEST(ParserTest, InvalidLink) {
   DoParserTest("[link] (http://link)",
                ParseTreeComparer({{ParseTreeNode::NODE, 0, 20, 0},
@@ -721,10 +732,9 @@ TEST(ParserTest, CommandAndInvalidCommand) {
 
 TEST(ParserTest, Math) {
   std::string content = R"(some $$1+2*3$$ math)";
-  DoParserTest(content,
-               ParseTreeComparer({{ParseTreeNode::NODE, 0, 19, 0},
-                                  {ParseTreeNode::PARAGRAPH, 0, 19, 1},
-                                  {ParseTreeNode::MATH, 5, 14, 2}}));
+  DoParserTest(content, ParseTreeComparer({{ParseTreeNode::NODE, 0, 19, 0},
+                                           {ParseTreeNode::PARAGRAPH, 0, 19, 1},
+                                           {ParseTreeNode::MATH, 5, 14, 2}}));
 }
 
 }  // namespace

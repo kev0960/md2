@@ -4,6 +4,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <atomic>
 
 #include "metadata_repo.h"
 
@@ -17,6 +18,8 @@ struct DriverOptions {
   bool should_log_db;
   bool generate_html = true;
   bool generate_latex = true;
+
+  size_t num_threads = 1;
 };
 
 class Driver {
@@ -36,6 +39,7 @@ class Driver {
   std::string ParseFile(std::string_view content);
 
   void DoParse();
+  void DoParse(std::string_view content, std::string_view file_name);
 
   DriverOptions options_;
 
@@ -43,6 +47,8 @@ class Driver {
   std::unordered_map<std::string, std::pair<std::string, int>> file_contents_;
 
   MetadataRepo repo_;
+
+  std::atomic<int> num_parsed_ = 0;
 };
 
 }  // namespace md2

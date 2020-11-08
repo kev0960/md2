@@ -7,8 +7,10 @@
 #include <fstream>
 
 #include "generators/html_generator.h"
+#include "logger.h"
 #include "parse_tree.h"
 #include "parser.h"
+#include "thread_pool.h"
 
 namespace md2 {
 namespace {
@@ -91,26 +93,35 @@ void Driver::BuildFileMetadataRepo() {
 
 void Driver::DoParse() {
   fmt::print(fmt::fg(fmt::color::green), "Start parsing ... \n");
+  ThreadPool pool(options_.num_threads);
+
   for (auto& [file_name, content_and_pos] : file_contents_) {
     auto& [file_content, pos] = content_and_pos;
     std::string_view content(file_content.c_str() + pos);
 
-    Parser parser;
-    fmt::print("Parsing [{}] \n", file_name);
-    ParseTree tree = parser.GenerateParseTree(content);
+    pool.enqueue(
+        [this, content](std::string file_name) { DoParse(content, file_name); },
+        file_name);
+  }
+}
 
-    GeneratorContext context;
-    if (options_.generate_html) {
-      HTMLGenerator generator(content, context);
-      generator.Generate(tree);
+void Driver::DoParse(std::string_view content, std::string_view file_name) {
+  std::string output_file_name =
+      GenerateOutputPath(file_name, options_.output_dir, "html");
 
-      std::string output_file_name =
-          GenerateOutputPath(file_name, options_.output_dir, "html");
-      fmt::print("Generating [{}] to [{}] \n", file_name, output_file_name);
+  fmt::print("[{}/{}] Generating [{}] to [{}] \n", ++num_parsed_,
+             file_contents_.size(), file_name, output_file_name);
 
-      std::ofstream out(output_file_name);
-      out << generator.ShowOutput();
-    }
+  Parser parser;
+  ParseTree tree = parser.GenerateParseTree(content);
+
+  GeneratorContext context;
+  if (options_.generate_html) {
+    HTMLGenerator generator(content, context);
+    generator.Generate(tree);
+
+    std::ofstream out(output_file_name);
+    out << generator.ShowOutput();
   }
 }
 
