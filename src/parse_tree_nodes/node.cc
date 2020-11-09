@@ -27,6 +27,7 @@ std::unordered_map<ParseTreeNode::NodeType, std::string_view> kNodeTypeToName =
         {ParseTreeNode::COMMAND, "COMMAND"},
         {ParseTreeNode::STRIKE_THROUGH, "STRIKE-THROUGH"},
         {ParseTreeNode::MATH, "MATH"},
+        {ParseTreeNode::QUOTE, "QUOTE"},
 };
 
 std::unique_ptr<ParseTreeNode> ParseTreeNode::PopChildrenAt(int index) {

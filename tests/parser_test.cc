@@ -737,5 +737,30 @@ TEST(ParserTest, Math) {
                                            {ParseTreeNode::MATH, 5, 14, 2}}));
 }
 
+TEST(ParserTest, Quote) {
+  std::string content = R"(
+> some quote
+> continued
+not quote
+)";
+  DoParserTest(content, ParseTreeComparer({
+                            {ParseTreeNode::NODE, 0, 36, 0},
+                            {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                            {ParseTreeNode::QUOTE, 1, 26, 1},
+                            {ParseTreeNode::TEXT, 3, 13, 2},
+                            {ParseTreeNode::TEXT, 16, 25, 2},
+                            {ParseTreeNode::PARAGRAPH, 26, 36, 1},
+                        }));
+}
+
+TEST(ParserTest, NotQuote) {
+  std::string content = R"(
+  > this is not quote
+)";
+  DoParserTest(content,
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 23, 0},
+                                  {ParseTreeNode::PARAGRAPH, 0, 23, 1}}));
+}
+
 }  // namespace
 }  // namespace md2

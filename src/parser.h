@@ -67,6 +67,11 @@ class Parser {
                                                    ParseTreeNode* parent,
                                                    size_t start, size_t& end);
 
+  // Try to parse the quote.
+  std::unique_ptr<ParseTreeNode> MaybeParseQuote(std::string_view content,
+                                                 ParseTreeNode* parent,
+                                                 size_t start, size_t& end);
+
   // Construct List node from the consecutive list items.
   void PostProcessList(ParseTreeNode* root);
 };

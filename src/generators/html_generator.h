@@ -12,6 +12,7 @@
 #include "../parse_tree_nodes/link.h"
 #include "../parse_tree_nodes/list.h"
 #include "../parse_tree_nodes/paragraph.h"
+#include "../parse_tree_nodes/quote.h"
 #include "../parse_tree_nodes/table.h"
 #include "../parse_tree_nodes/text_decoration.h"
 #include "../parse_tree_nodes/verbatim.h"
@@ -60,6 +61,7 @@ class HTMLGenerator : public Generator {
   void HandleCommand(const ParseTreeCommandNode& node);
   void HandleMath(const ParseTreeMathNode& node);
   void HandleBox(const ParseTreeBoxNode& node);
+  void HandleQuote(const ParseTreeQuoteNode& node);
 
   std::vector<HTMLLinkBuilder> links_;
   std::vector<HTMLImageBuilder> images_;

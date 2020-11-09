@@ -12,6 +12,7 @@
 #include "parse_tree_nodes/link.h"
 #include "parse_tree_nodes/list.h"
 #include "parse_tree_nodes/paragraph.h"
+#include "parse_tree_nodes/quote.h"
 #include "parse_tree_nodes/table.h"
 #include "parse_tree_nodes/text_decoration.h"
 #include "parse_tree_nodes/verbatim.h"
@@ -516,6 +517,22 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
           current_node->AddChildren(std::move(maybe_header));
         }
         continue;
+      }
+    }
+
+    if (content.substr(index, 2) == "> ") {
+      if (index == 0 || content[index - 1] == '\n') {
+        auto maybe_quote = MaybeParseQuote(content, current_node, index, index);
+        if (maybe_quote) {
+          if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
+            current_node =
+                HoistNodeAboveParagraph(current_node, std::move(maybe_quote));
+          } else {
+            // TODO Mark as a syntax error in the MD file.
+            current_node->AddChildren(std::move(maybe_quote));
+          }
+          continue;
+        }
       }
     }
 
@@ -1083,6 +1100,37 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
   end = current;
   command->SetEnd(current);
   return command;
+}
+
+std::unique_ptr<ParseTreeNode> Parser::MaybeParseQuote(std::string_view content,
+                                                       ParseTreeNode* parent,
+                                                       size_t start,
+                                                       size_t& end) {
+  if (content.substr(start, 2) != "> ") {
+    return nullptr;
+  }
+
+  auto quote = std::make_unique<ParseTreeQuoteNode>(nullptr, start);
+  size_t current = start + 2;
+
+  while (true) {
+    current =
+        GenericParser(content, current, "\n", quote.get(), /*use_text=*/true);
+    if (current != content.size() && content[current - 1] != '\n') {
+      return nullptr;
+    }
+
+    if (current >= content.size() || content.substr(current, 2) != "> ") {
+      quote->SetParent(parent);
+      quote->SetEnd(current);
+      end = current;
+      return quote;
+    }
+
+    current += 2;
+  }
+
+  return quote;
 }
 
 void Parser::PostProcessList(ParseTreeNode* root) {

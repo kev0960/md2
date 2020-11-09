@@ -112,6 +112,9 @@ void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
     case ParseTreeNode::BOX:
       HandleBox(CastNodeTypes<ParseTreeBoxNode>(node));
       break;
+    case ParseTreeNode::QUOTE:
+      HandleQuote(CastNodeTypes<ParseTreeQuoteNode>(node));
+      break;
     default:
       break;
   }
@@ -494,6 +497,17 @@ void HTMLGenerator::HandleBox(const ParseTreeBoxNode& node) {
     HandleParseTreeNode(*node.GetChildren()[1]);
     GetCurrentTarget()->append("</div>");
   }
+}
+
+void HTMLGenerator::HandleQuote(const ParseTreeQuoteNode& node) {
+  GetCurrentTarget()->append("<blockquote class='quote'>");
+  GenerateWithDefaultAction(node, [this](int index) {
+    /* Do nothing */
+    (void)(index);
+    (void)(this);
+  });
+
+  GetCurrentTarget()->append("</blockquote>");
 }
 
 }  // namespace md2

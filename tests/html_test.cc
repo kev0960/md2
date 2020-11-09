@@ -185,29 +185,31 @@ TEST(HtmlTest, SimpleVerbatim) {
   DoHtmlTest("a `code` a", "<p>a <code class='inline-code'>code</code> a</p>");
 }
 
-/*
 TEST(HtmlTest, SimpleCode) {
   DoHtmlTest(R"(
 ```cpp
 hello;
 ```)",
-             "");
+             "<p>\n</p><pre class='chroma lang-cpp'><span "
+             "class='i'>hello;\n</span></pre><p></p>");
 }
 
 TEST(HtmlTest, NestedBox) {
   std::string content = R"(
-```box
-hello;
-```box
+```note
+hello
+```note
 *a*
 ```
 b
 ```)";
 
-  DoHtmlTest(content, "");
+  DoHtmlTest(
+      content,
+      "<p>\n</p><div class='inline-note'><p>hello\n</p><div "
+      "class='inline-note'><p><span "
+      "class='font-italic'>a</span>\n</p></div><p>\nb\n</p></div><p></p>");
 }
-
-*/
 
 TEST(HtmlTest, SimpleTable) {
   std::string content = R"(
@@ -394,5 +396,24 @@ TEST(HtmlTest, SideNote) {
              "<p>\n</p><aside class='sidenote'><li><p>a</p></li><p>2. "
              "b\n</p></aside><p>\n</p>");
 }
+
+TEST(HtmlTest, Quote) {
+  std::string content = R"(
+> some quote
+> continued
+not quote
+)";
+  DoHtmlTest(content,
+             "<p>\n</p><blockquote class='quote'>some "
+             "quotecontinued</blockquote><p>not quote\n</p>");
+}
+
+TEST(HtmlTest, NotQuote) {
+  std::string content = R"(
+  > this is not quote
+)";
+  DoHtmlTest(content, "<p>\n  &gt; this is not quote\n</p>");
+}
+
 }  // namespace md
 }  // namespace md2
