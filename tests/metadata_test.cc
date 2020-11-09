@@ -12,7 +12,7 @@ using ::testing::IsNull;
 using ::testing::Not;
 
 Metadata ConstructMetadata(std::string_view content) {
-  int end;
+  size_t end;
   auto metadata_or = MetadataFactory::ParseMetadata(content, end);
   return *metadata_or;
 }
@@ -24,7 +24,7 @@ title : some title abc
 ----------------
 )";
 
-  int end = 0;
+  size_t end = 0;
   auto metadata_or = MetadataFactory::ParseMetadata(content, end);
 
   ASSERT_TRUE(metadata_or);
@@ -43,7 +43,7 @@ is_published : true
 ----------------
 )";
 
-  int end = 0;
+  size_t end = 0;
   auto metadata_or = MetadataFactory::ParseMetadata(content, end);
 
   ASSERT_TRUE(metadata_or);
@@ -62,7 +62,7 @@ ref_name : string, std::string, std::string_view,  string_view
 ----------------
 )";
 
-  int end = 0;
+  size_t end = 0;
   auto metadata_or = MetadataFactory::ParseMetadata(content, end);
 
   ASSERT_TRUE(metadata_or);

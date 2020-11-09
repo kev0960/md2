@@ -1,10 +1,10 @@
 #ifndef DRIVER_H
 #define DRIVER_H
 
+#include <atomic>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
-#include <atomic>
 
 #include "metadata_repo.h"
 
@@ -24,6 +24,9 @@ struct DriverOptions {
 
 class Driver {
  public:
+  // string file content, pos, rel_path
+  using FileInfo = std::tuple<std::string, size_t, std::string>;
+
   Driver(const DriverOptions& options) : options_(options) {}
 
   // Run the driver.
@@ -44,7 +47,7 @@ class Driver {
   DriverOptions options_;
 
   // Map between file name to the file content and the current reading position.
-  std::unordered_map<std::string, std::pair<std::string, int>> file_contents_;
+  std::unordered_map<std::string, FileInfo> file_contents_;
 
   MetadataRepo repo_;
 

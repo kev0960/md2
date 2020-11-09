@@ -45,7 +45,7 @@ class MetadataFactory {
   // Parse the file content to return the constructed file metadata.
   // end will be set as the end of the parsed file metadata.
   static std::optional<Metadata> ParseMetadata(std::string_view content,
-                                               int& end);
+                                               size_t& end);
 };
 
 }  // namespace md2

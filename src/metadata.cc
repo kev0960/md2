@@ -52,7 +52,7 @@ std::vector<std::string> SplitString(std::string_view line) {
 }  // namespace
 
 std::optional<Metadata> MetadataFactory::ParseMetadata(std::string_view content,
-                                                       int& end) {
+                                                       size_t& end) {
   size_t current = 0;
 
   // Ignore until it sees non whitespace.

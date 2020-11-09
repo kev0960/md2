@@ -36,7 +36,8 @@ std::string GenerateOutputPath(std::string_view file_name,
                                std::string_view output_dir,
                                std::string_view ext) {
   fs::path p(file_name);
-  return StrCat(output_dir, "/", p.stem().c_str(), ".", ext);
+  return StrCat(output_dir, "/", p.parent_path().c_str(), "/", p.stem().c_str(),
+                ".", ext);
 }
 
 }  // namespace
@@ -67,18 +68,20 @@ void Driver::ReadFilesInDirectory() {
         continue;
       }
 
-      file_contents_[path.filename()] =
-          std::make_pair(ReadFileContent(path), 0);
+      file_contents_[path.filename()] = std::make_tuple(
+          ReadFileContent(path), 0, fs::relative(path, dir).c_str());
 
       fmt::print(fmt::fg(fmt::color::green), "Reading files... [{}/{}]\n",
                  ++num_read, total_files);
-      fmt::print("\033[A\33[2KT\rT");
+      // Erase the previous line.
+      fmt::print("\033[A\33[2KT\r");
     }
   }
 
   for (const auto& file : options_.input_files) {
     const fs::path path(file);
-    file_contents_[path.filename()] = std::make_pair(ReadFileContent(path), 0);
+    file_contents_[path.filename()] =
+        std::make_tuple(ReadFileContent(path), 0, path.filename());
   }
 }
 
@@ -94,8 +97,8 @@ std::string Driver::ParseFile(std::string_view content) {
 }
 
 void Driver::BuildFileMetadataRepo() {
-  for (auto& [file_name, content_and_pos] : file_contents_) {
-    auto& [content, read_pos] = content_and_pos;
+  for (auto& [file_name, file_data] : file_contents_) {
+    auto& [content, read_pos, rel_path] = file_data;
     auto metadata_or = MetadataFactory::ParseMetadata(content, read_pos);
     if (metadata_or) {
       repo_.RegisterMetadata(file_name, metadata_or.value());
@@ -108,12 +111,12 @@ void Driver::DoParse() {
   ThreadPool pool(options_.num_threads);
 
   for (auto& [file_name, content_and_pos] : file_contents_) {
-    auto& [file_content, pos] = content_and_pos;
+    auto& [file_content, pos, rel_path] = content_and_pos;
     std::string_view content(file_content.c_str() + pos);
 
     pool.enqueue(
-        [this, content](std::string file_name) { DoParse(content, file_name); },
-        file_name);
+        [this, content](std::string rel_path) { DoParse(content, rel_path); },
+        rel_path);
   }
 }
 
