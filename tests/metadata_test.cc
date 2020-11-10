@@ -11,10 +11,9 @@ using ::testing::ElementsAre;
 using ::testing::IsNull;
 using ::testing::Not;
 
-Metadata ConstructMetadata(std::string_view content) {
+std::unique_ptr<Metadata> ConstructMetadata(std::string_view content) {
   size_t end;
-  auto metadata_or = MetadataFactory::ParseMetadata(content, end);
-  return *metadata_or;
+  return MetadataFactory::ParseMetadata("filename", content, end);
 }
 
 TEST(MetadataTest, SimpleMetadata) {
@@ -25,7 +24,7 @@ title : some title abc
 )";
 
   size_t end = 0;
-  auto metadata_or = MetadataFactory::ParseMetadata(content, end);
+  auto metadata_or = MetadataFactory::ParseMetadata("filename", content, end);
 
   ASSERT_TRUE(metadata_or);
   EXPECT_EQ(metadata_or->GetTitle(), "some title abc");
@@ -44,7 +43,7 @@ is_published : true
 )";
 
   size_t end = 0;
-  auto metadata_or = MetadataFactory::ParseMetadata(content, end);
+  auto metadata_or = MetadataFactory::ParseMetadata("filename", content, end);
 
   ASSERT_TRUE(metadata_or);
   EXPECT_EQ(metadata_or->GetTitle(), "some title abc");
@@ -63,7 +62,7 @@ ref_name : string, std::string, std::string_view,  string_view
 )";
 
   size_t end = 0;
-  auto metadata_or = MetadataFactory::ParseMetadata(content, end);
+  auto metadata_or = MetadataFactory::ParseMetadata("filename", content, end);
 
   ASSERT_TRUE(metadata_or);
   EXPECT_THAT(
@@ -81,7 +80,7 @@ path : C++
 ----------------
 )";
 
-  Metadata metadata1 = ConstructMetadata(content);
+  auto metadata1 = ConstructMetadata(content);
 
   std::string_view content2 = R"(
 ----------------
@@ -91,11 +90,11 @@ path : C Reference
 ----------------
 )";
 
-  Metadata metadata2 = ConstructMetadata(content2);
+  auto metadata2 = ConstructMetadata(content2);
 
   MetadataRepo repo;
-  repo.RegisterMetadata("a", metadata1);
-  repo.RegisterMetadata("b", metadata2);
+  repo.RegisterMetadata("a", std::move(metadata1));
+  repo.RegisterMetadata("b", std::move(metadata2));
 
   const Metadata* candidate = repo.FindMetadata("std::string");
   ASSERT_THAT(candidate, Not(IsNull()));

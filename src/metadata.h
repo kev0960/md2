@@ -1,7 +1,7 @@
 #ifndef METADATA_H
 #define METADATA_H
 
-#include <optional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -16,6 +16,7 @@ class Metadata {
   std::string_view GetCatTitle() const { return cat_title_; }
   std::string_view GetPath() const { return path_; }
   std::string_view GetPublishDate() const { return publish_date_; }
+  std::string_view GetFileName() const { return file_name_; }
   bool IsPublished() const { return is_published_; }
   const std::vector<std::string>& GetRefNames() const { return ref_names_; }
 
@@ -38,14 +39,18 @@ class Metadata {
 
   // True if the document is published.
   bool is_published_;
+
+  // Name of the file (not including the extension).
+  std::string file_name_;
 };
 
 class MetadataFactory {
  public:
   // Parse the file content to return the constructed file metadata.
   // end will be set as the end of the parsed file metadata.
-  static std::optional<Metadata> ParseMetadata(std::string_view content,
-                                               size_t& end);
+  static std::unique_ptr<Metadata> ParseMetadata(std::string_view filename,
+                                                 std::string_view content,
+                                                 size_t& end);
 };
 
 }  // namespace md2

@@ -53,6 +53,33 @@ std::string RunSyntaxHighlighter(std::string_view code,
   return highlighter->GenerateHighlightedHTML();
 }
 
+// Returns "" if it does not need to be escaped.
+std::string_view EscapeHtmlChar(char c) {
+  if (c == '<') {
+    return "&lt;";
+  } else if (c == '>') {
+    return "&gt;";
+  } else if (c == '&') {
+    return "&amp;";
+  }
+
+  return "";
+}
+
+std::string EscapeString(std::string_view s) {
+  std::string escaped;
+  escaped.reserve(s.size());
+  for (char c : s) {
+    if (std::string_view esc = EscapeHtmlChar(c); !esc.empty()) {
+      escaped.append(esc);
+    } else {
+      escaped.push_back(c);
+    }
+  }
+
+  return escaped;
+}
+
 }  // namespace
 
 void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
@@ -122,15 +149,11 @@ void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
 
 void HTMLGenerator::EmitChar(int index) {
   if (should_escape_html_) {
-    if (md_[index] == '<') {
-      GetCurrentTarget()->append("&lt;");
-    } else if (md_[index] == '>') {
-      GetCurrentTarget()->append("&gt;");
-    } else if (md_[index] == '&') {
-      GetCurrentTarget()->append("&amp;");
-    } else {
+    std::string_view escaped = EscapeHtmlChar(md_[index]);
+    if (!escaped.empty()) {
+      GetCurrentTarget()->append(escaped);
+    } else
       GetCurrentTarget()->push_back(md_[index]);
-    }
   } else {
     GetCurrentTarget()->push_back(md_[index]);
   }
@@ -361,10 +384,24 @@ void HTMLGenerator::HandleHeader(const ParseTreeHeaderNode& node) {
 // code it is showing and the second node contains the actual code.
 void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
   if (node.GetChildren().empty()) {
-    // Then this is the inline.
-    GetCurrentTarget()->append("<code class='inline-code'>");
-    EmitChar(node.Start() + 1, node.End() - 1);
-    GetCurrentTarget()->append("</code>");
+    std::string_view inline_code =
+        GetStringInNode(&node, /*prefix_offset=*/1, /*suffix_offset=*/1);
+    std::optional<std::pair<std::string_view, std::string_view>> link_and_name =
+        context_->FindReference(inline_code);
+
+    if (link_and_name) {
+      auto [link, ref_name] = *link_and_name;
+
+      // We should emit the link to the inline code instead.
+      GetCurrentTarget()->append(
+          fmt::format("<a href='{}' class='link-node'>", link));
+      GetCurrentTarget()->append(EscapeString(ref_name));
+      GetCurrentTarget()->append("</a>");
+    } else {
+      GetCurrentTarget()->append("<code class='inline-code'>");
+      EmitChar(node.Start() + 1, node.End() - 1);
+      GetCurrentTarget()->append("</code>");
+    }
     return;
   }
 

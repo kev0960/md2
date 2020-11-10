@@ -90,4 +90,41 @@ std::string_view GeneratorContext::GetClangFormatted(
   return verbatim_to_formatted_[node];
 }
 
+std::optional<std::pair<std::string_view, std::string_view>>
+GeneratorContext::FindReference(std::string_view name) {
+  size_t delim = name.find('$');
+
+  std::string_view actual_ref = name;
+  std::string_view specified_path;
+
+  // Makefile variable $(VAR) is incorrectly treated as a delimiter.
+  if (delim != 0 && delim != std::string_view::npos) {
+    actual_ref = name.substr(0, delim);
+    specified_path = name.substr(delim + 1);
+  }
+
+  const Metadata* metadata = nullptr;
+  if (specified_path.empty()) {
+    metadata = repo_.FindMetadata(actual_ref);
+  } else {
+    metadata = repo_.FindMetadata(actual_ref, specified_path);
+  }
+
+  if (metadata == nullptr) {
+    return std::nullopt;
+  }
+
+  std::string_view file_name = metadata->GetFileName();
+  if (file_name.substr(0, 5) == "dump_") {
+    file_name.remove_prefix(5);
+  }
+
+  if (file_name.size() > 3 &&
+      file_name.substr(file_name.size() - 3, 3) == ".md") {
+    file_name.remove_suffix(3);
+  }
+
+  return std::make_pair(file_name, actual_ref);
+}
+
 }  // namespace md2

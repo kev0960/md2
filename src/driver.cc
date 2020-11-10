@@ -36,7 +36,7 @@ std::string GenerateOutputPath(std::string_view file_name,
                                std::string_view output_dir,
                                std::string_view ext) {
   fs::path p(file_name);
-  return StrCat(output_dir, "/", p.parent_path().c_str(), "/", p.stem().c_str(),
+  return StrCat(output_dir, p.parent_path().c_str(), "/", p.stem().c_str(),
                 ".", ext);
 }
 
@@ -89,7 +89,7 @@ std::string Driver::ParseFile(std::string_view content) {
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
 
-  GeneratorContext context;
+  GeneratorContext context(repo_);
   HTMLGenerator generator(content, context);
   generator.Generate(tree);
 
@@ -99,24 +99,28 @@ std::string Driver::ParseFile(std::string_view content) {
 void Driver::BuildFileMetadataRepo() {
   for (auto& [file_name, file_data] : file_contents_) {
     auto& [content, read_pos, rel_path] = file_data;
-    auto metadata_or = MetadataFactory::ParseMetadata(content, read_pos);
-    if (metadata_or) {
-      repo_.RegisterMetadata(file_name, metadata_or.value());
+    auto metadata =
+        MetadataFactory::ParseMetadata(file_name, content, read_pos);
+    if (metadata) {
+      repo_.RegisterMetadata(file_name, std::move(metadata));
     }
   }
 }
 
 void Driver::DoParse() {
   fmt::print(fmt::fg(fmt::color::green), "Start parsing ... \n");
-  ThreadPool pool(options_.num_threads);
+  // ThreadPool pool(options_.num_threads);
 
   for (auto& [file_name, content_and_pos] : file_contents_) {
     auto& [file_content, pos, rel_path] = content_and_pos;
     std::string_view content(file_content.c_str() + pos);
 
+    /*
     pool.enqueue(
         [this, content](std::string rel_path) { DoParse(content, rel_path); },
         rel_path);
+        */
+    DoParse(content, rel_path);
   }
 }
 
@@ -130,7 +134,7 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
 
-  GeneratorContext context;
+  GeneratorContext context(repo_);
   if (options_.generate_html) {
     HTMLGenerator generator(content, context);
     generator.Generate(tree);

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <utility>
 
+#include "logger.h"
 #include "string_util.h"
 
 namespace md2 {
@@ -51,8 +52,8 @@ std::vector<std::string> SplitString(std::string_view line) {
 
 }  // namespace
 
-std::optional<Metadata> MetadataFactory::ParseMetadata(std::string_view content,
-                                                       size_t& end) {
+std::unique_ptr<Metadata> MetadataFactory::ParseMetadata(
+    std::string_view filename, std::string_view content, size_t& end) {
   size_t current = 0;
 
   // Ignore until it sees non whitespace.
@@ -62,7 +63,7 @@ std::optional<Metadata> MetadataFactory::ParseMetadata(std::string_view content,
 
   // Metadata should start with "----"s.
   if (content.substr(current, 3) != "---") {
-    return std::nullopt;
+    return nullptr;
   }
 
   // Go to the next line.
@@ -72,14 +73,16 @@ std::optional<Metadata> MetadataFactory::ParseMetadata(std::string_view content,
 
   current += 1;
   if (current > content.size()) {
-    return std::nullopt;
+    return nullptr;
   }
 
-  Metadata metadata;
+  auto metadata = std::make_unique<Metadata>();
+  metadata->file_name_ = filename;
+
   while (true) {
     size_t line_end = content.find('\n', current);
     if (line_end == std::string_view::npos) {
-      return std::nullopt;
+      return nullptr;
     }
 
     std::string_view line = content.substr(current, line_end - current);
@@ -92,24 +95,24 @@ std::optional<Metadata> MetadataFactory::ParseMetadata(std::string_view content,
 
     auto [field_name, field] = GetNameAndField(line);
     if (field_name == "title") {
-      metadata.title_ = field;
+      metadata->title_ = field;
     } else if (field_name == "cat_title") {
-      metadata.cat_title_ = field;
+      metadata->cat_title_ = field;
     } else if (field_name == "path") {
-      metadata.path_ = field;
+      metadata->path_ = field;
     } else if (field_name == "publish_date") {
-      metadata.publish_date_ = field;
+      metadata->publish_date_ = field;
     } else if (field_name == "is_published") {
-      metadata.is_published_ = (field == "true");
-    } else if (field_name == "ref_name") {
-      metadata.ref_names_ = SplitString(field);
+      metadata->is_published_ = (field == "true");
+    } else if (field_name == "ref_title") {
+      metadata->ref_names_ = SplitString(field);
     }
 
     current = line_end + 1;
   }
 
   // End of the metadata is not marked.
-  return std::nullopt;
+  return nullptr;
 }
 
 }  // namespace md2
