@@ -17,8 +17,9 @@ class GeneratorContext {
                                      std::string_view md);
 
   // Find the link to the name (if possible) and the reference name (e.g
-  // find$vector --> find)
-  std::optional<std::pair<std::string_view, std::string_view>> FindReference(
+  // find$vector --> find). If not found, the nthe file_name (first) would be
+  // empty.
+  std::pair<std::string_view, std::string_view> FindReference(
       std::string_view name);
 
  private:

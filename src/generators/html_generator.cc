@@ -386,20 +386,19 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
   if (node.GetChildren().empty()) {
     std::string_view inline_code =
         GetStringInNode(&node, /*prefix_offset=*/1, /*suffix_offset=*/1);
-    std::optional<std::pair<std::string_view, std::string_view>> link_and_name =
+    std::pair<std::string_view, std::string_view> link_and_name =
         context_->FindReference(inline_code);
 
-    if (link_and_name) {
-      auto [link, ref_name] = *link_and_name;
-
+    auto [link, ref_name] = link_and_name;
+    if (!link.empty()) {
       // We should emit the link to the inline code instead.
       GetCurrentTarget()->append(
-          fmt::format("<a href='{}' class='link-node'>", link));
+          fmt::format("<a href='{}' class='link-code'>", link));
       GetCurrentTarget()->append(EscapeString(ref_name));
       GetCurrentTarget()->append("</a>");
     } else {
       GetCurrentTarget()->append("<code class='inline-code'>");
-      EmitChar(node.Start() + 1, node.End() - 1);
+      GetCurrentTarget()->append(EscapeString(ref_name));
       GetCurrentTarget()->append("</code>");
     }
     return;

@@ -57,7 +57,7 @@ is_published : true
 TEST(MetadataTest, RefNames) {
   std::string_view content = R"(
 ----------------
-ref_name : string, std::string, std::string_view,  string_view
+ref_title : string, std::string, std::string_view,  string_view
 ----------------
 )";
 
@@ -75,7 +75,7 @@ TEST(MetadataRepoTest, ConstructRepo) {
   std::string_view content = R"(
 ----------------
 title : a
-ref_name : string, std::string, std::string_view,  string_view
+ref_title : string, std::string, std::string_view,  string_view
 path : C++
 ----------------
 )";
@@ -85,7 +85,7 @@ path : C++
   std::string_view content2 = R"(
 ----------------
 title :b 
-ref_name : std::string, string_view, some_func, other_func
+ref_title : std::string, string_view, some_func, other_func
 path : C Reference
 ----------------
 )";

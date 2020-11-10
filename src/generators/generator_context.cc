@@ -90,8 +90,8 @@ std::string_view GeneratorContext::GetClangFormatted(
   return verbatim_to_formatted_[node];
 }
 
-std::optional<std::pair<std::string_view, std::string_view>>
-GeneratorContext::FindReference(std::string_view name) {
+std::pair<std::string_view, std::string_view> GeneratorContext::FindReference(
+    std::string_view name) {
   size_t delim = name.find('$');
 
   std::string_view actual_ref = name;
@@ -111,7 +111,7 @@ GeneratorContext::FindReference(std::string_view name) {
   }
 
   if (metadata == nullptr) {
-    return std::nullopt;
+    return std::make_pair("", actual_ref);
   }
 
   std::string_view file_name = metadata->GetFileName();

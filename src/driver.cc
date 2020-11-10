@@ -36,8 +36,8 @@ std::string GenerateOutputPath(std::string_view file_name,
                                std::string_view output_dir,
                                std::string_view ext) {
   fs::path p(file_name);
-  return StrCat(output_dir, p.parent_path().c_str(), "/", p.stem().c_str(),
-                ".", ext);
+  return StrCat(output_dir, p.parent_path().c_str(), "/", p.stem().c_str(), ".",
+                ext);
 }
 
 }  // namespace
@@ -109,18 +109,15 @@ void Driver::BuildFileMetadataRepo() {
 
 void Driver::DoParse() {
   fmt::print(fmt::fg(fmt::color::green), "Start parsing ... \n");
-  // ThreadPool pool(options_.num_threads);
+  ThreadPool pool(options_.num_threads);
 
   for (auto& [file_name, content_and_pos] : file_contents_) {
     auto& [file_content, pos, rel_path] = content_and_pos;
     std::string_view content(file_content.c_str() + pos);
 
-    /*
     pool.enqueue(
         [this, content](std::string rel_path) { DoParse(content, rel_path); },
         rel_path);
-        */
-    DoParse(content, rel_path);
   }
 }
 
