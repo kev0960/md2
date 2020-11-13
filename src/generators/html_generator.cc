@@ -4,8 +4,8 @@
 
 #include "asm_syntax_highlighter.h"
 #include "cpp_syntax_highlighter.h"
-#include "logger.h"
 #include "generator_util.h"
+#include "logger.h"
 #include "py_syntax_highlighter.h"
 
 namespace md2 {
@@ -218,8 +218,24 @@ void HTMLGenerator::HandleLink(const ParseTreeLinkNode& node) {
   targets_.pop_back();
 
   const HTMLLinkBuilder& link = links_.back();
-  GetCurrentTarget()->append(
-      StrCat("<a href='", link.link_url, "'>", link.link_desc, "</a>"));
+
+  std::pair<std::string_view, std::string_view> ref_link_and_name =
+      context_->FindReference(link.link_desc);
+
+  auto [ref_link, ref_name] = ref_link_and_name;
+  if (!ref_link.empty()) {
+    // We should emit the link to the inline code instead, but use the link
+    // specified in the link (not the reference link).
+    GetCurrentTarget()->append(fmt::format("<a href='{}' class='link-code'>",
+                                           StripItguruLink(link.link_url)));
+    GetCurrentTarget()->append(link.link_desc);
+    GetCurrentTarget()->append("</a>");
+  } else {
+    GetCurrentTarget()->append(StrCat("<a href='",
+                                      StripItguruLink(link.link_url), "'>",
+                                      link.link_desc, "</a>"));
+  }
+
   links_.pop_back();
 }
 
