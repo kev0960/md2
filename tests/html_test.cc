@@ -4,7 +4,7 @@
 #include "gtest/gtest.h"
 
 namespace md2 {
-namespace md {
+namespace {
 
 using ::testing::Eq;
 
@@ -422,5 +422,5 @@ TEST(HtmlTest, NotQuote) {
   DoHtmlTest(content, "<p>\n  &gt; this is not quote\n</p>");
 }
 
-}  // namespace md
+}  // namespace
 }  // namespace md2

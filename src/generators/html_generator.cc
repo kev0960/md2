@@ -5,6 +5,7 @@
 #include "asm_syntax_highlighter.h"
 #include "cpp_syntax_highlighter.h"
 #include "logger.h"
+#include "generator_util.h"
 #include "py_syntax_highlighter.h"
 
 namespace md2 {
@@ -25,11 +26,6 @@ constexpr std::string_view kChewingCppEnd = R"(
 constexpr std::string_view kCppRefStart = R"(
 <div class='cpp-ref-start'><p class='cpp-ref-link'>이 레퍼런스의 모든 내용은 <a href="https://cppreference.com">여기</a>를 기초로 하여 작성하였습니다.</p><p class='cpp-lec-introduce'>아직 C++ 에 친숙하지 않다면 <a href="https://modoocode.com/135">씹어먹는 C++</a> 은 어때요?</p></div>
 )";
-
-template <typename To, typename From>
-const To& CastNodeTypes(const From& node) {
-  return *static_cast<const To*>(&node);
-}
 
 std::string RunSyntaxHighlighter(std::string_view code,
                                  std::string_view language) {
