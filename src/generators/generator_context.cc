@@ -149,19 +149,23 @@ std::string_view GeneratorContext::FindImage(const std::string& image_url) {
     ASSERT(id_start != std::string_view::npos, "Daum image url is malformed.");
 
     std::string image_name = image_url.substr(id_start + 8);
+    std::string image_path;
     for (std::string_view ext : kImageFileExtCandidate) {
-      if (IsFileExist(StrCat(image_path_, "/", image_name, ext))) {
+      std::string actual_image_path = StrCat(image_path_, "/", image_name, ext);
+      if (IsFileExist(actual_image_path)) {
         image_name = StrCat("/img/", image_name, ext);
+        image_path = actual_image_path;
         break;
       }
     }
 
     // Check whether webp exists.
-    size_t ext_pos = image_name.find_last_of('.');
+    size_t ext_pos = image_path.find_last_of('.');
     if (ext_pos != std::string::npos) {
-      std::string webp_image_name = image_name.substr(0, ext_pos) + ".webp";
-      if (IsFileExist(webp_image_name)) {
-        image_name = webp_image_name;
+      std::string webp_image_path = image_path.substr(0, ext_pos) + ".webp";
+      if (IsFileExist(webp_image_path)) {
+        image_name =
+            StrCat(image_name.substr(0, image_name.find_last_of('.')), ".webp");
       }
     }
 
