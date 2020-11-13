@@ -15,6 +15,8 @@ struct DriverOptions {
   std::vector<std::string> input_files;
   std::string output_dir;
 
+  std::string image_path;
+
   bool should_log_db;
   bool generate_html = true;
   bool generate_latex = true;

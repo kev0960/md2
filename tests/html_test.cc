@@ -13,7 +13,7 @@ void DoHtmlTest(std::string content, std::string expected) {
   ParseTree tree = parser.GenerateParseTree(content);
 
   MetadataRepo repo;
-  GeneratorContext context(repo);
+  GeneratorContext context(repo, "");
   HTMLGenerator generator(content, context);
   generator.Generate(tree);
 

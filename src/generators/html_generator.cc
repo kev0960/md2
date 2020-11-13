@@ -265,10 +265,10 @@ void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
   targets_.pop_back();
 
   const HTMLImageBuilder& image = images_.back();
-  GetCurrentTarget()->append(
-      StrCat("<figure><picture><img class='content-img' src='", image.url,
-             "' alt='", image.alt, "'>", "</picture><figcaption>",
-             image.caption, "</figcaption></figure>"));
+  GetCurrentTarget()->append(StrCat(
+      "<figure><picture><img class='content-img' src='",
+      context_->FindImage(image.url), "' alt='", image.alt, "'>",
+      "</picture><figcaption>", image.caption, "</figcaption></figure>"));
   images_.pop_back();
 }
 
