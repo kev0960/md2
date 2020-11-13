@@ -35,8 +35,9 @@ struct HTMLImageBuilder {
 
 class HTMLGenerator : public Generator {
  public:
-  HTMLGenerator(std::string_view content, GeneratorContext& context)
-      : Generator(content, context) {}
+  HTMLGenerator(std::string_view filename, std::string_view content,
+                GeneratorContext& context)
+      : Generator(filename, content, context) {}
 
  private:
   void EmitChar(int index);

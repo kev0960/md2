@@ -41,8 +41,6 @@ class Driver {
   // Build the file metadata repository.
   void BuildFileMetadataRepo();
 
-  std::string ParseFile(std::string_view content);
-
   void DoParse();
   void DoParse(std::string_view content, std::string_view file_name);
 

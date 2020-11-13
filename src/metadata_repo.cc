@@ -61,4 +61,13 @@ const Metadata* MetadataRepo::FindMetadata(std::string_view ref,
   return nullptr;
 }
 
+const Metadata* MetadataRepo::FindMetadataByFilename(
+    std::string_view filename) const {
+  if (auto itr  = repo_.find(std::string(filename)); itr != repo_.end()) {
+    return itr->second.get();
+  }
+
+  return nullptr;
+}
+
 }  // namespace md2

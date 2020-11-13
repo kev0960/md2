@@ -1,4 +1,5 @@
 #include "generator.h"
+
 #include <iostream>
 
 namespace md2 {
@@ -46,6 +47,15 @@ void Generator::GenerateWithDefaultActionSpan(
       current = next->End();
     }
   }
+}
+
+std::string_view Generator::GetFileTitle() const {
+  const Metadata* metadata = context_->FindMetadataByFilename(filename_);
+  if (metadata == nullptr) {
+    return "";
+  }
+
+  return metadata->GetTitle();
 }
 
 }  // namespace md2

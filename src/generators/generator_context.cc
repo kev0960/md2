@@ -172,4 +172,9 @@ std::string_view GeneratorContext::FindImage(const std::string& image_url) {
   return image_url;
 }
 
+const Metadata* GeneratorContext::FindMetadataByFilename(
+    std::string_view filename) const {
+  return repo_.FindMetadataByFilename(filename);
+}
+
 }  // namespace md2

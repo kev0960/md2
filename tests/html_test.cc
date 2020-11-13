@@ -13,8 +13,8 @@ void DoHtmlTest(std::string content, std::string expected) {
   ParseTree tree = parser.GenerateParseTree(content);
 
   MetadataRepo repo;
-  GeneratorContext context(repo, "");
-  HTMLGenerator generator(content, context);
+  GeneratorContext context(repo, "image_path");
+  HTMLGenerator generator(/*filename=*/"some_file.md", content, context);
   generator.Generate(tree);
 
   EXPECT_EQ(std::string(generator.ShowOutput()), expected);

@@ -11,8 +11,9 @@ namespace md2 {
 // Generates the converted markdown file in a target language.
 class Generator {
  public:
-  Generator(std::string_view md, GeneratorContext& context)
-      : md_(md), context_(&context) {
+  Generator(std::string_view filename, std::string_view md,
+            GeneratorContext& context)
+      : filename_(filename), md_(md), context_(&context) {
     targets_.push_back(&target_);
   }
   std::string_view ShowOutput() const { return target_; }
@@ -35,8 +36,7 @@ class Generator {
       const ParseTreeNode& node, std::function<void(int index)> default_action,
       int start, int end);
 
-  // TODO Implement
-  std::string_view GetFileTitle() const { return ""; }
+  std::string_view GetFileTitle() const;
 
   std::string* GetCurrentTarget() { return targets_.back(); }
 
@@ -48,6 +48,7 @@ class Generator {
         node->End() - suffix_offset - node->Start() - prefix_offset);
   }
 
+  std::string_view filename_;
   std::string_view md_;
   std::string target_;
 

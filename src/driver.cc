@@ -85,17 +85,6 @@ void Driver::ReadFilesInDirectory() {
   }
 }
 
-std::string Driver::ParseFile(std::string_view content) {
-  Parser parser;
-  ParseTree tree = parser.GenerateParseTree(content);
-
-  GeneratorContext context(repo_, options_.image_path);
-  HTMLGenerator generator(content, context);
-  generator.Generate(tree);
-
-  return std::move(generator).ReleaseGeneratedTarget();
-}
-
 void Driver::BuildFileMetadataRepo() {
   for (auto& [file_name, file_data] : file_contents_) {
     auto& [content, read_pos, rel_path] = file_data;
@@ -133,7 +122,7 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
 
   GeneratorContext context(repo_, options_.image_path);
   if (options_.generate_html) {
-    HTMLGenerator generator(content, context);
+    HTMLGenerator generator(file_name, content, context);
     generator.Generate(tree);
 
     std::ofstream out(output_file_name);

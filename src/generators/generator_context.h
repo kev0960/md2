@@ -25,6 +25,8 @@ class GeneratorContext {
 
   std::string_view FindImage(const std::string& image_url);
 
+  const Metadata* FindMetadataByFilename(std::string_view filename) const;
+
  private:
   std::unordered_map<const ParseTreeTextNode*, std::string>
       verbatim_to_formatted_;
