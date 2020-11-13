@@ -17,7 +17,6 @@ void DoParserTest(std::string content, ParseTreeComparer comparer,
   ParseTree tree = parser.GenerateParseTree(content);
 
   if (show_tree) {
-    Logger::GetLogger().SetLoggingLevel(3);
     tree.Print();
   }
   comparer.Compare(tree);
@@ -362,6 +361,21 @@ TEST(ParserTest, HeaderSimple2) {
                                     {ParseTreeNode::TEXT, 5, 12, 2},
                                     {ParseTreeNode::PARAGRAPH, 12, 12, 1},
                                 }));
+}
+
+TEST(ParserTest, LectureHeader) {
+  DoParserTest("###@ [Some](lecture)",
+               ParseTreeComparer({{ParseTreeNode::NODE, 0, 20, 0},
+                                  {ParseTreeNode::HEADER, 0, 20, 1},
+                                  {ParseTreeNode::TEXT, 0, 4, 2},
+                                  {ParseTreeNode::NODE, 4, 20, 2},
+                                  {ParseTreeNode::TEXT, 4, 20, 3},
+                                  {ParseTreeNode::LINK, 5, 20, 4},
+                                  {ParseTreeNode::NODE, 5, 11, 5},
+                                  {ParseTreeNode::TEXT, 6, 10, 6},
+                                  {ParseTreeNode::NODE, 11, 20, 5},
+                                  {ParseTreeNode::TEXT, 12, 19, 6},
+                                  {ParseTreeNode::PARAGRAPH, 20, 20, 1}}));
 }
 
 TEST(ParserTest, NotHeader) {

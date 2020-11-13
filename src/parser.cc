@@ -755,15 +755,36 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
     header_token_end++;
   }
 
+  auto header = std::make_unique<ParseTreeHeaderNode>(parent, start);
+  header->AddChildren(std::make_unique<ParseTreeTextNode>(header.get(), start));
+  header->GetLastChildren()->SetEnd(header_token_end);
+
+  // If the header token is ###@, then we should parse it.
+  // TODO This should be a default behavior. Some old markdown uses non escaped
+  // syntaxs in the header which prevents us from using the GenericParser.
+  if (content.substr(start, header_token_end - start) == "###@") {
+    auto header_content =
+        std::make_unique<ParseTreeNode>(nullptr, header_token_end);
+    size_t header_end =
+        GenericParser(content, header_token_end, "\n", header_content.get(),
+                      /*use_text=*/true);
+    if (header_end != content.size() && content[header_end - 1] != '\n') {
+      return nullptr;
+    }
+
+    header_content->SetEnd(header_end);
+    header->AddChildren(std::move(header_content));
+    header->SetEnd(header_end);
+    end = header_end;
+
+    return header;
+  }
+
   // Now find the end of the header.
   end = header_token_end;
   while (end != content.size() && content[end] != '\n') {
     end++;
   }
-
-  auto header = std::make_unique<ParseTreeHeaderNode>(parent, start);
-  header->AddChildren(std::make_unique<ParseTreeTextNode>(header.get(), start));
-  header->GetLastChildren()->SetEnd(header_token_end);
 
   header->AddChildren(
       std::make_unique<ParseTreeTextNode>(header.get(), header_token_end));

@@ -69,7 +69,7 @@ void ParseTreeNode::AddChildBefore(ParseTreeNode* node_to_find,
 }
 
 void ParseTreeNode::Print(int depth) const {
-  LOG(1) << "Node[" << kNodeTypeToName[GetNodeType()] << "] (" << start_ << ", "
+  LOG(0) << "Node[" << kNodeTypeToName[GetNodeType()] << "] (" << start_ << ", "
          << end_ << "), Depth : " << depth;
   for (const auto& child : children_) {
     child->Print(depth + 1);

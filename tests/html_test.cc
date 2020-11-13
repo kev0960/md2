@@ -180,6 +180,12 @@ TEST(HtmlTest, HeaderSimple2) {
              "header</h3><p></p>");
 }
 
+TEST(HtmlTest, LectureHeader) {
+  DoHtmlTest("###@ [Some](lecture)",
+             "<h3 class='lecture-header' id='page-heading-0' "
+             "class='header-general'> <a href='lecture'>Some</a></h3><p></p>");
+}
+
 TEST(HtmlTest, NotHeader) { DoHtmlTest("a### header", "<p>a### header</p>"); }
 
 TEST(HtmlTest, SimpleVerbatim) {
