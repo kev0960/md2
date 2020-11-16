@@ -423,7 +423,7 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
 
   const auto& content_node = node.GetChildren()[1];
   ASSERT(content_node->GetNodeType() == ParseTreeNode::TEXT, "");
-  if (name == "cpp") {
+  if (name == "cpp" || name == "info-format") {
     std::string_view formatted_cpp = context_->GetClangFormatted(
         &CastNodeTypes<ParseTreeTextNode>(*content_node), md_);
     GetCurrentTarget()->append(RunSyntaxHighlighter(formatted_cpp, name));
@@ -451,7 +451,6 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
     GetCurrentTarget()->append(fmt::format("<pre class='{}'>", name));
     EmitChar(content_node->Start(), content_node->End());
     GetCurrentTarget()->append("</pre>");
-  } else if (name == "info-format") {
   }
 }
 
@@ -489,6 +488,8 @@ void HTMLGenerator::HandleCommand(const ParseTreeCommandNode& node) {
     GetCurrentTarget()->append("' data-tooltip-position='bottom'>");
     HandleParseTreeNode(*node.GetChildren()[0]);
     GetCurrentTarget()->append("</span>");
+  } else if (command == "newline") {
+    GetCurrentTarget()->append("<br>");
   }
 }
 

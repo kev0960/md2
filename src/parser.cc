@@ -1027,6 +1027,18 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
       list_item->SetParent(parent);
       end = list_end;
       return list_item;
+    } else if (content.substr(list_end, 4) == "```\n") {
+      // This is the case like:
+      // ```note
+      // 1. abc
+      // ```
+      //
+      // Where people can omit the newline after the ordered list when it ends
+      // the box.
+      list_item->SetEnd(list_end);
+      list_item->SetParent(parent);
+      end = list_end;
+      return list_item;
     }
 
     // Otherwise, continue parsing.
@@ -1179,6 +1191,8 @@ void Parser::PostProcessList(ParseTreeNode* root) {
                        children.begin() + list_item_end);
         children.insert(children.begin() + current, std::move(list_node));
       }
+    } else {
+      PostProcessList(children[current].get());
     }
   }
 }

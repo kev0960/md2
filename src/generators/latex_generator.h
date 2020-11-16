@@ -21,6 +21,18 @@
 
 namespace md2 {
 
+struct LatexLinkBuilder {
+  std::string link_desc;
+  std::string link_url;
+};
+
+struct LatexImageBuilder {
+  std::string alt;
+  std::string caption;
+  std::string size;
+  std::string url;
+};
+
 class LatexGenerator : public Generator {
  public:
   LatexGenerator(std::string_view filename, std::string_view content,
@@ -54,6 +66,9 @@ class LatexGenerator : public Generator {
 
  private:
   bool should_escape_latex_ = true;
+
+  std::vector<LatexLinkBuilder> links_;
+  std::vector<LatexImageBuilder> images_;
 };
 
 }  // namespace md2

@@ -776,5 +776,29 @@ TEST(ParserTest, NotQuote) {
                                   {ParseTreeNode::PARAGRAPH, 0, 23, 1}}));
 }
 
+TEST(ParserTest, SideNote) {
+  std::string content = R"(
+```sidenote
+1. a
+2. b
+```
+)";
+
+  DoParserTest(content, ParseTreeComparer({
+                            {ParseTreeNode::NODE, 0, 27, 0},
+                            {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                            {ParseTreeNode::BOX, 1, 26, 1},
+                            {ParseTreeNode::TEXT, 4, 12, 2},
+                            {ParseTreeNode::NODE, 13, 26, 2},
+                            {ParseTreeNode::ORDERED_LIST, 13, 23, 3},
+                            {ParseTreeNode::ORDERED_LIST_ITEM, 13, 18, 4},
+                            {ParseTreeNode::PARAGRAPH, 16, 17, 5},
+                            {ParseTreeNode::ORDERED_LIST_ITEM, 18, 23, 4},
+                            {ParseTreeNode::PARAGRAPH, 21, 22, 5},
+                            {ParseTreeNode::PARAGRAPH, 23, 23, 3},
+                            {ParseTreeNode::PARAGRAPH, 26, 27, 1},
+                        }));
+}
+
 }  // namespace
 }  // namespace md2

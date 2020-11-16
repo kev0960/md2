@@ -400,8 +400,9 @@ TEST(HtmlTest, SideNote) {
 ```
 )";
   DoHtmlTest(content,
-             "<p>\n</p><aside class='sidenote'><li><p>a</p></li><p>2. "
-             "b\n</p></aside><p>\n</p>");
+             "<p>\n</p><aside "
+             "class='sidenote'><ol><li><p>a</p></li><li><p>b</p></li></ol><p></"
+             "p></aside><p>\n</p>");
 }
 
 TEST(HtmlTest, Quote) {
