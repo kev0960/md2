@@ -5,8 +5,10 @@
 
 #include <filesystem>
 #include <fstream>
+#include <optional>
 
 #include "generators/html_generator.h"
+#include "generators/latex_generator.h"
 #include "logger.h"
 #include "parse_tree.h"
 #include "parser.h"
@@ -40,12 +42,32 @@ std::string GenerateOutputPath(std::string_view file_name,
                 ext);
 }
 
+// if file_name <= 228 --> Then we should append dump_ at front.
+// If the file_name is not a number then this will return nullopt.
+std::optional<std::string> NextPageToActualFileName(
+    const std::string& file_name) {
+  int file_num;
+  try {
+    file_num = std::stoi(file_name);
+  } catch (std::invalid_argument& e) {
+    return std::nullopt;
+  }
+
+  if (file_num <= 228) {
+    return StrCat("dump_", file_name, ".md");
+  } else {
+    return StrCat(file_name, ".md");
+  }
+}
+
 }  // namespace
 
 void Driver::Run() {
   fmt::print(fmt::fg(fmt::color::red), "Starting driver \n");
   ReadFilesInDirectory();
   BuildFileMetadataRepo();
+  BuildBookFiles();
+
   DoParse();
 }
 
@@ -127,6 +149,39 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
 
     std::ofstream out(output_file_name);
     out << generator.ShowOutput();
+  }
+
+  if (auto itr = book_dir_to_files_.find(std::string(file_name));
+      itr != book_dir_to_files_.end()) {
+    LatexGenerator generator(file_name, content, context);
+    generator.Generate(tree);
+
+    std::ofstream out(GenerateOutputPath(file_name, itr->second, "tex"));
+    out << generator.ShowOutput();
+  }
+}
+
+void Driver::BuildBookFiles() {
+  for (auto [start_file_number, path] : options_.book_file_and_dir) {
+    std::string_view file_number = start_file_number;
+    while (true) {
+      std::optional<std::string> file_name =
+          NextPageToActualFileName(std::string(file_number));
+      if (!file_name) {
+        break;
+      }
+      book_dir_to_files_[*file_name] = path;
+
+      const Metadata* metadata = repo_.FindMetadataByFilename(*file_name);
+      if (metadata == nullptr) {
+        break;
+      }
+
+      file_number = metadata->GetNextPage();
+      if (file_number.empty()) {
+        break;
+      }
+    }
   }
 }
 

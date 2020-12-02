@@ -13,6 +13,10 @@ namespace md2 {
 struct DriverOptions {
   std::vector<std::string> input_dirs;
   std::vector<std::string> input_files;
+
+  // Book start file and the tex output directory.
+  std::vector<std::pair<std::string, std::string>> book_file_and_dir;
+
   std::string output_dir;
 
   std::string image_path;
@@ -42,7 +46,12 @@ class Driver {
   void BuildFileMetadataRepo();
 
   void DoParse();
+
+  // Note that file_name is not a full path (e.g 251.md)
   void DoParse(std::string_view content, std::string_view file_name);
+
+  // Figure out md files that needed to be parsed for book.
+  void BuildBookFiles();
 
   DriverOptions options_;
 
@@ -52,6 +61,9 @@ class Driver {
   MetadataRepo repo_;
 
   std::atomic<int> num_parsed_ = 0;
+
+  // Map between the file name to the book directory.
+  std::unordered_map<std::string, std::string> book_dir_to_files_;
 };
 
 }  // namespace md2

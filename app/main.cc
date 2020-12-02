@@ -8,6 +8,9 @@ int main(int argc, char* argv[]) {
   option.output_dir = "/home/jaebum/ModooCode/views/new";
   option.image_path = "/home/jaebum/ModooCode/static/img";
 
+  option.book_file_and_dir.push_back({"135", "/home/jaebum/book/cpp"});
+  option.book_file_and_dir.push_back({"231", "/home/jaebum/book/c"});
+
   md2::Driver driver(option);
   driver.Run();
 }
