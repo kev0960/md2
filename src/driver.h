@@ -51,7 +51,10 @@ class Driver {
   void DoParse(std::string_view content, std::string_view file_name);
 
   // Figure out md files that needed to be parsed for book.
-  void BuildBookFiles();
+  void BuildBookFilesMap();
+
+  // Emit the main tex file for each book.
+  void GenerateBookMainPage() const;
 
   DriverOptions options_;
 
@@ -64,6 +67,10 @@ class Driver {
 
   // Map between the file name to the book directory.
   std::unordered_map<std::string, std::string> book_dir_to_files_;
+
+  // Map between the start file and the included tex files in order.
+  std::unordered_map<std::string, std::vector<std::string>>
+      book_start_to_remaining_;
 };
 
 }  // namespace md2

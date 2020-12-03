@@ -100,6 +100,8 @@ std::unique_ptr<Metadata> MetadataFactory::ParseMetadata(
       metadata->cat_title_ = field;
     } else if (field_name == "path") {
       metadata->path_ = field;
+    } else if (field_name == "chapter") {
+      metadata->chapter_ = field;
     } else if (field_name == "next_page") {
       metadata->next_page_ = field;
     } else if (field_name == "publish_date") {

@@ -18,6 +18,7 @@ class Metadata {
   std::string_view GetPublishDate() const { return publish_date_; }
   std::string_view GetFileName() const { return file_name_; }
   std::string_view GetNextPage() const { return next_page_; }
+  std::string_view GetChapter() const { return chapter_; }
 
   bool IsPublished() const { return is_published_; }
   const std::vector<std::string>& GetRefNames() const { return ref_names_; }
@@ -47,6 +48,9 @@ class Metadata {
 
   // Get next page.
   std::string next_page_;
+
+  // Get chapter.
+  std::string chapter_;
 };
 
 class MetadataFactory {

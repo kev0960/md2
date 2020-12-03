@@ -3,6 +3,7 @@
 #include <fstream>
 #include <unordered_set>
 
+#include "logger.h"
 #include "string_util.h"
 
 namespace md2 {
@@ -95,32 +96,9 @@ std::string EscapeLatexString(std::string_view s) {
 
 }  // namespace
 
-BookManager::BookManager(
-    BookType book_type,
-    const std::map<std::string, std::map<std::string, std::string>>* file_info)
-    : book_type_(book_type), file_info_(file_info) {
-  if (book_type_ == BookType::C) {
-    book_list_.push_back("5");
-  } else if (book_type_ == BookType::CPP) {
-    book_list_.push_back("135");
-  }
-
-  // Create the list of included file names.
-  while (true) {
-    const auto& current_file = book_list_.back();
-    const auto current_file_info_itr = file_info_->find(current_file);
-    if (current_file_info_itr == file_info_->end()) {
-      break;
-    }
-    const auto next_page_itr = current_file_info_itr->second.find("next_page");
-    if (next_page_itr == current_file_info_itr->second.end()) {
-      break;
-    }
-    book_list_.push_back(next_page_itr->second);
-  }
-}
-
-void BookManager::GenerateMainTex() {
+std::string BookGenerator::GenerateMainTex(
+    std::string_view start_file_num, const std::vector<std::string>& tex_files,
+    const MetadataRepo& repo) const {
   std::string tex =
       "\\documentclass[a4paper, 11pt, oneside, chapter, nanum, "
       "footnote]{oblivoir}\n";
@@ -382,14 +360,14 @@ void BookManager::GenerateMainTex() {
 
 )";
 
-  if (book_type_ == BookType::CPP) {
+  if (start_file_num == "135") {
     tex += R"(
 \noindent
 이 책은 \textbf{모두의 코드}에 연재된 씹어먹는 C++ 강좌를 책으로 옮긴 것입니다. 해당 강좌는
  \url{https://modoocode.com} 에서 볼 수 있습니다.
 \newpage
 )";
-  } else if (book_type_ == BookType::C) {
+  } else if (start_file_num == "231") {
     tex += R"(
 \noindent
 이 책은 \textbf{모두의 코드}에 연재된 씹어먹는 C 언어 강좌를 책으로 옮긴 것입니다. 해당 강좌는
@@ -401,20 +379,23 @@ void BookManager::GenerateMainTex() {
   tex += "\\tableofcontents\n\\mainmatter\n";
   // Add \include{filename}
   tex += AddFancyComment("List of book files.");
-  for (const std::string& file_name : book_list_) {
-    auto chapter_itr = file_info_->at(file_name).find("chapter");
-    if (chapter_itr != file_info_->at(file_name).end()) {
-      std::string chapter = chapter_itr->second;
-      chapter = EscapeLatexString(chapter);
-      tex += StrCat("\n\\newpage\\chapter{", chapter, "}\n");
+  for (const std::string& file_name : tex_files) {
+    const Metadata* metadata = repo.FindMetadataByFilename(file_name);
+    if (metadata == nullptr) {
+      continue;
     }
-    auto title_itr = file_info_->at(file_name).find("tex_title");
-    if (title_itr != file_info_->at(file_name).end()) {
-      std::string title = title_itr->second;
-      title = EscapeLatexString(title);
-      if (chapter_itr == file_info_->at(file_name).end()) {
+
+    if (!metadata->GetChapter().empty()) {
+      tex += StrCat("\n\\newpage\\chapter{",
+                    EscapeLatexString(metadata->GetChapter()), "}\n");
+    }
+
+    if (!metadata->GetTitle().empty()) {
+      std::string title = EscapeLatexString(metadata->GetCatTitle());
+      if (metadata->GetChapter().empty()) {
         tex += "\n\\newpage";
       }
+
       tex += StrCat("\n\\section*{", title, "}\n");
       tex += StrCat("\\addcontentsline{toc}{section}{", title, "}\n");
     }
@@ -422,15 +403,8 @@ void BookManager::GenerateMainTex() {
   }
 
   tex += "\\end{document}";
-}
 
-bool BookManager::IsBookFile(const std::string& filename) {
-  for (const std::string& f : book_list_) {
-    if (f == filename) return true;
-  }
-  return false;
+  return tex;
 }
-
-std::string BookManager::GetBookType() { return ""; }
 
 }  // namespace md2

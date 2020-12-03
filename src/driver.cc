@@ -7,6 +7,7 @@
 #include <fstream>
 #include <optional>
 
+#include "generators/book.h"
 #include "generators/html_generator.h"
 #include "generators/latex_generator.h"
 #include "logger.h"
@@ -66,9 +67,10 @@ void Driver::Run() {
   fmt::print(fmt::fg(fmt::color::red), "Starting driver \n");
   ReadFilesInDirectory();
   BuildFileMetadataRepo();
-  BuildBookFiles();
+  BuildBookFilesMap();
 
   DoParse();
+  GenerateBookMainPage();
 }
 
 void Driver::ReadFilesInDirectory() {
@@ -161,8 +163,11 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
   }
 }
 
-void Driver::BuildBookFiles() {
+void Driver::BuildBookFilesMap() {
   for (auto [start_file_number, path] : options_.book_file_and_dir) {
+    std::vector<std::string>& book_files =
+        book_start_to_remaining_[start_file_number];
+
     std::string_view file_number = start_file_number;
     while (true) {
       std::optional<std::string> file_name =
@@ -171,6 +176,7 @@ void Driver::BuildBookFiles() {
         break;
       }
       book_dir_to_files_[*file_name] = path;
+      book_files.push_back(*file_name);
 
       const Metadata* metadata = repo_.FindMetadataByFilename(*file_name);
       if (metadata == nullptr) {
@@ -181,6 +187,20 @@ void Driver::BuildBookFiles() {
       if (file_number.empty()) {
         break;
       }
+    }
+  }
+}
+
+void Driver::GenerateBookMainPage() const {
+  for (auto [start_file_number, path] : options_.book_file_and_dir) {
+    if (auto itr = book_start_to_remaining_.find(start_file_number);
+        itr != book_start_to_remaining_.end()) {
+      BookGenerator gen;
+      std::string tex =
+          gen.GenerateMainTex(start_file_number, itr->second, repo_);
+
+      std::ofstream out(GenerateOutputPath("main", path, "tex"));
+      out << tex;
     }
   }
 }

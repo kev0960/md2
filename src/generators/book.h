@@ -5,25 +5,15 @@
 #include <string>
 #include <vector>
 
+#include "metadata_repo.h"
+
 namespace md2 {
 
-enum BookType { C, CPP };
-
-class BookManager {
+class BookGenerator {
  public:
-  BookManager(BookType book_type,
-              const std::map<std::string, std::map<std::string, std::string>>*
-                  file_info);
-
-  void GenerateMainTex();
-  bool IsBookFile(const std::string& filename);
-  std::string GetBookType();
-
- private:
-  BookType book_type_;
-  const std::map<std::string, std::map<std::string, std::string>>* file_info_;
-
-  std::vector<std::string> book_list_;
+  std::string GenerateMainTex(std::string_view start_file_num,
+                              const std::vector<std::string>& tex_files,
+                              const MetadataRepo& repo) const;
 };
 
 }  // namespace md2
