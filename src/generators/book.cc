@@ -94,6 +94,11 @@ std::string EscapeLatexString(std::string_view s) {
   return escaped_str;
 }
 
+// abc.md --> abc.tex
+std::string ChangeMdToTex(std::string_view s) {
+  return StrCat(s.substr(0, s.find_last_of(".")), ".tex");
+}
+
 }  // namespace
 
 std::string BookGenerator::GenerateMainTex(
@@ -399,7 +404,7 @@ std::string BookGenerator::GenerateMainTex(
       tex += StrCat("\n\\section*{", title, "}\n");
       tex += StrCat("\\addcontentsline{toc}{section}{", title, "}\n");
     }
-    tex += StrCat("\\input{", file_name, "}\n");
+    tex += StrCat("\\input{", ChangeMdToTex(file_name), "}\n");
   }
 
   tex += "\\end{document}";

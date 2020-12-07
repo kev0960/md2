@@ -162,6 +162,11 @@ void HTMLGenerator::EmitChar(int from, int to) {
 }
 
 void HTMLGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
+  // Do not emit the empty paragraph.
+  if (node.Start() == node.End()) {
+    return;
+  }
+
   GetCurrentTarget()->append("<p>");
 
   GenerateWithDefaultAction(node, [this](int index) { EmitChar(index); });
@@ -490,6 +495,10 @@ void HTMLGenerator::HandleCommand(const ParseTreeCommandNode& node) {
     GetCurrentTarget()->append("</span>");
   } else if (command == "newline") {
     GetCurrentTarget()->append("<br>");
+  } else if (command == "ref") {
+    std::string_view ref_name = GetStringInNode(node.GetChildren()[0].get());
+    GetCurrentTarget()->append(
+        GetReferenceNodeGeneratedOutput(std::string(ref_name)));
   }
 }
 
@@ -545,6 +554,8 @@ void HTMLGenerator::HandleBox(const ParseTreeBoxNode& node) {
     GetCurrentTarget()->append("<div class='inline-note'>");
     HandleParseTreeNode(*node.GetChildren()[1]);
     GetCurrentTarget()->append("</div>");
+  } else if (box_name.substr(0, 4) == "ref-") {
+    return;
   }
 }
 

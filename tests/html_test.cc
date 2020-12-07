@@ -14,8 +14,8 @@ void DoHtmlTest(std::string content, std::string expected) {
 
   MetadataRepo repo;
   GeneratorContext context(repo, "image_path");
-  HTMLGenerator generator(/*filename=*/"some_file.md", content, context);
-  generator.Generate(tree);
+  HTMLGenerator generator(/*filename=*/"some_file.md", content, context, tree);
+  generator.Generate();
 
   EXPECT_EQ(std::string(generator.ShowOutput()), expected);
 }
@@ -169,21 +169,20 @@ TEST(HtmlTest, ImageWithCaptionItalicAndSizeNoAlt) {
 }
 
 TEST(HtmlTest, HeaderSimple) {
-  DoHtmlTest(
-      "### header",
-      "<h3 id='page-heading-0' class='header-general'> header</h3><p></p>");
+  DoHtmlTest("### header",
+             "<h3 id='page-heading-0' class='header-general'> header</h3>");
 }
 
 TEST(HtmlTest, HeaderSimple2) {
   DoHtmlTest("a\n### header",
              "<p>a\n</p><h3 id='page-heading-0' class='header-general'> "
-             "header</h3><p></p>");
+             "header</h3>");
 }
 
 TEST(HtmlTest, LectureHeader) {
   DoHtmlTest("###@ [Some](lecture)",
              "<h3 class='lecture-header' id='page-heading-0' "
-             "class='header-general'> <a href='lecture'>Some</a></h3><p></p>");
+             "class='header-general'> <a href='lecture'>Some</a></h3>");
 }
 
 TEST(HtmlTest, NotHeader) { DoHtmlTest("a### header", "<p>a### header</p>"); }
@@ -198,7 +197,7 @@ TEST(HtmlTest, SimpleCode) {
 hello;
 ```)",
              "<p>\n</p><pre class='chroma lang-cpp'><span "
-             "class='i'>hello;\n</span></pre><p></p>");
+             "class='i'>hello;\n</span></pre>");
 }
 
 TEST(HtmlTest, NestedBox) {
@@ -211,11 +210,10 @@ hello
 b
 ```)";
 
-  DoHtmlTest(
-      content,
-      "<p>\n</p><div class='inline-note'><p>hello\n</p><div "
-      "class='inline-note'><p><span "
-      "class='font-italic'>a</span>\n</p></div><p>\nb\n</p></div><p></p>");
+  DoHtmlTest(content,
+             "<p>\n</p><div class='inline-note'><p>hello\n</p><div "
+             "class='inline-note'><p><span "
+             "class='font-italic'>a</span>\n</p></div><p>\nb\n</p></div>");
 }
 
 TEST(HtmlTest, SimpleTable) {
@@ -238,13 +236,12 @@ TEST(HtmlTest, SimpleTable2) {
 |-|-|
 |\|a|`b`|)";
 
-  DoHtmlTest(
-      content,
-      "<p>\n</p><table><thead><tr><th><p><span "
-      "class='font-italic'>a</span></p></th><th><p><span "
-      "class='font-weight-bold'>b</span></p></th></tr></"
-      "thead><tbody><tr><td><p>|a</p></td><td><p><code "
-      "class='inline-code'>b</code></p></td></tr></tbody></table><p></p>");
+  DoHtmlTest(content,
+             "<p>\n</p><table><thead><tr><th><p><span "
+             "class='font-italic'>a</span></p></th><th><p><span "
+             "class='font-weight-bold'>b</span></p></th></tr></"
+             "thead><tbody><tr><td><p>|a</p></td><td><p><code "
+             "class='inline-code'>b</code></p></td></tr></tbody></table>");
 }
 
 TEST(HtmlTest, SimpleList) {
@@ -256,7 +253,7 @@ TEST(HtmlTest, SimpleList) {
 
   DoHtmlTest(content,
              "<p>\n</p><ul><li><p>a</p></li><li><p>b</p><p>  "
-             "c</p></li><li><p>d</p></li></ul><p></p>");
+             "c</p></li><li><p>d</p></li></ul>");
 }
 
 TEST(HtmlTest, SimpleNestedList) {
@@ -269,7 +266,7 @@ TEST(HtmlTest, SimpleNestedList) {
 
   DoHtmlTest(content,
              "<p>\n</p><ul><li><p>a</p></li><ul><li><p>b</p></li><ul><li><p>c</"
-             "p></li><li><p>d</p></li></ul></ul><li><p>e</p></li></ul><p></p>");
+             "p></li><li><p>d</p></li></ul></ul><li><p>e</p></li></ul>");
 }
 
 TEST(HtmlTest, SimpleNestedListWithSomeText) {
@@ -289,7 +286,7 @@ TEST(HtmlTest, SimpleNestedListWithSomeText) {
              "a2</p></li><ul><li><p>b1</p></li><ul><li><p>c1</p></"
              "li><li><p>d1</p></li></ul><li><p>b2</p><p>    "
              "b3</p></li><ul><li><p>c2</p></li></ul></ul><li><p>e</p></li></"
-             "ul><p></p>");
+             "ul>");
 }
 
 TEST(HtmlTest, ParagraphMiddleOfList) {
@@ -301,7 +298,7 @@ some text
 
   DoHtmlTest(content,
              "<p>\n</p><ul><li><p>a</p></li></ul><p>some "
-             "text\n</p><ul><li><p>e</p></li></ul><p></p>");
+             "text\n</p><ul><li><p>e</p></li></ul>");
 }
 
 TEST(HtmlTest, ParagraphMiddleOfListWithLongEmptyNewline) {
@@ -314,7 +311,7 @@ some text
 
   DoHtmlTest(content,
              "<p>\n</p><ul><li><p>a</p></li></ul><p>some "
-             "text\n</p><ul><li><p>e</p></li></ul><p></p>");
+             "text\n</p><ul><li><p>e</p></li></ul>");
 }
 
 /*
@@ -342,7 +339,7 @@ TEST(HtmlTest, SimpleOrderedList) {
 
   DoHtmlTest(content,
              "<p>\n</p><ol><li><p>a</p></li><li><p>b</p><p>  "
-             "c</p></li><li><p>d</p></li></ol><p></p>");
+             "c</p></li><li><p>d</p></li></ol>");
 }
 
 TEST(HtmlTest, OrderedAndUnorderedMixed) {
@@ -361,7 +358,7 @@ TEST(HtmlTest, OrderedAndUnorderedMixed) {
              "<p>\n</p><ol><li><p>a</p></li><li><p>b</p></li><ul><li><p>c</p></"
              "li><li><p>d</p></li><ol><li><p>e</p></li><li><p>f</p></li></"
              "ol><li><p>g</p></li><ul><li><p>a</p></li></ul></ul><li><p>d</p></"
-             "li></ol><p></p>");
+             "li></ol>");
 }
 
 TEST(HtmlTest, SimpleCommand) {
@@ -401,8 +398,8 @@ TEST(HtmlTest, SideNote) {
 )";
   DoHtmlTest(content,
              "<p>\n</p><aside "
-             "class='sidenote'><ol><li><p>a</p></li><li><p>b</p></li></ol><p></"
-             "p></aside><p>\n</p>");
+             "class='sidenote'><ol><li><p>a</p></li><li><p>b</p></li></ol>"
+             "</aside><p>\n</p>");
 }
 
 TEST(HtmlTest, Quote) {
@@ -421,6 +418,44 @@ TEST(HtmlTest, NotQuote) {
   > this is not quote
 )";
   DoHtmlTest(content, "<p>\n  &gt; this is not quote\n</p>");
+}
+
+TEST(HtmlTest, SimpleRef) {
+  std::string content = R"(
+```ref-abc
+some stuff
+```
+
+this is \ref{abc}.
+)";
+
+  DoHtmlTest(content, "<p>\n</p><p>this is some stuff\n.\n</p>");
+}
+
+TEST(HtmlTest, TableWithRef) {
+  std::string content = R"(
+|a|b|
+|-|-|
+|\ref{code1}|\ref{code2}|
+
+```ref-code1
+```cpp
+some code1
+```
+```
+
+```ref-code2
+```cpp
+some code2
+```
+```)";
+
+  DoHtmlTest(content,
+             "<p>\n</p><table><thead><tr><th><p>a</p></th><th><p>b</p></th></"
+             "tr></thead><tbody><tr><td><p><pre class='chroma lang-cpp'><span "
+             "class='i'>some code1\n</span></pre>\n</p></td><td><p><pre "
+             "class='chroma lang-cpp'><span class='i'>some "
+             "code2\n</span></pre>\n</p></td></tr></tbody></table><p>\n</p>");
 }
 
 }  // namespace

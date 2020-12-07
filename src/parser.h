@@ -8,6 +8,9 @@
 
 namespace md2 {
 
+// Map between the ref name and the actual node.
+using RefContainer = std::unordered_map<std::string, ParseTreeNode*>;
+
 // Parses Markdown and emits the parse tree.
 //
 // The parsed syntax tree will be converted to the target language (e.g html or
@@ -26,8 +29,8 @@ class Parser {
   // incur the error.
   size_t GenericParser(std::string_view content, size_t start,
                        std::string_view end_parsing_token, ParseTreeNode* root,
-                       bool use_text = false, bool must_inline = false,
-                       bool no_link = false);
+                       RefContainer* refs, bool use_text = false,
+                       bool must_inline = false, bool no_link = false);
 
   // Try to parse the markdown that starts with '['. The parsing can fail if it
   // does not construct the proper link. In such case, this will return nullptr
@@ -36,6 +39,7 @@ class Parser {
   // link.
   template <typename LinkNodeType>
   std::unique_ptr<ParseTreeNode> MaybeParseLink(std::string_view content,
+                                                RefContainer* refs,
                                                 size_t start, size_t& end);
 
   // Parse the image description of the Image node.
@@ -46,30 +50,37 @@ class Parser {
   // first in the line (so the preceding character must be '\n'.
   std::unique_ptr<ParseTreeNode> MaybeParseHeader(std::string_view content,
                                                   ParseTreeNode* parent,
+                                                  RefContainer* refs,
                                                   size_t start, size_t& end);
 
   // Try to parse a box (starts with ```).
   std::unique_ptr<ParseTreeNode> MaybeParseBox(std::string_view content,
                                                ParseTreeNode* parent,
-                                               size_t start, size_t& end);
+                                               RefContainer* refs, size_t start,
+                                               size_t& end);
 
   // Try to parse the table.
   std::unique_ptr<ParseTreeNode> MaybeParseTable(std::string_view content,
                                                  ParseTreeNode* parent,
+                                                 RefContainer* refs,
                                                  size_t start, size_t& end);
+
   // Try to parse the list.
   std::unique_ptr<ParseTreeNode> MaybeParseList(std::string_view content,
                                                 ParseTreeNode* parent,
+                                                RefContainer* refs,
                                                 size_t start, size_t& end);
 
   // Try to parse the command.
   std::unique_ptr<ParseTreeNode> MaybeParseCommand(std::string_view content,
                                                    ParseTreeNode* parent,
+                                                   RefContainer* refs,
                                                    size_t start, size_t& end);
 
   // Try to parse the quote.
   std::unique_ptr<ParseTreeNode> MaybeParseQuote(std::string_view content,
                                                  ParseTreeNode* parent,
+                                                 RefContainer* refs,
                                                  size_t start, size_t& end);
 
   // Construct List node from the consecutive list items.

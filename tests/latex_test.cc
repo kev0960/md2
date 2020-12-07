@@ -16,8 +16,8 @@ void DoLatexTest(std::string content, std::string expected) {
 
   MetadataRepo repo;
   GeneratorContext context(repo, "image_path");
-  LatexGenerator generator(/*filename=*/"some_file.md", content, context);
-  generator.Generate(tree);
+  LatexGenerator generator(/*filename=*/"some_file.md", content, context, tree);
+  generator.Generate();
 
   EXPECT_EQ(std::string(generator.ShowOutput()), expected);
 }

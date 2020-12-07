@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "logger.h"
+
 namespace md2 {
 namespace {
 
@@ -17,8 +19,8 @@ ParseTreeNode* GetNext(const ParseTreeNode* node, int pos) {
 
 }  // namespace
 
-std::string_view Generator::Generate(const ParseTree& parse_tree) {
-  HandleParseTreeNode(*parse_tree.GetRoot());
+std::string_view Generator::Generate() {
+  HandleParseTreeNode(*parse_tree_.GetRoot());
   return target_;
 }
 
@@ -56,6 +58,28 @@ std::string_view Generator::GetFileTitle() const {
   }
 
   return metadata->GetTitle();
+}
+
+std::string_view Generator::GetReferenceNodeGeneratedOutput(
+    const std::string& ref_name) {
+  auto itr = ref_to_generated_.find(ref_name);
+  if (itr != ref_to_generated_.end()) {
+    return itr->second;
+  }
+
+  ParseTreeNode* ref_node = parse_tree_.FindReferenceNode(ref_name);
+  if (ref_node == nullptr) {
+    return "";
+  }
+
+  std::string ref_node_output;
+  targets_.push_back(&ref_node_output);
+
+  HandleParseTreeNode(*ref_node->GetChildren()[1]);
+  targets_.pop_back();
+
+  ref_to_generated_[ref_name] = std::move(ref_node_output);
+  return ref_to_generated_[ref_name];
 }
 
 }  // namespace md2

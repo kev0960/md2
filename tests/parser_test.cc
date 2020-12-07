@@ -800,5 +800,28 @@ TEST(ParserTest, SideNote) {
                         }));
 }
 
+TEST(ParserTest, SimpleRef) {
+  std::string content = R"(
+```ref-abc
+some stuff
+```
+
+this is \ref{abc}.
+)";
+
+  DoParserTest(content, ParseTreeComparer({
+                            {ParseTreeNode::NODE, 0, 47, 0},
+                            {ParseTreeNode::PARAGRAPH, 0, 1, 1},
+                            {ParseTreeNode::BOX, 1, 26, 1},
+                            {ParseTreeNode::TEXT, 4, 11, 2},
+                            {ParseTreeNode::NODE, 12, 26, 2},
+                            {ParseTreeNode::TEXT, 12, 23, 3},
+                            {ParseTreeNode::PARAGRAPH, 26, 26, 1},
+                            {ParseTreeNode::PARAGRAPH, 28, 47, 1},
+                            {ParseTreeNode::COMMAND, 36, 45, 2},
+                            {ParseTreeNode::TEXT, 41, 44, 3},
+                        }));
+}
+
 }  // namespace
 }  // namespace md2

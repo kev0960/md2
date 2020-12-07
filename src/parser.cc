@@ -34,14 +34,14 @@ static std::unordered_set<std::string> kVerbatimBoxNames = {
 static std::unordered_set<std::string> kImageDescKeywords = {"caption", "size"};
 
 static std::unordered_map<std::string, int> kCommandToNumArgs = {
-    {"sidenote", 1}, {"sc", 1},       {"newline", 1},
-    {"serif", 1},    {"htmlonly", 1}, {"latexonly", 1},
-    {"footnote", 1}, {"esc", 1},      {"tooltip", 2}};
+    {"sidenote", 1}, {"sc", 1},        {"newline", 1},  {"serif", 1},
+    {"htmlonly", 1}, {"latexonly", 1}, {"footnote", 1}, {"esc", 1},
+    {"tooltip", 2},  {"ref", 1}};
 
 // Commands that take verbatim stuff in the argument (should not parse whatever
 // that's inside {}) and the index of those args.
 static std::unordered_map<std::string, std::unordered_set<size_t>>
-    kVerbatimCommands = {{"htmlonly", {0}}, {"tooltip", {1}}};
+    kVerbatimCommands = {{"htmlonly", {0}}, {"tooltip", {1}}, {"ref", {0}}};
 
 // Create a new node that starts at the given parameter.
 template <typename NewNodeType>
@@ -338,16 +338,18 @@ std::optional<int> IsEmptyLine(std::string_view content, int start) {
 
 ParseTree Parser::GenerateParseTree(std::string_view content) {
   auto root = std::make_unique<ParseTreeNode>(/*parent=*/nullptr, 0);
-  GenericParser(content, 0, /*end_parsing_token=*/"", root.get());
+  RefContainer refs;
+
+  GenericParser(content, 0, /*end_parsing_token=*/"", root.get(), &refs);
 
   PostProcessList(root.get());
-  return ParseTree(std::move(root));
+  return ParseTree(std::move(root), std::move(refs));
 }
 
 size_t Parser::GenericParser(std::string_view content, size_t start,
                              std::string_view end_parsing_token,
-                             ParseTreeNode* root, bool use_text,
-                             bool must_inline, bool no_link) {
+                             ParseTreeNode* root, RefContainer* refs,
+                             bool use_text, bool must_inline, bool no_link) {
   ParseTreeNode* current_node = root;
 
   size_t index = start;
@@ -381,7 +383,7 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
           continue;
         } else {
           auto maybe_command =
-              MaybeParseCommand(content, current_node, index, index);
+              MaybeParseCommand(content, current_node, refs, index, index);
           if (maybe_command != nullptr) {
             current_node->AddChildren(std::move(maybe_command));
             continue;
@@ -393,7 +395,8 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
     // This can be the start of the ordered list. (e.g "1.")
     if (std::isdigit(content[index]) && index + 2 < content.size() &&
         content.substr(index + 1, 2) == ". ") {
-      if (auto maybe_list = MaybeParseList(content, current_node, index, index);
+      if (auto maybe_list =
+              MaybeParseList(content, current_node, refs, index, index);
           maybe_list != nullptr) {
         if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
           current_node =
@@ -435,7 +438,8 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
     }
 
     if (content[index] == '*') {
-      if (auto maybe_list = MaybeParseList(content, current_node, index, index);
+      if (auto maybe_list =
+              MaybeParseList(content, current_node, refs, index, index);
           maybe_list != nullptr) {
         if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
           current_node =
@@ -484,7 +488,7 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
 
     if (content[index] == '[' && !no_link) {
       auto maybe_link =
-          MaybeParseLink<ParseTreeLinkNode>(content, index, index);
+          MaybeParseLink<ParseTreeLinkNode>(content, refs, index, index);
 
       if (maybe_link) {
         current_node->AddChildren(std::move(maybe_link));
@@ -495,7 +499,7 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
     if (content.substr(index, 2) == "![") {
       // We need to pass the position of '['.
       auto maybe_image =
-          MaybeParseLink<ParseTreeImageNode>(content, index + 1, index);
+          MaybeParseLink<ParseTreeImageNode>(content, refs, index + 1, index);
 
       if (maybe_image) {
         ParseTreeImageNode* image =
@@ -507,7 +511,8 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
     }
 
     if (content[index] == '#') {
-      auto maybe_header = MaybeParseHeader(content, current_node, index, index);
+      auto maybe_header =
+          MaybeParseHeader(content, current_node, refs, index, index);
       if (maybe_header) {
         if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
           current_node =
@@ -522,7 +527,8 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
 
     if (content.substr(index, 2) == "> ") {
       if (index == 0 || content[index - 1] == '\n') {
-        auto maybe_quote = MaybeParseQuote(content, current_node, index, index);
+        auto maybe_quote =
+            MaybeParseQuote(content, current_node, refs, index, index);
         if (maybe_quote) {
           if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
             current_node =
@@ -546,7 +552,7 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
     }
 
     if (content[index] == '`') {
-      auto maybe_box = MaybeParseBox(content, current_node, index, index);
+      auto maybe_box = MaybeParseBox(content, current_node, refs, index, index);
       if (maybe_box) {
         if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH ||
             current_node->GetNodeType() == ParseTreeNode::TEXT) {
@@ -587,7 +593,8 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
     }
 
     if (index > 0 && content.substr(index - 1, 2) == "\n|") {
-      auto maybe_table = MaybeParseTable(content, current_node, index, index);
+      auto maybe_table =
+          MaybeParseTable(content, current_node, refs, index, index);
       if (maybe_table) {
         if (current_node->GetNodeType() == ParseTreeNode::PARAGRAPH) {
           current_node =
@@ -625,6 +632,7 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
 // Link has the form [link-desc](url)
 template <typename LinkNodeType>
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
+                                                      RefContainer* refs,
                                                       size_t start,
                                                       size_t& end) {
   LOG(3) << "Maybe link : " << content.substr(start, 10) << " -- " << start;
@@ -651,7 +659,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
 
   // Note that parsing starts after "[" (to prevent infinite loop).
   size_t desc_end =
-      GenericParser(content, start + 1, "]", desc.get(),
+      GenericParser(content, start + 1, "]", desc.get(), refs,
                     /*use_text=*/true, /*must_inline=*/true, no_nested_link);
 
   if (start == desc_end || content.substr(desc_end - 1, 2) != "](") {
@@ -662,7 +670,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseLink(std::string_view content,
   auto url = std::make_unique<ParseTreeNode>(nullptr, desc_end);
 
   // Parsing starts after "(".
-  size_t url_end = GenericParser(content, desc_end + 1, ")", url.get(),
+  size_t url_end = GenericParser(content, desc_end + 1, ")", url.get(), refs,
                                  /*use_text=*/true, /*must_inline=*/true);
   if (url_end == desc_end + 1 || content.substr(url_end - 1, 1) != ")") {
     return nullptr;
@@ -734,8 +742,8 @@ void Parser::ParseImageDescriptionMetadata(std::string_view content,
 }
 
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
-    std::string_view content, ParseTreeNode* parent, size_t start,
-    size_t& end) {
+    std::string_view content, ParseTreeNode* parent, RefContainer* refs,
+    size_t start, size_t& end) {
   // Header must be start from the new line.
   if (start != 0 && content[start - 1] != '\n') {
     return nullptr;
@@ -765,9 +773,9 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
   if (content.substr(start, header_token_end - start) == "###@") {
     auto header_content =
         std::make_unique<ParseTreeNode>(nullptr, header_token_end);
-    size_t header_end =
-        GenericParser(content, header_token_end, "\n", header_content.get(),
-                      /*use_text=*/true);
+    size_t header_end = GenericParser(content, header_token_end, "\n",
+                                      header_content.get(), refs,
+                                      /*use_text=*/true);
     if (header_end != content.size() && content[header_end - 1] != '\n') {
       return nullptr;
     }
@@ -796,6 +804,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseHeader(
 
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
                                                      ParseTreeNode* parent,
+                                                     RefContainer* refs,
                                                      size_t start,
                                                      size_t& end) {
   LOG(3) << "start : " << start << " : " << content.substr(start, 10);
@@ -868,8 +877,10 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
   auto box_content_node =
       std::make_unique<ParseTreeNode>(nullptr, box_name_end + 1);
 
+  bool is_ref_box = (box_name.substr(0, 4) == "ref-" && box_name.size() > 4);
   size_t box_content_end =
-      GenericParser(content, box_name_end + 1, "```", box_content_node.get());
+      GenericParser(content, box_name_end + 1, "```", box_content_node.get(),
+                    refs, /*use_text=*/is_ref_box);
 
   LOG(3) << "box content end : [" << content.substr(box_content_end - 4, 4)
          << "]";
@@ -885,12 +896,18 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseBox(std::string_view content,
   end = box_content_end;
   box->SetEnd(end);
 
+  if (is_ref_box) {
+    // Then register this box node as a reference.
+    (*refs)[box_name.substr(4)] = box.get();
+  }
+
   LOG(3) << "End box " << box_name << "!\n";
   return box;
 }
 
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
                                                        ParseTreeNode* parent,
+                                                       RefContainer* refs,
                                                        size_t start,
                                                        size_t& end) {
   // Table must start with newline.
@@ -908,7 +925,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
   while (true) {
     while (true) {
       auto cell = std::make_unique<ParseTreeNode>(nullptr, current);
-      size_t cell_end = GenericParser(content, current, "|", cell.get());
+      size_t cell_end = GenericParser(content, current, "|", cell.get(), refs);
 
       // Not a valid table.
       if (content[cell_end - 1] != '|') {
@@ -981,6 +998,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseTable(std::string_view content,
 // the parser.
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
                                                       ParseTreeNode* parent,
+                                                      RefContainer* refs,
                                                       size_t start,
                                                       size_t& end) {
   auto list_header_info = IsCorrectListHeader(content, start);
@@ -998,7 +1016,8 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
   list_item->SetListDepth(list_depth);
 
   while (true) {
-    size_t list_end = GenericParser(content, current, "\n", list_item.get());
+    size_t list_end =
+        GenericParser(content, current, "\n", list_item.get(), refs);
     if (list_end == content.size()) {
       list_item->SetEnd(list_end);
       list_item->SetParent(parent);
@@ -1049,9 +1068,10 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseList(std::string_view content,
 }
 
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
-    std::string_view content, ParseTreeNode* parent, size_t start,
-    size_t& end) {
+    std::string_view content, ParseTreeNode* parent, RefContainer* refs,
+    size_t start, size_t& end) {
   LOG(3) << "Maybe Command : " << content.substr(start, 5) << "--" << start;
+
   // Commands are in form \command{}{}..{}
   // Number of {} s can be vary.
   std::string_view command_name;
@@ -1112,7 +1132,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
       }
     } else {
       auto arg = std::make_unique<ParseTreeNode>(nullptr, current);
-      current = GenericParser(content, current, "}", arg.get(), true);
+      current = GenericParser(content, current, "}", arg.get(), refs, true);
 
       if (content[current - 1] != '}') {
         return nullptr;
@@ -1137,6 +1157,7 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseCommand(
 
 std::unique_ptr<ParseTreeNode> Parser::MaybeParseQuote(std::string_view content,
                                                        ParseTreeNode* parent,
+                                                       RefContainer* refs,
                                                        size_t start,
                                                        size_t& end) {
   if (content.substr(start, 2) != "> ") {
@@ -1147,8 +1168,8 @@ std::unique_ptr<ParseTreeNode> Parser::MaybeParseQuote(std::string_view content,
   size_t current = start + 2;
 
   while (true) {
-    current =
-        GenericParser(content, current, "\n", quote.get(), /*use_text=*/true);
+    current = GenericParser(content, current, "\n", quote.get(), refs,
+                            /*use_text=*/true);
     if (current != content.size() && content[current - 1] != '\n') {
       return nullptr;
     }

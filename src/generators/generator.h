@@ -9,16 +9,20 @@
 namespace md2 {
 
 // Generates the converted markdown file in a target language.
+// This is *NOT* thread safe.
 class Generator {
  public:
   Generator(std::string_view filename, std::string_view md,
-            GeneratorContext& context)
-      : filename_(filename), md_(md), context_(&context) {
+            GeneratorContext& context, const ParseTree& parse_tree)
+      : filename_(filename),
+        md_(md),
+        context_(&context),
+        parse_tree_(parse_tree) {
     targets_.push_back(&target_);
   }
   std::string_view ShowOutput() const { return target_; }
 
-  std::string_view Generate(const ParseTree& parse_tree);
+  std::string_view Generate();
 
   // Release the generated target.
   std::string&& ReleaseGeneratedTarget() && { return std::move(target_); }
@@ -35,6 +39,8 @@ class Generator {
   void GenerateWithDefaultActionSpan(
       const ParseTreeNode& node, std::function<void(int index)> default_action,
       int start, int end);
+
+  std::string_view GetReferenceNodeGeneratedOutput(const std::string& ref_name);
 
   std::string_view GetFileTitle() const;
 
@@ -57,6 +63,11 @@ class Generator {
   std::vector<std::string*> targets_;
 
   GeneratorContext* context_;
+
+  const ParseTree& parse_tree_;
+
+  // Mapping between the reference name and the generated data.
+  std::unordered_map<std::string, std::string> ref_to_generated_;
 };
 
 }  // namespace md2

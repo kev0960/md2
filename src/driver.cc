@@ -142,12 +142,12 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
              file_contents_.size(), file_name, output_file_name);
 
   Parser parser;
-  ParseTree tree = parser.GenerateParseTree(content);
+  const ParseTree tree = parser.GenerateParseTree(content);
 
   GeneratorContext context(repo_, options_.image_path);
   if (options_.generate_html) {
-    HTMLGenerator generator(file_name, content, context);
-    generator.Generate(tree);
+    HTMLGenerator generator(file_name, content, context, tree);
+    generator.Generate();
 
     std::ofstream out(output_file_name);
     out << generator.ShowOutput();
@@ -155,8 +155,8 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
 
   if (auto itr = book_dir_to_files_.find(std::string(file_name));
       itr != book_dir_to_files_.end()) {
-    LatexGenerator generator(file_name, content, context);
-    generator.Generate(tree);
+    LatexGenerator generator(file_name, content, context, tree);
+    generator.Generate();
 
     std::ofstream out(GenerateOutputPath(file_name, itr->second, "tex"));
     out << generator.ShowOutput();
