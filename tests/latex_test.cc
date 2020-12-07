@@ -251,7 +251,7 @@ b
   DoLatexTest(content,
               "\n\n\n\n\\begin{tcolorbox}[colback=green!5!white,colframe=green!"
               "75!black,left=3pt,right=3pt,enlarge top "
-              "by=2mm]\n\nhello\n\n\\footnote{\n\\emph{a}\n\n}\n\nb\n\n\n\\end{"
+              "by=2mm]\n\nhello\n\n\\footnote{\n\\emph{a}\n}\n\nb\n\n\\end{"
               "tcolorbox}\n\n\n");
 }
 

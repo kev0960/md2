@@ -135,6 +135,10 @@ void LatexGenerator::EmitChar(int from, int to) {
 }
 
 void LatexGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
+  if (node.Start() >= node.End()) {
+    return;
+  }
+
   GetCurrentTarget()->append("\n");
   GenerateWithDefaultAction(node, [this](int index) { EmitChar(index); });
   GetCurrentTarget()->append("\n");
@@ -176,7 +180,7 @@ void LatexGenerator::HandleStrikeThrough(
 }
 
 void LatexGenerator::HandleLink(const ParseTreeLinkNode& node) {
-  ASSERT(node.GetChildren().size() == 2, "Number of children is not two");
+  MD2_ASSERT(node.GetChildren().size() == 2, "Number of children is not two");
 
   links_.push_back(LatexLinkBuilder());
 
@@ -195,13 +199,13 @@ void LatexGenerator::HandleLink(const ParseTreeLinkNode& node) {
 }
 
 void LatexGenerator::HandleImage(const ParseTreeImageNode& node) {
-  ASSERT(node.GetChildren().size() == 2, "Number of children is not two");
+  MD2_ASSERT(node.GetChildren().size() == 2, "Number of children is not two");
 
   const ParseTreeNode* desc_node = node.GetChildren()[0].get();
-  ASSERT(desc_node->GetNodeType() == ParseTreeNode::NODE, "");
+  MD2_ASSERT(desc_node->GetNodeType() == ParseTreeNode::NODE, "");
 
   const ParseTreeNode* desc = desc_node->GetChildren()[0].get();
-  ASSERT(desc->GetNodeType() == ParseTreeNode::TEXT, "");
+  MD2_ASSERT(desc->GetNodeType() == ParseTreeNode::TEXT, "");
 
   images_.push_back(LatexImageBuilder());
 
@@ -293,13 +297,13 @@ void LatexGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
     return;
   }
 
-  ASSERT(node.GetChildren().size() == 2, "Verbatim does not have two nodes.");
+  MD2_ASSERT(node.GetChildren().size() == 2, "Verbatim does not have two nodes.");
   const auto& code_name_node = node.GetChildren()[0];
   std::string_view name = md_.substr(
       code_name_node->Start(), code_name_node->End() - code_name_node->Start());
 
   const auto& content_node = node.GetChildren()[1];
-  ASSERT(content_node->GetNodeType() == ParseTreeNode::TEXT, "");
+  MD2_ASSERT(content_node->GetNodeType() == ParseTreeNode::TEXT, "");
 
   if (name == "cpp" || name == "info-format") {
     std::string_view formatted_cpp = context_->GetClangFormatted(
@@ -374,7 +378,7 @@ void LatexGenerator::HandleListItem(const ParseTreeListItemNode& node) {
 }
 
 void LatexGenerator::HandleHeader(const ParseTreeHeaderNode& node) {
-  ASSERT(node.GetChildren().size() == 2, "");
+  MD2_ASSERT(node.GetChildren().size() == 2, "");
 
   std::string_view header_symbol = GetStringInNode(node.GetChildren()[0].get());
 
@@ -424,6 +428,10 @@ void LatexGenerator::HandleCommand(const ParseTreeCommandNode& node) {
     return;
   } else if (command == "newline") {
     GetCurrentTarget()->append("\\newline");
+  } else if (command == "ref") {
+    std::string_view ref_name = GetStringInNode(node.GetChildren()[0].get());
+    GetCurrentTarget()->append(
+        GetReferenceNodeGeneratedOutput(std::string(ref_name)));
   }
 }
 
@@ -435,7 +443,7 @@ void LatexGenerator::HandleMath(const ParseTreeMathNode& node) {
 }
 
 void LatexGenerator::HandleBox(const ParseTreeBoxNode& node) {
-  ASSERT(node.GetChildren().size() == 2, "");
+  MD2_ASSERT(node.GetChildren().size() == 2, "");
   const auto& box_name_node = node.GetChildren()[0];
 
   std::string_view box_name = md_.substr(
@@ -472,6 +480,8 @@ void LatexGenerator::HandleBox(const ParseTreeBoxNode& node) {
     GetCurrentTarget()->append("}");
   } else if (box_name == "note") {
     // TODO Implement the note in latex.
+    return;
+  } else if (box_name.substr(0, 4) == "ref-") {
     return;
   }
 }

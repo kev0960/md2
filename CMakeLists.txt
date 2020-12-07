@@ -23,6 +23,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(fmtlib)
 # Adds fmt::fmt
 
+# JSON library
+FetchContent_Declare(
+  json 
+  GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
+  GIT_TAG v3.9.1)
+FetchContent_MakeAvailable(json)
+
 # The compiled library code is here
 add_subdirectory(src)
 

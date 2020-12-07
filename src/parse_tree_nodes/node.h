@@ -1,13 +1,12 @@
 #ifndef PARSE_TREE_NODE_H
 #define PARSE_TREE_NODE_H
 
-#include <cassert>
 #include <functional>
 #include <list>
 #include <memory>
 #include <vector>
 
-#include "assert.h"
+#include "md2_assert.h"
 
 namespace md2 {
 
@@ -46,7 +45,7 @@ class ParseTreeNode {
   // Override in case adding a children is not valid.
   void AddChildren(std::unique_ptr<ParseTreeNode> child) {
     if (is_leaf_node_) {
-      ASSERT(false, "This node is the leaf node.");
+      MD2_ASSERT(false, "This node is the leaf node.");
       return;
     }
 
@@ -55,7 +54,7 @@ class ParseTreeNode {
 
   void AddChildrenFront(std::unique_ptr<ParseTreeNode> child) {
     if (is_leaf_node_) {
-      ASSERT(false, "This node is the leaf node.");
+      MD2_ASSERT(false, "This node is the leaf node.");
       return;
     }
 

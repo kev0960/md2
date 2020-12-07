@@ -1,9 +1,9 @@
-#ifndef ASSERT_H
-#define ASSERT_H
+#ifndef MD2_ASSERT_H
+#define MD2_ASSERT_H
 
 #include <iostream>
 
-#define ASSERT(condition, message)                                       \
+#define MD2_ASSERT(condition, message)                                   \
   do {                                                                   \
     if (!(condition)) {                                                  \
       std::cerr << "Assertion `" #condition "` failed in " << __FILE__   \

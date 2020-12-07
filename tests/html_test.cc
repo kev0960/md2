@@ -213,7 +213,7 @@ b
   DoHtmlTest(content,
              "<p>\n</p><div class='inline-note'><p>hello\n</p><div "
              "class='inline-note'><p><span "
-             "class='font-italic'>a</span>\n</p></div><p>\nb\n</p></div>");
+             "class='font-italic'>a</span></p></div><p>\nb</p></div>");
 }
 
 TEST(HtmlTest, SimpleTable) {
@@ -429,7 +429,7 @@ some stuff
 this is \ref{abc}.
 )";
 
-  DoHtmlTest(content, "<p>\n</p><p>this is some stuff\n.\n</p>");
+  DoHtmlTest(content, "<p>\n</p><p>this is some stuff.\n</p>");
 }
 
 TEST(HtmlTest, TableWithRef) {
@@ -453,9 +453,9 @@ some code2
   DoHtmlTest(content,
              "<p>\n</p><table><thead><tr><th><p>a</p></th><th><p>b</p></th></"
              "tr></thead><tbody><tr><td><p><pre class='chroma lang-cpp'><span "
-             "class='i'>some code1\n</span></pre>\n</p></td><td><p><pre "
+             "class='i'>some code1\n</span></pre></p></td><td><p><pre "
              "class='chroma lang-cpp'><span class='i'>some "
-             "code2\n</span></pre>\n</p></td></tr></tbody></table><p>\n</p>");
+             "code2\n</span></pre></p></td></tr></tbody></table><p>\n</p>");
 }
 
 }  // namespace

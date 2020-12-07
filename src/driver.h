@@ -21,6 +21,9 @@ struct DriverOptions {
 
   std::string image_path;
 
+  // Output directory for json files that will be picked up by the server.
+  std::string json_output_dir;
+
   bool should_log_db;
   bool generate_html = true;
   bool generate_latex = true;
@@ -55,6 +58,9 @@ class Driver {
 
   // Emit the main tex file for each book.
   void GenerateBookMainPage() const;
+
+  // Generate page_path.json and file_headers.json
+  void GenerateJSONFiles() const;
 
   DriverOptions options_;
 

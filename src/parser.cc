@@ -232,7 +232,7 @@ bool IsListItemType(const ParseTreeNode* node) {
 }
 
 int GetDepth(std::unique_ptr<ParseTreeNode>& child) {
-  ASSERT(IsListItemType(child.get()), "");
+  MD2_ASSERT(IsListItemType(child.get()), "");
 
   return static_cast<ParseTreeListItemNode*>(child.get())->GetListDepth();
 }
@@ -332,6 +332,22 @@ std::optional<int> IsEmptyLine(std::string_view content, int start) {
   }
 
   return content.size();
+}
+
+bool IsEndBoxToken(std::string_view content, size_t index) {
+  if (index < 1) {
+    return false;
+  }
+
+  if (content.substr(index - 1, 5) == "\n```\n") {
+    return true;
+  }
+
+  if (content.substr(index - 1, 4) == "\n```" && index + 3 == content.size()) {
+    return true;
+  }
+
+  return false;
 }
 
 }  // namespace
@@ -543,9 +559,9 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
     }
 
     if (content.substr(index, 3) == "```") {
-      if (index >= 1 && content.substr(index - 1, 5) == "\n```\n") {
-        // Then this is the absolute end token.
-        MarkEndAllTheWayUp(current_node, index);
+      if (IsEndBoxToken(content, index)) {
+        // Then this is the absolute end token. We do not include the "\n".
+        MarkEndAllTheWayUp(current_node, index - 1);
         root->SetEnd(index + 3);
         return index + 3;
       }
@@ -698,10 +714,10 @@ void Parser::ParseImageDescriptionMetadata(std::string_view content,
   // Go through the strings in the paragraph that are not part of the any
   // child node. If it contains xxx= kind of the form, check what xxx is.
   ParseTreeNode* desc_node = image->GetChildren()[0].get();
-  ASSERT(desc_node->GetNodeType() == ParseTreeNode::NODE, "");
+  MD2_ASSERT(desc_node->GetNodeType() == ParseTreeNode::NODE, "");
 
   ParseTreeNode* desc = desc_node->GetChildren()[0].get();
-  ASSERT(desc->GetNodeType() == ParseTreeNode::TEXT, "");
+  MD2_ASSERT(desc->GetNodeType() == ParseTreeNode::TEXT, "");
 
   nodes_per_keyword["alt"] =
       std::make_unique<ParseTreeTextNode>(nullptr, desc->Start());

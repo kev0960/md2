@@ -146,7 +146,7 @@ std::string_view GeneratorContext::FindImage(const std::string& image_url) {
 
   if (image_url.find(kDaumImageURL) != std::string_view::npos) {
     size_t id_start = image_url.find("image%2F");
-    ASSERT(id_start != std::string_view::npos, "Daum image url is malformed.");
+    MD2_ASSERT(id_start != std::string_view::npos, "Daum image url is malformed.");
 
     std::string image_name = image_url.substr(id_start + 8);
     std::string image_path;
