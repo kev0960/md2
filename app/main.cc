@@ -7,6 +7,7 @@ int main(int argc, char* argv[]) {
   // option.input_files.push_back("/home/jaebum/md2/md/256.md");
   option.output_dir = "/home/jaebum/ModooCode/views/new";
   option.image_path = "/home/jaebum/ModooCode/static/img";
+  option.json_output_dir = "/home/jaebum/ModooCode";
 
   option.book_file_and_dir.push_back({"135", "/home/jaebum/book/cpp"});
   option.book_file_and_dir.push_back({"231", "/home/jaebum/book/c"});

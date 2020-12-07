@@ -23,6 +23,9 @@ class MetadataRepo {
 
   const Metadata* FindMetadataByFilename(std::string_view filename) const;
 
+  std::string DumpFileHeaderAsJson() const;
+  std::string DumpPathAsJson() const;
+
  private:
   std::unordered_map<std::string, std::unique_ptr<Metadata>> repo_;
   std::unordered_map<std::string, std::vector<const Metadata*>>

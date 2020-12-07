@@ -112,6 +112,8 @@ std::unique_ptr<Metadata> MetadataFactory::ParseMetadata(
       metadata->ref_names_ = SplitString(field);
     }
 
+    metadata->all_fields_[std::string(field_name)] = field;
+
     current = line_end + 1;
   }
 

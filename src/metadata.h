@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace md2 {
@@ -22,6 +23,9 @@ class Metadata {
 
   bool IsPublished() const { return is_published_; }
   const std::vector<std::string>& GetRefNames() const { return ref_names_; }
+  const std::unordered_map<std::string, std::string> GetAllFields() const {
+    return all_fields_;
+  }
 
  private:
   // Title that shows up on the html.
@@ -51,6 +55,8 @@ class Metadata {
 
   // Get chapter.
   std::string chapter_;
+
+  std::unordered_map<std::string, std::string> all_fields_;
 };
 
 class MetadataFactory {

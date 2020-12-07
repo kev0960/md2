@@ -5,7 +5,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <nlohmann/json.hpp>
 #include <optional>
 
 #include "generators/book.h"
@@ -19,7 +18,6 @@
 namespace md2 {
 namespace {
 
-using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 std::string ReadFileContent(const std::string& file_path) {
@@ -72,6 +70,7 @@ void Driver::Run() {
   BuildBookFilesMap();
 
   DoParse();
+  GenerateJSONFiles();
   GenerateBookMainPage();
 }
 
@@ -207,6 +206,12 @@ void Driver::GenerateBookMainPage() const {
   }
 }
 
-void Driver::GenerateJSONFiles() const {}
+void Driver::GenerateJSONFiles() const {
+  std::ofstream out_path(options_.json_output_dir + "/page_path.json");
+  out_path << repo_.DumpPathAsJson();
+
+  std::ofstream out_header(options_.json_output_dir + "/file_headers.json");
+  out_header << repo_.DumpFileHeaderAsJson();
+}
 
 }  // namespace md2
