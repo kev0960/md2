@@ -1,5 +1,7 @@
 #include "driver.h"
 
+#include <vector>
+
 int main(int argc, char* argv[]) {
   md2::DriverOptions option;
   option.input_dirs.push_back("/home/jaebum/ModooCode/md");

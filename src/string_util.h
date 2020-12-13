@@ -2,6 +2,7 @@
 #define STRING_UTIL_H
 
 #include <string>
+#include <vector>
 
 namespace md2 {
 
@@ -34,10 +35,16 @@ std::string StrCat(const String& s, Strings... strs) {
   return concat_str;
 }
 
+std::string Join(int count, char* args[]); 
+std::string Join(const std::vector<std::string>& vec);
+
 // Strip ' '.
 std::string_view LStrip(std::string_view s);
 std::string_view RStrip(std::string_view s);
 std::string_view Strip(std::string_view s);
+
+std::vector<std::string_view> SplitStringByChar(std::string_view line, char c);
+std::vector<std::string> SplitStringByCharToStringVec(std::string_view line, char c);
 
 }  // namespace md2
 

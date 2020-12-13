@@ -141,7 +141,7 @@ TEST(LatexTest, SimpleTable2) {
       content,
       "\n\n\n\n\\begin{tabularx}{\\textwidth}{|X|X|}"
       "\n\\hline\n\n\\emph{a}\n & \n\\textbf{b}\n \\\\ \\hline\n \n|a\n "
-      "& \n\\texttt{b}\n \\\\ \\hline\n \\end{tabularx}\n\n");
+      "& \n\\texttt{b}\n \\\\ \\hline\n \\end{tabularx}");
 }
 
 TEST(LatexTest, SimpleVerbatim) {
@@ -157,7 +157,7 @@ TEST(LatexTest, SimpleList) {
 
   DoLatexTest(content,
               "\n\n\n\n\\begin{itemize}\n\\item \na\n\n\\item \nb\n\n  "
-              "c\n\n\\item \nd\n\n\\end{itemize}\n\n");
+              "c\n\n\\item \nd\n\n\\end{itemize}");
 }
 
 TEST(LatexTest, SimpleNestedList) {
@@ -172,7 +172,7 @@ TEST(LatexTest, SimpleNestedList) {
               "\n\n\n\n\\begin{itemize}\n\\item "
               "\na\n\n\\begin{itemize}\n\\item \nb\n\n\\begin{itemize}\n\\item "
               "\nc\n\n\\item \nd\n\n\\end{itemize}\n\\end{itemize}\n\\item "
-              "\ne\n\n\\end{itemize}\n\n");
+              "\ne\n\n\\end{itemize}");
 }
 
 TEST(LatexTest, SimpleNestedListWithSomeText) {
@@ -193,7 +193,7 @@ TEST(LatexTest, SimpleNestedListWithSomeText) {
               "\nc1\n\n\\item \nd1\n\n\\end{itemize}\n\\item \nb2\n\n    "
               "b3\n\n\\begin{itemize}\n\\item "
               "\nc2\n\n\\end{itemize}\n\\end{itemize}\n\\item "
-              "\ne\n\n\\end{itemize}\n\n");
+              "\ne\n\n\\end{itemize}");
 }
 
 TEST(LatexTest, ParagraphMiddleOfList) {
@@ -205,7 +205,7 @@ some text
 
   DoLatexTest(content,
               "\n\n\n\n\\begin{itemize}\n\\item \na\n\n\\end{itemize}\nsome "
-              "text\n\n\n\\begin{itemize}\n\\item \ne\n\n\\end{itemize}\n\n");
+              "text\n\n\n\\begin{itemize}\n\\item \ne\n\n\\end{itemize}");
 }
 
 TEST(LatexTest, ParagraphMiddleOfListWithLongEmptyNewline) {
@@ -218,15 +218,15 @@ some text
 
   DoLatexTest(content,
               "\n\n\n\n\\begin{itemize}\n\\item \na\n\n\\end{itemize}\nsome "
-              "text\n\n\n\\begin{itemize}\n\\item \ne\n\n\\end{itemize}\n\n");
+              "text\n\n\n\\begin{itemize}\n\\item \ne\n\n\\end{itemize}");
 }
 
 TEST(LatexTest, HeaderSimple) {
-  DoLatexTest("### header", "\n\\subsection{ header}\n\n\n");
+  DoLatexTest("### header", "\n\\subsection{ header}\n");
 }
 
 TEST(LatexTest, HeaderSimple2) {
-  DoLatexTest("a\n### header", "\na\n\n\n\\subsection{ header}\n\n\n");
+  DoLatexTest("a\n### header", "\na\n\n\n\\subsection{ header}\n");
 }
 
 TEST(LatexTest, NotHeader) {
@@ -252,7 +252,7 @@ b
               "\n\n\n\n\\begin{tcolorbox}[colback=green!5!white,colframe=green!"
               "75!black,left=3pt,right=3pt,enlarge top "
               "by=2mm]\n\nhello\n\n\\footnote{\n\\emph{a}\n}\n\nb\n\n\\end{"
-              "tcolorbox}\n\n\n");
+              "tcolorbox}\n");
 }
 
 TEST(LatexTest, SideNote) {
@@ -264,7 +264,7 @@ TEST(LatexTest, SideNote) {
 )";
   DoLatexTest(content,
               "\n\n\n\\footnote{\n\\begin{enumerate}\n\\item \na\n\n\\item "
-              "\nb\n\n\\end{enumerate}\n\n}\n\n\n");
+              "\nb\n\n\\end{enumerate}}\n\n\n");
 }
 
 TEST(LatexTest, Quote) {
