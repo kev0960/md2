@@ -39,8 +39,8 @@ std::string GenerateOutputPath(std::string_view file_name,
                                std::string_view output_dir,
                                std::string_view ext) {
   fs::path p(file_name);
-  return StrCat(output_dir, p.parent_path().c_str(), "/", p.stem().c_str(), ".",
-                ext);
+  return StrCat(output_dir, "/", p.parent_path().c_str(), "/", p.stem().c_str(),
+                ".", ext);
 }
 
 // if file_name <= 228 --> Then we should append dump_ at front.

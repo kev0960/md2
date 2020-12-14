@@ -1,5 +1,7 @@
 #include "argparse.h"
 
+#include <fstream>
+#include <nlohmann/json.hpp>
 #include <optional>
 
 #include "logger.h"
@@ -7,6 +9,8 @@
 
 namespace md2 {
 namespace {
+
+using json = nlohmann::json;
 
 std::pair<std::string_view, size_t> GetOption(std::string_view arg,
                                               size_t start) {
@@ -67,6 +71,62 @@ std::optional<size_t> HandleVectorOption(std::string_view arg,
     }
   } else {
     option->push_back(transformer(quote_option));
+  }
+
+  return end;
+}
+
+std::optional<size_t> ReadFromJson(std::string_view arg,
+                                   size_t option_detail_start,
+                                   DriverOptions* option) {
+  auto [parsed_option, end] = GetOption(arg, option_detail_start);
+
+  std::string file_name(parsed_option);
+  std::ifstream in(file_name.c_str());
+
+  json option_data;
+  in >> option_data;
+
+  if (option_data.count("input_dirs")) {
+    option->input_dirs =
+        option_data["input_dirs"].get<std::vector<std::string>>();
+  }
+
+  if (option_data.count("input_files")) {
+    option->input_files =
+        option_data["input_files"].get<std::vector<std::string>>();
+  }
+
+  if (option_data.count("book_to_dir")) {
+    for (auto itr = option_data["book_to_dir"].begin();
+         itr != option_data["book_to_dir"].end(); itr++) {
+      option->book_file_and_dir.push_back(std::make_pair(
+          (*itr)["book"].get<std::string>(), (*itr)["dir"].get<std::string>()));
+    }
+  }
+
+  if (option_data.count("output_dir")) {
+    option->output_dir = option_data["output_dir"].get<std::string>();
+  }
+
+  if (option_data.count("image_path")) {
+    option->image_path = option_data["image_path"].get<std::string>();
+  }
+
+  if (option_data.count("json_output_dir")) {
+    option->json_output_dir = option_data["json_output_dir"].get<std::string>();
+  }
+
+  if (option_data.count("log_db")) {
+    option->should_log_db = option_data["log_db"].get<bool>();
+  }
+
+  if (option_data.count("html")) {
+    option->generate_html = option_data["html"].get<bool>();
+  }
+
+  if (option_data.count("latex")) {
+    option->should_log_db = option_data["latex"].get<bool>();
   }
 
   return end;
@@ -139,6 +199,12 @@ std::optional<size_t> HandleDriverOption(
 
     return HandleVectorOption(arg, *option_detail_start,
                               &option.book_file_and_dir, StringViewToPair);
+  } else if (option_name == "j") {
+    if (!option_detail_start) {
+      return std::nullopt;
+    }
+
+    return ReadFromJson(arg, *option_detail_start, &option);
   }
 
   return std::nullopt;
