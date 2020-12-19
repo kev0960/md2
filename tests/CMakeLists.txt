@@ -12,7 +12,7 @@ set(BUILD_GTEST ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Add test cpp file
-add_executable(md2test driver_test.cc parser_test.cc html_test.cc latex_test.cc metadata_test.cc argparse_test.cc)
+add_executable(md2test driver_test.cc parser_test.cc html_test.cc latex_test.cc metadata_test.cc argparse_test.cc syntax_highlighter_test.cc)
 
 # Link test executable against gtest & gtest_main
 target_link_libraries(md2test libmd2 gtest gmock gtest_main fmt::fmt)

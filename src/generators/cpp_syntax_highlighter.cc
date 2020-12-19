@@ -10,7 +10,7 @@ namespace {
 
 char kWhiteSpaces[] = " \t\n";
 
-std::unordered_set<std::string> kCppKeywords = {
+std::unordered_set<std::string_view> kCppKeywords = {
     /* C++ specific */
     "class", "catch", "const_cast", "delete", "dynamic_cast", "explicit",
     "export", "friend", "mutable", "namespace", "new", "operator", "private",
@@ -24,15 +24,15 @@ std::unordered_set<std::string> kCppKeywords = {
     "return", "sizeof", "static", "struct", "switch", "typedef", "union",
     "volatile", "while"};
 
-std::unordered_set<std::string> kCppTypeKeywords = {
-    "bool",  "int",      "long",    "float",      "short", "double",
-    "char",  "unsigned", "signed",  "void",       "int8",  "int16",
-    "int32", "int64",    "wchar_t", "std::string"};
+std::unordered_set<std::string_view> kCppTypeKeywords = {
+    "bool",   "int",  "long", "float", "short", "double", "char",    "unsigned",
+    "signed", "void", "int8", "int16", "int32", "int64",  "wchar_t", "string"};
 
-std::unordered_set<std::string> kMacroWithOneExpression = {"#if", "#ifdef",
-                                                           "#ifndef", "#elif"};
+std::unordered_set<std::string_view> kMacroWithOneExpression = {
+    "#if", "#ifdef", "#ifndef", "#elif"};
 
-std::unordered_set<std::string> kMacroWithNoExpression = {"#else", "#endif"};
+std::unordered_set<std::string_view> kMacroWithNoExpression = {"#else",
+                                                               "#endif"};
 
 // Check whether the character is allowed in the identifier.
 bool IsIdenfierAllowedChar(char c) {
@@ -60,7 +60,7 @@ bool IsWhiteSpace(char c) {
 
 bool IsNumber(char c) { return '0' <= c && c <= '9'; }
 
-bool IsNumericLiteral(const std::string& s) {
+bool IsNumericLiteral(std::string_view s) {
   if (s.length() == 0) {
     return false;
   }
@@ -241,18 +241,17 @@ bool CppSyntaxHighlighter::ParseCode() {
   // If any identifier is preceded by '(', then we think that the identifier is
   // a function.
   for (size_t i = 0; i < token_list_.size(); i++) {
-    if (token_list_[i].token_types == IDENTIFIER &&
-        i < token_list_.size() - 1) {
+    if (token_list_[i].token_type == IDENTIFIER && i < token_list_.size() - 1) {
       // Ignore Whitespaces.
       size_t next_parenth = i + 1;
       while (next_parenth < token_list_.size() &&
-             token_list_[next_parenth].token_types == WHITESPACE) {
+             token_list_[next_parenth].token_type == WHITESPACE) {
         next_parenth++;
       }
       if (next_parenth < token_list_.size() &&
-          token_list_[next_parenth].token_types == PARENTHESES &&
+          token_list_[next_parenth].token_type == PARENTHESES &&
           code_[token_list_[next_parenth].token_start] == '(') {
-        token_list_[i].token_types = FUNCTION;
+        token_list_[i].token_type = FUNCTION;
       }
     }
   }
@@ -263,7 +262,7 @@ size_t CppSyntaxHighlighter::HandleStringLiteral(size_t string_literal_start) {
   if (string_literal_start >= 1 && code_[string_literal_start - 1] == 'R') {
     // Handle raw std::string.
     // First find the delimiter.
-    std::string delimiter = code_.substr(
+    std::string_view delimiter = code_.substr(
         string_literal_start + 1,
         code_.find('(', string_literal_start + 1) - (string_literal_start + 1));
     std::string end_delimiter = StrCat(")", delimiter, "\"");
@@ -298,7 +297,8 @@ size_t CppSyntaxHighlighter::HandleMacro(size_t macro_start) {
   }
 
   // Check the macro token.
-  std::string macro = code_.substr(macro_start, header_token_end - macro_start);
+  std::string_view macro =
+      code_.substr(macro_start, header_token_end - macro_start);
   if (SetContains(kMacroWithNoExpression, macro)) {
     return delimiter_pos;
   }
@@ -336,7 +336,7 @@ void CppSyntaxHighlighter::AppendCurrentToken(SyntaxTokenType current_token,
                                               size_t token_end) {
   if (current_token == IDENTIFIER) {
     // Check whether it matches one of our keyword set.
-    std::string token = code_.substr(token_start, token_end - token_start);
+    std::string_view token = code_.substr(token_start, token_end - token_start);
     if (SetContains(kCppTypeKeywords, token)) {
       current_token = TYPE_KEYWORD;
     } else if (SetContains(kCppKeywords, token)) {

@@ -6,6 +6,7 @@
 #include "cpp_syntax_highlighter.h"
 #include "generator_util.h"
 #include "logger.h"
+#include "objdump_highlighter.h"
 #include "py_syntax_highlighter.h"
 
 namespace md2 {
@@ -38,8 +39,9 @@ std::string RunSyntaxHighlighter(std::string_view code,
   } else if (language == "py") {
     highlighter = std::make_unique<PySyntaxHighlighter>(str_code, str_lang);
   } else if (language == "asm") {
-    highlighter = std::make_unique<AsmSyntaxHighlighter>(
-        str_code, str_lang, AsmSyntaxHighlighter::INTEL);
+    highlighter = std::make_unique<AsmSyntaxHighlighter>(str_code, str_lang);
+  } else if (language == "objdump") {
+    highlighter = std::make_unique<ObjdumpHighlighter>(str_code, str_lang);
   } else {
     return str_code;
   }
@@ -421,7 +423,8 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
     return;
   }
 
-  MD2_ASSERT(node.GetChildren().size() == 2, "Verbatim does not have two nodes.");
+  MD2_ASSERT(node.GetChildren().size() == 2,
+             "Verbatim does not have two nodes.");
   const auto& code_name_node = node.GetChildren()[0];
   std::string_view name = md_.substr(
       code_name_node->Start(), code_name_node->End() - code_name_node->Start());
@@ -432,7 +435,7 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
     std::string_view formatted_cpp = context_->GetClangFormatted(
         &CastNodeTypes<ParseTreeTextNode>(*content_node), md_);
     GetCurrentTarget()->append(RunSyntaxHighlighter(formatted_cpp, name));
-  } else if (name == "py" || name == "asm") {
+  } else if (name == "py" || name == "asm" || name == "objdump") {
     GetCurrentTarget()->append(
         RunSyntaxHighlighter(GetStringInNode(content_node.get()), name));
   } else if (name == "cpp-formatted") {

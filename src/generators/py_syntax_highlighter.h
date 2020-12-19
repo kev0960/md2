@@ -7,7 +7,7 @@ namespace md2 {
 
 class PySyntaxHighlighter : public SyntaxHighlighter {
  public:
-  PySyntaxHighlighter(const std::string& code, const std::string& language)
+  PySyntaxHighlighter(std::string_view code, std::string_view language)
       : SyntaxHighlighter(code, language) {}
   bool ParseCode() override;
 

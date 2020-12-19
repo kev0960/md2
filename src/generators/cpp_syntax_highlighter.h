@@ -9,7 +9,7 @@ namespace md2 {
 
 class CppSyntaxHighlighter : public SyntaxHighlighter {
  public:
-  CppSyntaxHighlighter(const std::string& code, const std::string& language)
+  CppSyntaxHighlighter(std::string_view code, std::string_view language)
       : SyntaxHighlighter(code, language) {}
   bool ParseCode() override;
 

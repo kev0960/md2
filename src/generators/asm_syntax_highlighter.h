@@ -7,10 +7,8 @@ namespace md2 {
 
 class AsmSyntaxHighlighter : public SyntaxHighlighter {
  public:
-  enum ASM_SYNTAX { INTEL, AT_T };
-  AsmSyntaxHighlighter(const std::string& code, const std::string& language,
-                       ASM_SYNTAX asm_syntax)
-      : SyntaxHighlighter(code, language), asm_syntax_(asm_syntax) {
+  AsmSyntaxHighlighter(std::string_view code, std::string_view language)
+      : SyntaxHighlighter(code, language){
     class_to_style_map_.insert({"in", {{"color", "#6dbeff"}}});
     class_to_style_map_.insert({"rg", {{"color", "#78dce8"}}});
     class_to_style_map_.insert({"u", {{"color", "#b26a2f"}}});
@@ -24,8 +22,6 @@ class AsmSyntaxHighlighter : public SyntaxHighlighter {
   bool ParseLine(size_t line_start, size_t line_end);
   void AppendCurrentToken(SyntaxTokenType current_token, size_t token_start,
                           size_t token_end, int* identifier_index);
-
-  ASM_SYNTAX asm_syntax_;
 };
 
 }  // namespace md2

@@ -31,28 +31,32 @@ enum SyntaxTokenType {
   LABEL,        // e.g func:
   DIRECTIVE,    // e.g .align, .global
   INSTRUCTION,  // e.g mov, add, sub
-  NONE          // Not matched to any token.
+  // Objdump only
+  FUNCTION_SECTION, // <some_function>
+  NONE     // Not matched to any token.
 };
 
 struct SyntaxToken {
-  SyntaxTokenType token_types;
+  SyntaxTokenType token_type;
   size_t token_start;
   size_t token_end;  // Not inclusive.
 
-  SyntaxToken(SyntaxTokenType token_types, size_t token_start, size_t token_end)
-      : token_types(token_types),
+  SyntaxToken(SyntaxTokenType token_type, size_t token_start, size_t token_end)
+      : token_type(token_type),
         token_start(token_start),
         token_end(token_end) {}
 
   bool operator==(const SyntaxToken& token) const {
-    return token_types == token.token_types &&
-           token_start == token.token_start && token_end == token.token_end;
+    return token_type == token.token_type && token_start == token.token_start &&
+           token_end == token.token_end;
   }
+
+  void Print() const;
 };
 
 class SyntaxHighlighter {
  public:
-  SyntaxHighlighter(const std::string& code, const std::string& language)
+  SyntaxHighlighter(std::string_view code, std::string_view language)
       : code_(code), language_(language) {
     class_to_style_map_.insert({"k", {{"color", "#ff6188"}}});
     class_to_style_map_.insert({"s", {{"color", "#ffd866"}}});
@@ -72,19 +76,24 @@ class SyntaxHighlighter {
 
   // Merge syntax tokens with same colors.
   void ColorMerge();
+
+  const std::vector<SyntaxToken>& GetTokenList() const;
   std::string GenerateHighlightedHTML() const;
   void OutputColorCss(std::string filename) const;
 
   virtual ~SyntaxHighlighter() = default;
 
  protected:
-  std::string code_;
+  void RemoveNewlineInTokenList();
+
+  std::string_view code_;
+
   std::vector<SyntaxToken> token_list_;
   std::unordered_map<std::string, std::unordered_map<std::string, std::string>>
       class_to_style_map_;
 
  private:
-  std::string language_;
+  std::string_view language_;
 };
 
 }  // namespace md2

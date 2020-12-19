@@ -7,8 +7,9 @@
 namespace md2 {
 namespace {
 
-std::unordered_set<std::string> kIntelAsmKeywords = {"section", "dd", "dw"};
-std::unordered_set<std::string> kRegisterNames = {
+std::unordered_set<std::string_view> kIntelAsmKeywords = {"section", "dd",
+                                                          "dw"};
+std::unordered_set<std::string_view> kRegisterNames = {
     "rax", "eax", "ah",  "al",  "rcx", "ecx", "cx",  "ch", "cl",  "rdx", "edx",
     "dx",  "dh",  "dl",  "rbx", "ebx", "bx",  "bh",  "bl", "rsp", "esp", "sp",
     "spl", "rbp", "ebp", "bp",  "bpl", "rsi", "esi", "si", "sil", "rdi", "edi",
@@ -43,6 +44,13 @@ bool IsIdenfierAllowedChar(char c) {
   if (c == '.') {  // For directives.
     return true;
   }
+  if (c == '%') {  // For register %eax
+    return true;
+  }
+  if (c == '$') {  // For numeric literal for AT&T syntax.
+    return true;
+  }
+
   return false;
 }
 
@@ -53,11 +61,14 @@ bool IsBracket(char c) {
   return false;
 }
 
-bool IsNumericLiteral(const std::string& s) {
+bool IsNumericLiteral(std::string_view s) {
   if (s.length() == 0) {
     return false;
   }
   if (IsNumber(s[0])) {
+    return true;
+  }
+  if (s[0] == '$') {
     return true;
   }
 
@@ -86,6 +97,21 @@ bool IsOperator(char c) {
   }
   return false;
 }
+
+bool IsRegisterName(std::string_view token) {
+  if (token.empty()) {
+    return false;
+  }
+
+  if (token[0] == '%' && SetContains(kRegisterNames, token.substr(1))) {
+    return true;
+  } else if (SetContains(kRegisterNames, token)) {
+    return true;
+  }
+
+  return false;
+}
+
 }  // namespace
 
 bool AsmSyntaxHighlighter::ParseCode() {
@@ -177,7 +203,7 @@ void AsmSyntaxHighlighter::AppendCurrentToken(SyntaxTokenType current_token,
                                               size_t token_end,
                                               int* identifier_index) {
   if (current_token == IDENTIFIER) {
-    std::string token = code_.substr(token_start, token_end - token_start);
+    std::string_view token = code_.substr(token_start, token_end - token_start);
     if (token.empty()) {
       return;
     }
@@ -186,7 +212,7 @@ void AsmSyntaxHighlighter::AppendCurrentToken(SyntaxTokenType current_token,
       current_token = LABEL;
     } else if (token.front() == '.') {
       current_token = DIRECTIVE;
-    } else if (SetContains(kRegisterNames, token)) {
+    } else if (IsRegisterName(token)) {
       current_token = REGISTER;
     } else if (*identifier_index == 0) {
       // If not label or directive, then the first identifier will be treated as
