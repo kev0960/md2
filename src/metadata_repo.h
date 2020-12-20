@@ -23,6 +23,9 @@ class MetadataRepo {
 
   const Metadata* FindMetadataByFilename(std::string_view filename) const;
 
+  // Pathname is the normalized version of filename (e.g dump_121.md --> 121)
+  const Metadata* FindMetadataByPathname(std::string_view filename) const;
+
   std::string DumpFileHeaderAsJson() const;
   std::string DumpPathAsJson() const;
 

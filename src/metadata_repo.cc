@@ -1,15 +1,16 @@
 #include "metadata_repo.h"
 
 #include <nlohmann/json.hpp>
+#include <unordered_set>
 
-#include "logger.h"
+#include "string_util.h"
 
 namespace md2 {
 namespace {
 
 using json = nlohmann::json;
 
-std::string NormalizeFileName(std::string_view file_name) {
+std::string_view NormalizeFileName(std::string_view file_name) {
   size_t name_start = file_name.find_last_of("/");
   if (name_start != std::string_view::npos) {
     file_name = file_name.substr(name_start + 1);
@@ -25,7 +26,22 @@ std::string NormalizeFileName(std::string_view file_name) {
     file_name = file_name.substr(5);
   }
 
-  return std::string(file_name);
+  return file_name;
+}
+
+std::string ConvertPathnameToFilename(std::string_view path_name) {
+  // Instruction name.
+  if (!std::all_of(path_name.begin(), path_name.end(), isdigit) ||
+      path_name.empty()) {
+    return StrCat(path_name, ".md");
+  }
+
+  int num = std::stoi(std::string(path_name));
+  if (num <= 228) {
+    return StrCat("dump_", path_name, ".md");
+  }
+
+  return StrCat(path_name, ".md");
 }
 
 std::vector<std::string> PathToVec(std::string_view path) {
@@ -129,6 +145,15 @@ const Metadata* MetadataRepo::FindMetadataByFilename(
   return nullptr;
 }
 
+const Metadata* MetadataRepo::FindMetadataByPathname(
+    std::string_view filename) const {
+  if (filename.empty()) {
+    return nullptr;
+  }
+
+  return FindMetadataByFilename(ConvertPathnameToFilename(filename));
+}
+
 std::string MetadataRepo::DumpFileHeaderAsJson() const {
   json file_headers;
   for (auto& [file_name, metadata] : repo_) {
@@ -136,7 +161,7 @@ std::string MetadataRepo::DumpFileHeaderAsJson() const {
     for (auto& [field_name, field] : metadata->GetAllFields()) {
       file[field_name] = field;
     }
-    file_headers[NormalizeFileName(file_name)] = file;
+    file_headers[std::string(NormalizeFileName(file_name))] = file;
   }
 
   return file_headers.dump(1);
@@ -144,10 +169,52 @@ std::string MetadataRepo::DumpFileHeaderAsJson() const {
 
 std::string MetadataRepo::DumpPathAsJson() const {
   json path_db;
+
+  std::vector<std::pair<std::string_view, const Metadata*>> file_and_metadata;
+  file_and_metadata.reserve(repo_.size());
+
   for (auto& [file_name, metadata] : repo_) {
-    std::string_view path = metadata->GetPath();
-    auto paths = PathToVec(path);
-    ConstructPathJson(path_db, paths, 0, NormalizeFileName(file_name));
+    file_and_metadata.emplace_back(file_name, metadata.get());
+  }
+
+  // Sort by the published date.
+  std::sort(file_and_metadata.begin(), file_and_metadata.end(),
+            [](const auto& left, const auto& right) {
+              const Metadata* left_meta = left.second;
+              const Metadata* right_meta = right.second;
+              if (left_meta->GetPublishDate() == right_meta->GetPublishDate()) {
+                return left_meta->GetTitle() < right_meta->GetTitle();
+              }
+
+              return left_meta->GetPublishDate() < right_meta->GetPublishDate();
+            });
+
+  std::unordered_set<std::string_view> handled_files;
+  handled_files.reserve(repo_.size());
+
+  for (auto& [file_name, metadata] : file_and_metadata) {
+    std::string_view current_file = NormalizeFileName(file_name);
+    if (handled_files.count(current_file)) {
+      continue;
+    }
+
+    // Keep finding the next pages.
+    const Metadata* current_meta = metadata;
+    while (current_meta != nullptr) {
+      std::string_view path = current_meta->GetPath();
+      auto paths = PathToVec(path);
+      ConstructPathJson(path_db, paths, 0, std::string(current_file));
+      handled_files.insert(current_file);
+
+      // Find the next page if exist.
+      current_file = current_meta->GetNextPage();
+      current_meta = FindMetadataByPathname(current_file);
+
+      // Break from errorneous loop.
+      if (handled_files.count(current_file)) {
+        break;
+      }
+    }
   }
 
   return path_db.dump(1);
