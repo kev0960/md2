@@ -3,6 +3,7 @@
 #include <unordered_set>
 
 #include "container_util.h"
+#include "logger.h"
 
 namespace md2 {
 namespace {
@@ -13,7 +14,7 @@ std::unordered_set<std::string_view> kRegisterNames = {
     "rax", "eax", "ah",  "al",  "rcx", "ecx", "cx",  "ch", "cl",  "rdx", "edx",
     "dx",  "dh",  "dl",  "rbx", "ebx", "bx",  "bh",  "bl", "rsp", "esp", "sp",
     "spl", "rbp", "ebp", "bp",  "bpl", "rsi", "esi", "si", "sil", "rdi", "edi",
-    "di",  "dil", "ss",  "cs",  "ds",  "es",  "fs",  "gs"};
+    "di",  "dil", "ss",  "cs",  "ds",  "es",  "fs",  "gs", "eip", "rip"};
 
 bool IsWhiteSpace(char c) {
   if (c == '\t' || c == ' ' || c == '\n') {
@@ -38,9 +39,6 @@ bool IsIdenfierAllowedChar(char c) {
   if (c == '_') {
     return true;
   }
-  if (c == '(' || c == ')') {  // Allowed for demangled function name.
-    return true;
-  }
   if (c == '.') {  // For directives.
     return true;
   }
@@ -55,6 +53,9 @@ bool IsIdenfierAllowedChar(char c) {
 }
 
 bool IsBracket(char c) {
+  if (c == '(' || c == ')') {
+    return true;
+  }
   if (c == '[' || c == ']') {
     return true;
   }
@@ -225,7 +226,7 @@ void AsmSyntaxHighlighter::AppendCurrentToken(SyntaxTokenType current_token,
   }
 
   if (current_token != NONE) {
-    token_list_.emplace_back(current_token, token_start, token_end);
+    token_list_.push_back(SyntaxToken(current_token, token_start, token_end));
   }
 }
 

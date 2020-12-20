@@ -10,10 +10,9 @@
 namespace md2 {
 namespace {
 
-constexpr std::string_view kAsmPrefix = "    ";
 constexpr std::string_view kWhiteSpace = " \t";
 
-inline bool isHexDigit(char c) {
+inline bool IsHexDigit(char c) {
   if ('0' <= c && c <= '9') {
     return true;
   }
@@ -30,20 +29,22 @@ inline bool isHexDigit(char c) {
 }
 
 bool IsThisAssembly(std::string_view code) {
-  if (code.substr(0, 4) != kAsmPrefix) {
+  size_t whitespace_prefix_end = code.find_first_not_of(kWhiteSpace);
+  if (whitespace_prefix_end == 0) {
     return false;
   }
 
-  size_t offset_end = code.find(':', 4);
+  size_t offset_end = code.find(':', whitespace_prefix_end + 1);
   if (offset_end == std::string_view::npos) {
     return false;
   }
 
-  std::string_view offset_str = code.substr(4, offset_end - 4);
+  std::string_view offset_str =
+      code.substr(whitespace_prefix_end, offset_end - 4);
 
   // Offset str should be all in hex.
   if (std::any_of(offset_str.begin(), offset_str.end(),
-                  [](char c) { return !isHexDigit(c); })) {
+                  [](char c) { return !IsHexDigit(c); })) {
     return false;
   }
 
@@ -57,7 +58,7 @@ bool IsThisFunctionHeader(std::string_view code) {
   }
 
   if (std::any_of(code.begin(), code.begin() + offset_end,
-                  [](char c) { return !isHexDigit(c); })) {
+                  [](char c) { return !IsHexDigit(c); })) {
     return false;
   }
 
@@ -121,10 +122,12 @@ void ObjdumpHighlighter::HandleFunctionHeader(size_t start, size_t end) {
 }
 
 size_t ObjdumpHighlighter::HandleOffset(size_t start, size_t end) {
-  size_t offset_end = code_.find(":", start);
-  token_list_.push_back(SyntaxToken(WHITESPACE, start, start + 4));
+  size_t whitespace_prefix_end = code_.find_first_not_of(kWhiteSpace, start);
+  token_list_.push_back(SyntaxToken(WHITESPACE, start, whitespace_prefix_end));
+
+  size_t offset_end = code_.find(":", whitespace_prefix_end + 1);
   token_list_.push_back(
-      SyntaxToken(NUMERIC_LITERAL, start + 4, offset_end + 1));
+      SyntaxToken(NUMERIC_LITERAL, whitespace_prefix_end, offset_end + 1));
 
   // Now fetch the hex instruction part.
   size_t hex_start = code_.find_first_not_of(kWhiteSpace, offset_end + 1);
@@ -132,6 +135,11 @@ size_t ObjdumpHighlighter::HandleOffset(size_t start, size_t end) {
 
   while (true) {
     size_t hex_end = code_.find_first_of(kWhiteSpace, hex_start + 1);
+    std::string_view maybe_hex = code_.substr(hex_start, hex_end - hex_start);
+    if (!std::all_of(maybe_hex.begin(), maybe_hex.end(), IsHexDigit)) {
+      return hex_start;
+    }
+
     token_list_.push_back(SyntaxToken(NUMERIC_LITERAL, hex_start, hex_end));
 
     hex_start = code_.find_first_not_of(kWhiteSpace, hex_end + 1);

@@ -418,6 +418,21 @@ mov eax, ebp)");
   });
 }
 
+TEST(AsmSyntaxHighlighter, RegisterName) {
+  MockAsmSyntaxHighlighter syn(R"(mov    0x0(%rip),%eax)");
+  syn.ParseCode();
+  syn.CheckSyntaxTokens({
+      {INSTRUCTION, 0, 3},
+      {WHITESPACE, 3, 7},
+      {NUMERIC_LITERAL, 7, 10},
+      {BRACKET, 10, 11},
+      {REGISTER, 11, 15},
+      {BRACKET, 15, 16},
+      {PUNCTUATION, 16, 17},
+      {REGISTER, 17, 21},
+  });
+}
+
 TEST(AsmSyntaxHighlighter, RegisterAndIdentifier) {
   MockAsmSyntaxHighlighter syn(R"(mov BYTE PTR data[rbx-1], al)");
   syn.ParseCode();
@@ -506,23 +521,30 @@ TEST(ObjdumpHighlighter, InstructionSection) {
 
 TEST(ObjdumpHighlighter, InstructionSection2) {
   MockObjdumpHighlighter syn(R"(
-    11a4:c3                     retq   
-    11a5:66 66 2e 0f 1f 84 00   data16 nopw %cs:0x0(%rax,%rax,1)
-    11ac:00 00 00 00 
+ objdump -S s.o 
 
-00000000000011b0 <__libc_csu_fini>:
-    11b0:f3 0f 1e fa            endbr64 
-    11b4:c3                     retq   
+s.o:     file format elf64-x86-64
 
-Disassembly of section .fini:
 
-00000000000011b8 <_fini>:
-    11b8:f3 0f 1e fa            endbr64 
-    11bc:48 83 ec 08            sub    $0x8,%rsp
-    11c0:48 83 c4 08            add    $0x8,%rsp
-    11c4:c3                     retq )");
+Disassembly of section .text:
+
+0000000000000000 <_Z4funcv>:
+   0:	f3 0f 1e fa          	endbr64 
+   4:	55                   	push   %rbp
+   5:	48 89 e5             	mov    %rsp,%rbp
+   8:	90                   	nop
+   9:	5d                   	pop    %rbp
+   a:	c3                   	retq   
+
+000000000000000b <_ZL5func2v>:
+   b:	f3 0f 1e fa          	endbr64 
+   f:	55                   	push   %rbp
+  10:	48 89 e5             	mov    %rsp,%rbp
+  13:	90                   	nop
+  14:	5d                   	pop    %rbp
+  15:	c3                   	retq   
+)");
   syn.ParseCode();
-  syn.PrintTokens();
 }
 
 }  // namespace md2
