@@ -104,7 +104,11 @@ bool MetadataRepo::RegisterMetadata(std::string_view filename,
 }
 
 const Metadata* MetadataRepo::FindMetadata(std::string_view ref) const {
-  auto itr = ref_to_metadata_.find(std::string(ref));
+  std::string lowercase_ref;
+  std::transform(ref.begin(), ref.end(), std::back_inserter(lowercase_ref),
+                 [](const char c) { return std::tolower(c); });
+
+  auto itr = ref_to_metadata_.find(lowercase_ref);
   if (itr == ref_to_metadata_.end()) {
     return nullptr;
   }
@@ -118,7 +122,11 @@ const Metadata* MetadataRepo::FindMetadata(std::string_view ref) const {
 
 const Metadata* MetadataRepo::FindMetadata(std::string_view ref,
                                            std::string_view path) const {
-  auto itr = ref_to_metadata_.find(std::string(ref));
+  std::string lowercase_ref;
+  std::transform(ref.begin(), ref.end(), std::back_inserter(lowercase_ref),
+                 [](const char c) { return std::tolower(c); });
+
+  auto itr = ref_to_metadata_.find(lowercase_ref);
   if (itr == ref_to_metadata_.end()) {
     return nullptr;
   }

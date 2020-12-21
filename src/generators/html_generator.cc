@@ -28,7 +28,8 @@ constexpr std::string_view kCppRefStart = R"(
 <div class='cpp-ref-start'><p class='cpp-ref-link'>이 레퍼런스의 모든 내용은 <a href="https://cppreference.com">여기</a>를 기초로 하여 작성하였습니다.</p><p class='cpp-lec-introduce'>아직 C++ 에 친숙하지 않다면 <a href="https://modoocode.com/135">씹어먹는 C++</a> 은 어때요?</p></div>
 )";
 
-std::string RunSyntaxHighlighter(std::string_view code,
+std::string RunSyntaxHighlighter(const GeneratorContext& context,
+                                 std::string_view code,
                                  std::string_view language) {
   std::string str_code(code);
   std::string str_lang(language);
@@ -39,9 +40,11 @@ std::string RunSyntaxHighlighter(std::string_view code,
   } else if (language == "py") {
     highlighter = std::make_unique<PySyntaxHighlighter>(str_code, str_lang);
   } else if (language == "asm") {
-    highlighter = std::make_unique<AsmSyntaxHighlighter>(str_code, str_lang);
+    highlighter =
+        std::make_unique<AsmSyntaxHighlighter>(context, str_code, str_lang);
   } else if (language == "objdump") {
-    highlighter = std::make_unique<ObjdumpHighlighter>(str_code, str_lang);
+    highlighter =
+        std::make_unique<ObjdumpHighlighter>(context, str_code, str_lang);
   } else {
     return str_code;
   }
@@ -434,13 +437,14 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
   if (name == "cpp" || name == "info-format") {
     std::string_view formatted_cpp = context_->GetClangFormatted(
         &CastNodeTypes<ParseTreeTextNode>(*content_node), md_);
-    GetCurrentTarget()->append(RunSyntaxHighlighter(formatted_cpp, name));
+    GetCurrentTarget()->append(
+        RunSyntaxHighlighter(*context_, formatted_cpp, name));
   } else if (name == "py" || name == "asm" || name == "objdump") {
-    GetCurrentTarget()->append(
-        RunSyntaxHighlighter(GetStringInNode(content_node.get()), name));
+    GetCurrentTarget()->append(RunSyntaxHighlighter(
+        *context_, GetStringInNode(content_node.get()), name));
   } else if (name == "cpp-formatted") {
-    GetCurrentTarget()->append(
-        RunSyntaxHighlighter(GetStringInNode(content_node.get()), "cpp"));
+    GetCurrentTarget()->append(RunSyntaxHighlighter(
+        *context_, GetStringInNode(content_node.get()), "cpp"));
   } else if (name == "compiler-warning") {
     GetCurrentTarget()->append(
         "<p class='compiler-warning-title'><i class='xi-warning'></i>컴파일 "

@@ -21,7 +21,7 @@ class GeneratorContext {
   // find$vector --> find). If not found, then the file_name (first) would be
   // empty.
   std::pair<std::string_view, std::string_view> FindReference(
-      std::string_view name);
+      std::string_view name) const;
 
   std::string_view FindImage(const std::string& image_url);
 

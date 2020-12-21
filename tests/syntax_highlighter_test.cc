@@ -1,9 +1,11 @@
 #include "generators/asm_syntax_highlighter.h"
 #include "generators/cpp_syntax_highlighter.h"
+#include "generators/generator_context.h"
 #include "generators/objdump_highlighter.h"
 #include "generators/py_syntax_highlighter.h"
 #include "gtest/gtest.h"
 #include "logger.h"
+#include "metadata_repo.h"
 
 namespace md2 {
 namespace {
@@ -64,6 +66,8 @@ std::string TokenTypeToString(SyntaxTokenType type) {
 template <typename Highlighter>
 class SyntaxHighlighterTester {
  public:
+  SyntaxHighlighterTester() : fake_context_(repo_, "") {}
+
   void CheckSyntaxTokens(std::vector<SyntaxToken> expected) {
     const std::vector<SyntaxToken>& actual =
         static_cast<Highlighter*>(this)->GetTokenList();
@@ -89,6 +93,9 @@ class SyntaxHighlighterTester {
              << token_list[i].token_end << "]";
     }
   }
+
+  GeneratorContext fake_context_;
+  MetadataRepo repo_;
 };
 
 class MockSyntaxHighlighter
@@ -387,7 +394,7 @@ class MockAsmSyntaxHighlighter
       public SyntaxHighlighterTester<MockAsmSyntaxHighlighter> {
  public:
   MockAsmSyntaxHighlighter(std::string_view content)
-      : AsmSyntaxHighlighter(content, "asm") {}
+      : AsmSyntaxHighlighter(fake_context_, content, "asm") {}
 };
 
 TEST(AsmSyntaxHighlighter, LabelTest) {
@@ -482,7 +489,7 @@ class MockObjdumpHighlighter
       public SyntaxHighlighterTester<MockObjdumpHighlighter> {
  public:
   MockObjdumpHighlighter(std::string_view content)
-      : ObjdumpHighlighter(content, "objdump") {}
+      : ObjdumpHighlighter(fake_context_, content, "objdump") {}
 };
 
 TEST(ObjdumpHighlighter, FunctionSection) {

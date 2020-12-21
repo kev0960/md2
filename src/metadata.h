@@ -35,6 +35,7 @@ class Metadata {
   std::string cat_title_;
 
   // List of references that are listed in this file.
+  // NOTE We convert reference name to all lower case.
   std::vector<std::string> ref_names_;
 
   // Path of this document (in the category, not the actual path in the

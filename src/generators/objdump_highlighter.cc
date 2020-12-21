@@ -1,8 +1,10 @@
 #include "objdump_highlighter.h"
 
 #include <algorithm>
+#include <unordered_set>
 
 #include "asm_syntax_highlighter.h"
+#include "container_util.h"
 #include "cpp_syntax_highlighter.h"
 #include "logger.h"
 #include "string_util.h"
@@ -11,7 +13,8 @@ namespace md2 {
 namespace {
 
 constexpr std::string_view kWhiteSpace = " \t";
-
+static std::unordered_set<char> kATandTAssemblySuffix = {'b', 's', 'w',
+                                                         'l', 'q', 't'};
 inline bool IsHexDigit(char c) {
   if ('0' <= c && c <= '9') {
     return true;
@@ -93,7 +96,7 @@ bool ObjdumpHighlighter::ParseCode() {
       // Handle the offset.
       size_t inst_start = HandleOffset(current, line_end);
       AsmSyntaxHighlighter asm_highlighter(
-          code_.substr(inst_start, line_end - inst_start), "asm");
+          context_, code_.substr(inst_start, line_end - inst_start), "asm");
       asm_highlighter.ParseCode();
       AppendTokenVec(asm_highlighter.GetTokenList(), inst_start);
     } else if (IsThisFunctionHeader(current_line)) {
@@ -156,6 +159,44 @@ size_t ObjdumpHighlighter::HandleOffset(size_t start, size_t end) {
     }
   }
   return hex_start;
+}
+
+std::string_view ObjdumpHighlighter::FindAssemblyReference(
+    std::string_view inst) const {
+  if (inst.empty()) {
+    return "";
+  }
+
+  if (auto result = context_.FindReference(inst); !result.first.empty()) {
+    return result.first;
+  }
+
+  // If the instruction is not immediately found, check whether it is the AT&T
+  // assembly format.
+  if (!SetContains(kATandTAssemblySuffix, inst.back())) {
+    return "";
+  }
+
+  inst.remove_suffix(1);
+  if (auto result = context_.FindReference(inst); !result.first.empty()) {
+    return result.first;
+  }
+
+  return "";
+}
+
+std::string ObjdumpHighlighter::GetReferenceOf(SyntaxTokenType type,
+                                               std::string_view snippet) const {
+  if (type != INSTRUCTION) {
+    return std::string(snippet);
+  }
+
+  std::string_view link = FindAssemblyReference(snippet);
+  if (link.empty()) {
+    return std::string(snippet);
+  }
+
+  return StrCat(R"(<a href=")", link, "\">", snippet, "</a>");
 }
 
 }  // namespace md2

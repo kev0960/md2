@@ -4,6 +4,7 @@
 
 #include "container_util.h"
 #include "logger.h"
+#include "string_util.h"
 
 namespace md2 {
 namespace {
@@ -203,6 +204,7 @@ void AsmSyntaxHighlighter::AppendCurrentToken(SyntaxTokenType current_token,
                                               size_t token_start,
                                               size_t token_end,
                                               int* identifier_index) {
+  bool no_merge = false;
   if (current_token == IDENTIFIER) {
     std::string_view token = code_.substr(token_start, token_end - token_start);
     if (token.empty()) {
@@ -219,6 +221,7 @@ void AsmSyntaxHighlighter::AppendCurrentToken(SyntaxTokenType current_token,
       // If not label or directive, then the first identifier will be treated as
       // an instruction.
       (*identifier_index)++;
+      no_merge = true;
       current_token = INSTRUCTION;
     } else if (IsNumericLiteral(token)) {
       current_token = NUMERIC_LITERAL;
@@ -226,8 +229,23 @@ void AsmSyntaxHighlighter::AppendCurrentToken(SyntaxTokenType current_token,
   }
 
   if (current_token != NONE) {
-    token_list_.push_back(SyntaxToken(current_token, token_start, token_end));
+    token_list_.push_back(
+        SyntaxToken(current_token, token_start, token_end, no_merge));
   }
+}
+
+std::string AsmSyntaxHighlighter::GetReferenceOf(
+    SyntaxTokenType type, std::string_view snippet) const {
+  if (type != INSTRUCTION) {
+    return std::string(snippet);
+  }
+
+  auto [link, ref_name] = context_.FindReference(snippet);
+  if (link.empty()) {
+    return std::string(snippet);
+  }
+
+  return StrCat(R"(<a href=")", link, "\">", snippet, "</a>");
 }
 
 }  // namespace md2

@@ -1,5 +1,6 @@
 #include "metadata.h"
 
+#include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <utility>
@@ -110,6 +111,12 @@ std::unique_ptr<Metadata> MetadataFactory::ParseMetadata(
       metadata->is_published_ = (field == "true");
     } else if (field_name == "ref_title") {
       metadata->ref_names_ = SplitString(field);
+
+      // Convert reference name to all lower case.
+      for (auto& ref_name : metadata->ref_names_) {
+        std::transform(ref_name.begin(), ref_name.end(), ref_name.begin(),
+                       [](const char c) { return std::tolower(c); });
+      }
     }
 
     metadata->all_fields_[std::string(field_name)] = field;

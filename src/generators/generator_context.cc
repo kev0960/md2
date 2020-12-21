@@ -102,7 +102,7 @@ std::string_view GeneratorContext::GetClangFormatted(
 }
 
 std::pair<std::string_view, std::string_view> GeneratorContext::FindReference(
-    std::string_view name) {
+    std::string_view name) const {
   size_t delim = name.find('$');
 
   std::string_view actual_ref = name;

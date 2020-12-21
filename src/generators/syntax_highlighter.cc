@@ -161,7 +161,8 @@ std::string SyntaxHighlighter::GenerateHighlightedHTML() const {
         code_.substr(token.token_start, token.token_end - token.token_start));
 
     EscapeHTML(&token_str);
-    html += StrCat("<span class='", class_name, "'>", token_str, "</span>");
+    html += StrCat("<span class='", class_name, "'>",
+                   GetReferenceOf(token.token_type, token_str), "</span>");
   }
   html += "</pre>";
 
@@ -224,9 +225,18 @@ void SyntaxHighlighter::ColorMerge() {
   // Now iterate through the token list and merge the tokens with same style.
   size_t i = 0;
   while (i < token_list_.size() - 1) {
+    if (token_list_[i].no_merge) {
+      i++;
+      continue;
+    }
+
     const auto current_token = token_list_[i].token_type;
     size_t pivot = i;
     while (i < token_list_.size() - 1) {
+      if (token_list_[i + 1].no_merge) {
+        break;
+      }
+
       const auto next_token = token_list_[i + 1].token_type;
       if (token_type_to_cluster_id[current_token] ==
           token_type_to_cluster_id[next_token]) {
@@ -239,6 +249,7 @@ void SyntaxHighlighter::ColorMerge() {
     }
     i++;
   }
+
   // Now remove all the empty string tokens.
   token_list_.erase(std::remove_if(token_list_.begin(), token_list_.end(),
                                    [](const SyntaxToken& token) {

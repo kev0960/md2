@@ -32,8 +32,8 @@ enum SyntaxTokenType {
   DIRECTIVE,    // e.g .align, .global
   INSTRUCTION,  // e.g mov, add, sub
   // Objdump only
-  FUNCTION_SECTION, // <some_function>
-  NONE     // Not matched to any token.
+  FUNCTION_SECTION,  // <some_function>
+  NONE               // Not matched to any token.
 };
 
 struct SyntaxToken {
@@ -41,10 +41,15 @@ struct SyntaxToken {
   size_t token_start;
   size_t token_end;  // Not inclusive.
 
-  SyntaxToken(SyntaxTokenType token_type, size_t token_start, size_t token_end)
+  // If this is true then this token will not be color-merged.
+  bool no_merge;
+
+  SyntaxToken(SyntaxTokenType token_type, size_t token_start, size_t token_end,
+              bool no_merge = false)
       : token_type(token_type),
         token_start(token_start),
-        token_end(token_end) {}
+        token_end(token_end),
+        no_merge(no_merge) {}
 
   bool operator==(const SyntaxToken& token) const {
     return token_type == token.token_type && token_start == token.token_start &&
@@ -80,6 +85,14 @@ class SyntaxHighlighter {
   const std::vector<SyntaxToken>& GetTokenList() const;
   std::string GenerateHighlightedHTML() const;
   void OutputColorCss(std::string filename) const;
+
+  virtual std::string GetReferenceOf(SyntaxTokenType type,
+                                     std::string_view snippet) const {
+    // To disable unused warnings.
+    (void)type;
+
+    return std::string(snippet);
+  }
 
   virtual ~SyntaxHighlighter() = default;
 
