@@ -744,6 +744,20 @@ TEST(ParserTest, CommandAndInvalidCommand) {
                                            {ParseTreeNode::TEXT, 12, 13, 3}}));
 }
 
+TEST(ParserTest, CommandWithEscapes) {
+  std::string content = R"(\tooltip{\{k1\}\{z\}}{쓰기 마스크 (write mask)})";
+  DoParserTest(content, ParseTreeComparer({{ParseTreeNode::NODE, 0, 52, 0},
+                                           {ParseTreeNode::PARAGRAPH, 0, 52, 1},
+                                           {ParseTreeNode::COMMAND, 0, 52, 2},
+                                           {ParseTreeNode::NODE, 9, 20, 3},
+                                           {ParseTreeNode::TEXT, 9, 20, 4},
+                                           {ParseTreeNode::ESCAPE, 9, 11, 5},
+                                           {ParseTreeNode::ESCAPE, 13, 15, 5},
+                                           {ParseTreeNode::ESCAPE, 15, 17, 5},
+                                           {ParseTreeNode::ESCAPE, 18, 20, 5},
+                                           {ParseTreeNode::TEXT, 22, 51, 3}}));
+}
+
 TEST(ParserTest, Math) {
   std::string content = R"(some $$1+2*3$$ math)";
   DoParserTest(content, ParseTreeComparer({{ParseTreeNode::NODE, 0, 19, 0},

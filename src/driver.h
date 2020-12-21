@@ -28,7 +28,7 @@ struct DriverOptions {
   bool generate_html = true;
   bool generate_latex = true;
 
-  size_t num_threads = 8;
+  size_t num_threads = 1; 
 };
 
 class Driver {

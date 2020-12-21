@@ -129,6 +129,10 @@ std::optional<size_t> ReadFromJson(std::string_view arg,
     option->should_log_db = option_data["latex"].get<bool>();
   }
 
+  if (option_data.count("jobs")) {
+    option->num_threads = option_data["jobs"].get<int>();
+  }
+
   return end;
 }
 

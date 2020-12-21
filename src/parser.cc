@@ -20,7 +20,7 @@
 namespace md2 {
 namespace {
 
-static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\', '|'};
+static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\', '|', '{', '}'};
 
 // Box names that should be always treated as verbatim (nested not allowed).
 static std::unordered_set<std::string> kVerbatimBoxNames = {

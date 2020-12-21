@@ -152,6 +152,7 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
 
     std::ofstream out(output_file_name);
     out << generator.ShowOutput();
+    fmt::print(" --- [{}] is done \n", file_name);
   }
 
   if (auto itr = book_dir_to_files_.find(std::string(file_name));
