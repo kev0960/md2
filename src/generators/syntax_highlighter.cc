@@ -200,6 +200,10 @@ void SyntaxHighlighter::RemoveNewlineInTokenList() {
 // Merge the syntax tokens that belongs to same style. This will help to reduce
 // the number of DOM elements.
 void SyntaxHighlighter::ColorMerge() {
+  if (token_list_.empty()) {
+    return;
+  }
+
   RemoveNewlineInTokenList();
 
   // First build a set that tells what Token Types belongs to same style.

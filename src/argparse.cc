@@ -117,6 +117,16 @@ std::optional<size_t> ReadFromJson(std::string_view arg,
     option->json_output_dir = option_data["json_output_dir"].get<std::string>();
   }
 
+  if (option_data.count("clang_format_server")) {
+    option->clang_format_server_path=
+        option_data["clang_format_server"].get<std::string>();
+  }
+
+  if (option_data.count("use_clang_format_server")) {
+    option->use_clang_format_server =
+        option_data["use_clang_format_server"].get<bool>();
+  }
+
   if (option_data.count("log_db")) {
     option->should_log_db = option_data["log_db"].get<bool>();
   }

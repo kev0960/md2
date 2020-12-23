@@ -5,6 +5,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <zmq.hpp>
 
 #include "metadata_repo.h"
 
@@ -28,7 +29,10 @@ struct DriverOptions {
   bool generate_html = true;
   bool generate_latex = true;
 
-  size_t num_threads = 1; 
+  size_t num_threads = 1;
+
+  std::string clang_format_server_path;
+  bool use_clang_format_server = false;
 };
 
 class Driver {
@@ -40,6 +44,8 @@ class Driver {
 
   // Run the driver.
   void Run();
+
+  ~Driver();
 
  private:
   // Read files in the dirs.
@@ -62,6 +68,9 @@ class Driver {
   // Generate page_path.json and file_headers.json
   void GenerateJSONFiles() const;
 
+  // Start the Clang format server.
+  void StartClangFormatServer(const std::string& server_location);
+
   DriverOptions options_;
 
   // Map between file name to the file content and the current reading position.
@@ -77,6 +86,10 @@ class Driver {
   // Map between the start file and the included tex files in order.
   std::unordered_map<std::string, std::vector<std::string>>
       book_start_to_remaining_;
+
+  bool clang_format_server_spanwed_ = false;
+  int clang_format_pid_ = 0;
+  std::unique_ptr<zmq::context_t> zmq_context_;
 };
 
 }  // namespace md2

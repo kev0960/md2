@@ -15,7 +15,8 @@ void DoLatexTest(std::string content, std::string expected) {
   ParseTree tree = parser.GenerateParseTree(content);
 
   MetadataRepo repo;
-  GeneratorContext context(repo, "image_path");
+  GeneratorContext context(repo, "image_path", /*use_clang_server=*/false,
+                           nullptr);
   LatexGenerator generator(/*filename=*/"some_file.md", content, context, tree);
   generator.Generate();
 

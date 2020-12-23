@@ -2,6 +2,9 @@
 
 #include <fmt/color.h>
 #include <fmt/core.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include <filesystem>
 #include <fstream>
@@ -75,6 +78,13 @@ void Driver::Run() {
 }
 
 void Driver::ReadFilesInDirectory() {
+  if (options_.use_clang_format_server) {
+    fmt::print("Starting Clang Format Server -- \n");
+    StartClangFormatServer(options_.clang_format_server_path);
+
+    zmq_context_ = std::make_unique<zmq::context_t>(/*io_threads=*/1);
+  }
+
   fmt::print("Start reading files -- \n");
 
   int total_files = 0;
@@ -145,14 +155,15 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
   Parser parser;
   const ParseTree tree = parser.GenerateParseTree(content);
 
-  GeneratorContext context(repo_, options_.image_path);
+  GeneratorContext context(repo_, options_.image_path,
+                           options_.use_clang_format_server,
+                           zmq_context_.get());
   if (options_.generate_html) {
     HTMLGenerator generator(file_name, content, context, tree);
     generator.Generate();
 
     std::ofstream out(output_file_name);
     out << generator.ShowOutput();
-    fmt::print(" --- [{}] is done \n", file_name);
   }
 
   if (auto itr = book_dir_to_files_.find(std::string(file_name));
@@ -213,6 +224,42 @@ void Driver::GenerateJSONFiles() const {
 
   std::ofstream out_header(options_.json_output_dir + "/file_headers.json");
   out_header << repo_.DumpFileHeaderAsJson();
+}
+
+void Driver::StartClangFormatServer(const std::string& server_location) {
+  if (clang_format_server_spanwed_) {
+    return;
+  }
+
+  clang_format_server_spanwed_ = true;
+
+  int pid = fork();
+  if (pid < 0) {
+    LOG(0) << "Fork error!";
+    return;
+  }
+
+  if (pid > 0) {
+    clang_format_pid_ = pid;
+    return;
+  } else {
+    char* server_argv[] = {const_cast<char*>(server_location.c_str()), NULL};
+    char* server_env[] = {NULL};
+
+    int ret = execve(server_location.c_str(), server_argv, server_env);
+    LOG(0) << "Unable to run execve " << server_location
+           << " with error code : " << ret;
+    clang_format_server_spanwed_ = false;
+  }
+}
+
+Driver::~Driver() {
+  if (clang_format_pid_ != 0) {
+    kill(clang_format_pid_, SIGKILL);
+
+    int status;
+    waitpid(clang_format_pid_, &status, 0);
+  }
 }
 
 }  // namespace md2

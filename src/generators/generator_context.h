@@ -1,7 +1,9 @@
 #ifndef GENERATORS_GENERATOR_CONTEXT_H
 #define GENERATORS_GENERATOR_CONTEXT_H
 
+#include <mutex>
 #include <unordered_map>
+#include <zmq.hpp>
 
 #include "metadata_repo.h"
 #include "parse_tree_nodes/paragraph.h"
@@ -11,8 +13,12 @@ namespace md2 {
 // Common object that is shared by generators.
 class GeneratorContext {
  public:
-  GeneratorContext(const MetadataRepo& repo, const std::string& image_path)
-      : repo_(repo), image_path_(image_path) {}
+  GeneratorContext(const MetadataRepo& repo, const std::string& image_path,
+                   bool use_clang_server, zmq::context_t* context)
+      : repo_(repo),
+        image_path_(image_path),
+        use_clang_server_(use_clang_server),
+        context_(context) {}
 
   std::string_view GetClangFormatted(const ParseTreeTextNode* node,
                                      std::string_view md);
@@ -28,6 +34,7 @@ class GeneratorContext {
   const Metadata* FindMetadataByFilename(std::string_view filename) const;
 
  private:
+  std::mutex m_format_map;
   std::unordered_map<const ParseTreeTextNode*, std::string>
       verbatim_to_formatted_;
 
@@ -36,6 +43,11 @@ class GeneratorContext {
 
   const MetadataRepo& repo_;
   std::string image_path_;
+
+  bool use_clang_server_;
+
+  // ZMQ context (if used)
+  zmq::context_t* context_;
 };
 
 }  // namespace md2

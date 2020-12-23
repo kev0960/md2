@@ -28,17 +28,32 @@ bool IsFileExist(const std::string& file_name) {
   return in.good();
 }
 
+void ReadFromPipe(int pipe, std::string* formatted_code) {
+  char buf[kBufferSize];
+  int read_cnt;
+  while ((read_cnt = read(pipe, buf, kBufferSize)) > 0) {
+    auto current_size = formatted_code->size();
+    formatted_code->reserve(current_size + read_cnt + 1);
+    for (int i = 0; i < read_cnt; i++) {
+      formatted_code->push_back(buf[i]);
+    }
+  }
+  close(pipe);
+}
+
 void DoClangFormat(std::string_view code, std::string* formatted_code) {
   int pipe_p2c[2], pipe_c2p[2];
   if (pipe(pipe_p2c) != 0 || pipe(pipe_c2p) != 0) {
     LOG(0) << "Pipe error!";
     return;
   }
+
   int pid = fork();
   if (pid < 0) {
     LOG(0) << "Fork error!";
     return;
   }
+
   // Parent process;
   if (pid > 0) {
     // Close unused pipes.
@@ -49,21 +64,12 @@ void DoClangFormat(std::string_view code, std::string* formatted_code) {
     int result = write(pipe_p2c[1], code.data(), code.size());
     if (result == -1 || static_cast<size_t>(result) != code.size()) {
       LOG(0) << "Error; STDOUT to clang format has not completed succesfully";
+      return;
     }
     close(pipe_p2c[1]);
 
     // Retrieve the formatted code from the child process.
-
-    char buf[kBufferSize];
-    int read_cnt;
-    while ((read_cnt = read(pipe_c2p[0], buf, kBufferSize)) > 0) {
-      auto current_size = formatted_code->size();
-      formatted_code->reserve(current_size + read_cnt + 1);
-      for (int i = 0; i < read_cnt; i++) {
-        formatted_code->push_back(buf[i]);
-      }
-    }
-    close(pipe_c2p[0]);
+    ReadFromPipe(pipe_c2p[0], formatted_code);
   } else {
     // In child process, call execve into the clang format.
 
@@ -85,20 +91,52 @@ void DoClangFormat(std::string_view code, std::string* formatted_code) {
   }
 }
 
+void DoClangFormatUsingFormatServer(zmq::context_t& context,
+                                    std::string_view code,
+                                    std::string* formatted_code) {
+  zmq::socket_t sock(context, ZMQ_REQ);
+  sock.connect("tcp://localhost:5001");
+
+  sock.send(zmq::buffer(code));
+
+  zmq::message_t formatted;
+  auto result = sock.recv(formatted);
+
+  if (!result) {
+    LOG(0) << "Clang format result : " << result.value();
+  }
+
+  *formatted_code = formatted.to_string();
+}
+
 }  // namespace
 
 std::string_view GeneratorContext::GetClangFormatted(
     const ParseTreeTextNode* node, std::string_view md) {
-  if (const auto itr = verbatim_to_formatted_.find(node);
-      itr != verbatim_to_formatted_.end()) {
-    return itr->second;
+  {
+    std::lock_guard<std::mutex> lk(m_format_map);
+    if (const auto itr = verbatim_to_formatted_.find(node);
+        itr != verbatim_to_formatted_.end()) {
+      return itr->second;
+    }
   }
 
-  // Otherwise actually do formatting.
-  DoClangFormat(md.substr(node->Start(), node->End() - node->Start()),
-                &verbatim_to_formatted_[node]);
+  std::string_view code = md.substr(node->Start(), node->End() - node->Start());
+  std::string formatted_code;
 
-  return verbatim_to_formatted_[node];
+  if (use_clang_server_) {
+    DoClangFormatUsingFormatServer(*context_, code, &formatted_code);
+  } else {
+    // Otherwise actually do formatting.
+    DoClangFormat(md.substr(node->Start(), node->End() - node->Start()),
+                  &formatted_code);
+  }
+
+  {
+    std::lock_guard<std::mutex> lk(m_format_map);
+    verbatim_to_formatted_[node] = formatted_code;
+    return verbatim_to_formatted_[node];
+  }
 }
 
 std::pair<std::string_view, std::string_view> GeneratorContext::FindReference(
@@ -146,7 +184,8 @@ std::string_view GeneratorContext::FindImage(const std::string& image_url) {
 
   if (image_url.find(kDaumImageURL) != std::string_view::npos) {
     size_t id_start = image_url.find("image%2F");
-    MD2_ASSERT(id_start != std::string_view::npos, "Daum image url is malformed.");
+    MD2_ASSERT(id_start != std::string_view::npos,
+               "Daum image url is malformed.");
 
     std::string image_name = image_url.substr(id_start + 8);
     std::string image_path;
