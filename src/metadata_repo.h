@@ -29,6 +29,8 @@ class MetadataRepo {
   std::string DumpFileHeaderAsJson() const;
   std::string DumpPathAsJson() const;
 
+  static std::string_view NormalizeFileName(std::string_view file_name);
+
  private:
   std::unordered_map<std::string, std::unique_ptr<Metadata>> repo_;
   std::unordered_map<std::string, std::vector<const Metadata*>>

@@ -10,25 +10,6 @@ namespace {
 
 using json = nlohmann::json;
 
-std::string_view NormalizeFileName(std::string_view file_name) {
-  size_t name_start = file_name.find_last_of("/");
-  if (name_start != std::string_view::npos) {
-    file_name = file_name.substr(name_start + 1);
-  }
-
-  size_t ext_start = file_name.find_last_of(".");
-  if (ext_start != std::string_view::npos) {
-    file_name = file_name.substr(0, ext_start);
-  }
-
-  // Remove "dump_" prefix.
-  if (!file_name.empty() && file_name.substr(0, 5) == "dump_") {
-    file_name = file_name.substr(5);
-  }
-
-  return file_name;
-}
-
 std::string ConvertPathnameToFilename(std::string_view path_name) {
   // Instruction name.
   if (!std::all_of(path_name.begin(), path_name.end(), isdigit) ||
@@ -226,6 +207,25 @@ std::string MetadataRepo::DumpPathAsJson() const {
   }
 
   return path_db.dump(1);
+}
+
+std::string_view MetadataRepo::NormalizeFileName(std::string_view file_name) {
+  size_t name_start = file_name.find_last_of("/");
+  if (name_start != std::string_view::npos) {
+    file_name = file_name.substr(name_start + 1);
+  }
+
+  size_t ext_start = file_name.find_last_of(".");
+  if (ext_start != std::string_view::npos) {
+    file_name = file_name.substr(0, ext_start);
+  }
+
+  // Remove "dump_" prefix.
+  if (!file_name.empty() && file_name.substr(0, 5) == "dump_") {
+    file_name = file_name.substr(5);
+  }
+
+  return file_name;
 }
 
 }  // namespace md2

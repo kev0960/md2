@@ -6,9 +6,12 @@
   "jobs" : 16,
   "use_clang_format_server" : true,
   "clang_format_server" : "/home/jblee/llvm-project/build/bin/clang-format-server",
-  "book_to_dir" : [{"book" : "135", "dir" : "/home/jblee/book/cpp"},
-    {"book" : "231", "dir" : "/home/jblee/book/c"}],
-    "log_db" : false,
-    "html" : true, 
-    "latex" : true
-  }
+  "book_to_dir" : [
+    {"book" : "135", "dir" : "/home/jblee/book/cpp"},
+    {"book" : "231", "dir" : "/home/jblee/book/c"}
+  ],
+  "html" : true, 
+  "latex" : true,
+  "auth_file_path" : "/home/jblee/db_auth.json",
+  "update_database" : true
+}

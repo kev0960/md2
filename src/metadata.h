@@ -45,8 +45,8 @@ class Metadata {
   // Time that this is published.
   std::string publish_date_;
 
-  // True if the document is published.
-  bool is_published_;
+  // True if the document is published. This is default true if not specified.
+  bool is_published_ = true;
 
   // Name of the file (not including the extension).
   std::string file_name_;

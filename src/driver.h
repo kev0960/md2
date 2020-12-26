@@ -25,7 +25,6 @@ struct DriverOptions {
   // Output directory for json files that will be picked up by the server.
   std::string json_output_dir;
 
-  bool should_log_db;
   bool generate_html = true;
   bool generate_latex = true;
 
@@ -33,6 +32,12 @@ struct DriverOptions {
 
   std::string clang_format_server_path;
   bool use_clang_format_server = false;
+
+  // JSON file that contains the authentication info.
+  std::string auth_file_path;
+
+  // If true, articles will be updated to Database.
+  bool update_database = false;
 };
 
 class Driver {
@@ -70,6 +75,9 @@ class Driver {
 
   // Start the Clang format server.
   void StartClangFormatServer(const std::string& server_location);
+
+  // Update articles to the database.
+  void UpdateDatabase() const;
 
   DriverOptions options_;
 

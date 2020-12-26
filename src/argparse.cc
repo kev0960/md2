@@ -118,7 +118,7 @@ std::optional<size_t> ReadFromJson(std::string_view arg,
   }
 
   if (option_data.count("clang_format_server")) {
-    option->clang_format_server_path=
+    option->clang_format_server_path =
         option_data["clang_format_server"].get<std::string>();
   }
 
@@ -127,20 +127,24 @@ std::optional<size_t> ReadFromJson(std::string_view arg,
         option_data["use_clang_format_server"].get<bool>();
   }
 
-  if (option_data.count("log_db")) {
-    option->should_log_db = option_data["log_db"].get<bool>();
-  }
-
   if (option_data.count("html")) {
     option->generate_html = option_data["html"].get<bool>();
   }
 
   if (option_data.count("latex")) {
-    option->should_log_db = option_data["latex"].get<bool>();
+    option->generate_latex = option_data["latex"].get<bool>();
   }
 
   if (option_data.count("jobs")) {
     option->num_threads = option_data["jobs"].get<int>();
+  }
+
+  if (option_data.count("auth_file_path")) {
+    option->auth_file_path = option_data["auth_file_path"].get<std::string>();
+  }
+
+  if (option_data.count("update_database")) {
+    option->update_database = option_data["update_database"].get<bool>();
   }
 
   return end;
@@ -200,10 +204,6 @@ std::optional<size_t> HandleDriverOption(
     return option_detail_start;
   } else if (option_name == "no_latex") {
     option.generate_latex = false;
-
-    return option_detail_start;
-  } else if (option_name == "log_db") {
-    option.should_log_db = true;
 
     return option_detail_start;
   } else if (option_name == "book_to_dir") {

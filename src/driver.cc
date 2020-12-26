@@ -10,6 +10,7 @@
 #include <fstream>
 #include <optional>
 
+#include "db.h"
 #include "generators/book.h"
 #include "generators/html_generator.h"
 #include "generators/latex_generator.h"
@@ -74,7 +75,14 @@ void Driver::Run() {
 
   DoParse();
   GenerateJSONFiles();
-  GenerateBookMainPage();
+
+  if (options_.generate_latex) {
+    GenerateBookMainPage();
+  }
+
+  if (options_.update_database) {
+    UpdateDatabase();
+  }
 }
 
 void Driver::ReadFilesInDirectory() {
@@ -250,6 +258,15 @@ void Driver::StartClangFormatServer(const std::string& server_location) {
     LOG(0) << "Unable to run execve " << server_location
            << " with error code : " << ret;
     clang_format_server_spanwed_ = false;
+  }
+}
+
+void Driver::UpdateDatabase() const {
+  Database database(options_.auth_file_path, repo_);
+  for (const auto& [file_name, file_info] : file_contents_) {
+    auto& [content, read_pos, rel_path] = file_info;
+    database.TryUpdateFileToDatabase(
+        std::string(MetadataRepo::NormalizeFileName(file_name)), content);
   }
 }
 
