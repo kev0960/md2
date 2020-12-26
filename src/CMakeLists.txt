@@ -12,7 +12,17 @@ file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
 
 add_library(libmd2 STATIC ${SRC_FILES})
 
-target_link_libraries(libmd2 fmt::fmt pthread nlohmann_json::nlohmann_json zmq pqxx ssl crypto)
+target_link_libraries(libmd2
+  fmt::fmt
+  pthread
+  nlohmann_json::nlohmann_json
+  zmq
+  pqxx
+  pq
+  ssl
+  crypto
+  stdc++fs)
+
 target_include_directories(libmd2 PUBLIC .)
 target_compile_features(libmd2 PUBLIC cxx_std_17)
 
