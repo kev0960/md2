@@ -127,6 +127,11 @@ std::optional<size_t> ReadFromJson(std::string_view arg,
         option_data["use_clang_format_server"].get<bool>();
   }
 
+  if (option_data.count("clang_format_server_port")) {
+    option->clang_format_server_port =
+        option_data["clang_format_server_port"].get<int>();
+  }
+
   if (option_data.count("html")) {
     option->generate_html = option_data["html"].get<bool>();
   }

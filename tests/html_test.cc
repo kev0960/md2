@@ -14,7 +14,7 @@ void DoHtmlTest(std::string content, std::string expected) {
 
   MetadataRepo repo;
   GeneratorContext context(repo, "image_path", /*use_clang_server=*/false,
-                           nullptr);
+                           /*clang_server_port=*/0, nullptr);
   HTMLGenerator generator(/*filename=*/"some_file.md", content, context, tree);
   generator.Generate();
 

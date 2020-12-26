@@ -32,6 +32,7 @@ struct DriverOptions {
 
   std::string clang_format_server_path;
   bool use_clang_format_server = false;
+  int clang_format_server_port = 3001;
 
   // JSON file that contains the authentication info.
   std::string auth_file_path;

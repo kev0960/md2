@@ -6,6 +6,7 @@
   "jobs" : 16,
   "use_clang_format_server" : true,
   "clang_format_server" : "/home/jblee/llvm-project/build/bin/clang-format-server",
+  "clang_format_server_port" : 5001,
   "book_to_dir" : [
     {"book" : "135", "dir" : "/home/jblee/book/cpp"},
     {"book" : "231", "dir" : "/home/jblee/book/c"}

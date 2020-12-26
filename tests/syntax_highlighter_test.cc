@@ -67,7 +67,7 @@ template <typename Highlighter>
 class SyntaxHighlighterTester {
  public:
   SyntaxHighlighterTester()
-      : fake_context_(repo_, "", /*use_clang_server=*/false, nullptr) {}
+      : fake_context_(repo_, "", /*use_clang_server=*/false, /*clang_server_port=*/0, nullptr) {}
 
   void CheckSyntaxTokens(std::vector<SyntaxToken> expected) {
     const std::vector<SyntaxToken>& actual =

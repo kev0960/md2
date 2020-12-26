@@ -91,11 +91,11 @@ void DoClangFormat(std::string_view code, std::string* formatted_code) {
   }
 }
 
-void DoClangFormatUsingFormatServer(zmq::context_t& context,
+void DoClangFormatUsingFormatServer(int server_port, zmq::context_t& context,
                                     std::string_view code,
                                     std::string* formatted_code) {
   zmq::socket_t sock(context, ZMQ_REQ);
-  sock.connect("tcp://localhost:5001");
+  sock.connect("tcp://localhost:" + std::to_string(server_port));
 
   sock.send(zmq::buffer(code));
 
@@ -125,7 +125,8 @@ std::string_view GeneratorContext::GetClangFormatted(
   std::string formatted_code;
 
   if (use_clang_server_) {
-    DoClangFormatUsingFormatServer(*context_, code, &formatted_code);
+    DoClangFormatUsingFormatServer(clang_server_port_, *context_, code,
+                                   &formatted_code);
   } else {
     // Otherwise actually do formatting.
     DoClangFormat(md.substr(node->Start(), node->End() - node->Start()),

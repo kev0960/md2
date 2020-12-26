@@ -14,10 +14,12 @@ namespace md2 {
 class GeneratorContext {
  public:
   GeneratorContext(const MetadataRepo& repo, const std::string& image_path,
-                   bool use_clang_server, zmq::context_t* context)
+                   bool use_clang_server, int clang_server_port,
+                   zmq::context_t* context)
       : repo_(repo),
         image_path_(image_path),
         use_clang_server_(use_clang_server),
+        clang_server_port_(clang_server_port),
         context_(context) {}
 
   std::string_view GetClangFormatted(const ParseTreeTextNode* node,
@@ -45,6 +47,7 @@ class GeneratorContext {
   std::string image_path_;
 
   bool use_clang_server_;
+  int clang_server_port_;
 
   // ZMQ context (if used)
   zmq::context_t* context_;

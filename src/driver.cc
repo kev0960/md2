@@ -165,6 +165,7 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
 
   GeneratorContext context(repo_, options_.image_path,
                            options_.use_clang_format_server,
+                           options_.clang_format_server_port,
                            zmq_context_.get());
   if (options_.generate_html) {
     HTMLGenerator generator(file_name, content, context, tree);
@@ -251,7 +252,10 @@ void Driver::StartClangFormatServer(const std::string& server_location) {
     clang_format_pid_ = pid;
     return;
   } else {
-    char* server_argv[] = {const_cast<char*>(server_location.c_str()), NULL};
+    std::string port = std::to_string(options_.clang_format_server_port);
+    char* server_argv[] = {const_cast<char*>(server_location.c_str()),
+                           const_cast<char*>("--port"),
+                           const_cast<char*>(port.c_str()), NULL};
     char* server_env[] = {NULL};
 
     int ret = execve(server_location.c_str(), server_argv, server_env);
