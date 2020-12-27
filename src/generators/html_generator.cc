@@ -452,7 +452,10 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
     EmitChar(content_node->Start(), content_node->End());
     GetCurrentTarget()->append("</pre>");
   } else if (name == "embed") {
+    bool prev_escape_state = should_escape_html_;
+    should_escape_html_ = false;
     EmitChar(content_node->Start(), content_node->End());
+    should_escape_html_ = prev_escape_state;
   } else if (name == "exec") {
     GetCurrentTarget()->append(
         "<p class='exec-preview-title'>실행 결과</p><pre "

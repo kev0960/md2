@@ -217,6 +217,15 @@ b
              "class='font-italic'>a</span></p></div><p>\nb</p></div>");
 }
 
+TEST(HtmlTest, EmbedBox) {
+  std::string content = R"(
+```embed
+<span>hi</span>
+```)";
+
+  DoHtmlTest(content, "<p>\n</p><span>hi</span>\n");
+}
+
 TEST(HtmlTest, SimpleTable) {
   std::string content = R"(
 |a|b|c|
