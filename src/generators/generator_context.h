@@ -31,17 +31,22 @@ class GeneratorContext {
   std::pair<std::string_view, std::string_view> FindReference(
       std::string_view name) const;
 
-  std::string_view FindImage(const std::string& image_url);
+  std::string_view FindImageForHtml(const std::string& image_url);
+  std::string FindImageForLatex(const std::string& image_url);
 
   const Metadata* FindMetadataByFilename(std::string_view filename) const;
 
  private:
+  const std::vector<std::string>& FindImage(const std::string& image_url);
+
   std::mutex m_format_map;
   std::unordered_map<const ParseTreeTextNode*, std::string>
       verbatim_to_formatted_;
 
-  // Map from image link url to the actual path.
-  std::unordered_map<std::string, std::string> image_url_to_actual_url_;
+  // Map from image link url to the actual path. If multiple images are
+  // available, then they are inserted into the vector.
+  std::unordered_map<std::string, std::vector<std::string>>
+      image_url_to_actual_url_;
 
   const MetadataRepo& repo_;
   std::string image_path_;

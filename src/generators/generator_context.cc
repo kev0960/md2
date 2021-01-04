@@ -177,7 +177,33 @@ std::pair<std::string_view, std::string_view> GeneratorContext::FindReference(
   return std::make_pair(file_name, actual_ref);
 }
 
-std::string_view GeneratorContext::FindImage(const std::string& image_url) {
+std::string_view GeneratorContext::FindImageForHtml(
+    const std::string& image_url) {
+  const std::vector<std::string>& files = FindImage(image_url);
+  if (files.empty()) {
+    return image_url;
+  }
+
+  return files.back(); // The last one is webp (if exists).
+}
+
+std::string GeneratorContext::FindImageForLatex(
+    const std::string& image_url) {
+  const std::vector<std::string>& files = FindImage(image_url);
+  if (files.empty()) {
+    return image_url;
+  }
+
+  std::string file = files.front();
+  if (file.substr(0, 4) == "/img") {
+    file = file.substr(4);
+  }
+
+  return image_path_ + file; // First one is never webp.
+}
+
+const std::vector<std::string>& GeneratorContext::FindImage(
+    const std::string& image_url) {
   if (const auto& actual_url = image_url_to_actual_url_.find(image_url);
       actual_url != image_url_to_actual_url_.end()) {
     return actual_url->second;
@@ -186,7 +212,7 @@ std::string_view GeneratorContext::FindImage(const std::string& image_url) {
   if (image_url.find(kDaumImageURL) != std::string_view::npos) {
     size_t id_start = image_url.find("image%2F");
     MD2_ASSERT(id_start != std::string_view::npos,
-               "Daum image url is malformed.");
+               "Daum image url is malformed. " + image_url);
 
     std::string image_name = image_url.substr(id_start + 8);
     std::string image_path;
@@ -194,6 +220,8 @@ std::string_view GeneratorContext::FindImage(const std::string& image_url) {
       std::string actual_image_path = StrCat(image_path_, "/", image_name, ext);
       if (IsFileExist(actual_image_path)) {
         image_name = StrCat("/img/", image_name, ext);
+        image_url_to_actual_url_[image_url].push_back(image_name);
+
         image_path = actual_image_path;
         break;
       }
@@ -206,14 +234,15 @@ std::string_view GeneratorContext::FindImage(const std::string& image_url) {
       if (IsFileExist(webp_image_path)) {
         image_name =
             StrCat(image_name.substr(0, image_name.find_last_of('.')), ".webp");
+        image_url_to_actual_url_[image_url].push_back(image_name);
       }
     }
 
-    image_url_to_actual_url_[image_url] = image_name;
     return image_url_to_actual_url_[image_url];
   }
 
-  return image_url;
+  image_url_to_actual_url_[image_url] = {image_url};
+  return image_url_to_actual_url_[image_url];
 }
 
 const Metadata* GeneratorContext::FindMetadataByFilename(

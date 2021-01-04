@@ -231,21 +231,20 @@ void LatexGenerator::HandleImage(const ParseTreeImageNode& node) {
     targets_.pop_back();
   }
 
-  targets_.push_back(&images_.back().url);
-  HandleParseTreeNode(*node.GetChildren()[1]);
-  targets_.pop_back();
+  images_.back().url = GetStringInNode(node.GetChildren()[1].get(), 1, 1);
 
   const LatexImageBuilder& image = images_.back();
   if (image.caption.empty()) {
     GetCurrentTarget()->append(
         StrCat("\n\\begin{figure}[H]\n\\centering\n\\includegraphics[max width="
                "0.7\\linewidth]{",
-               image.url, "}\n\\end{figure}\n"));
+               context_->FindImageForLatex(image.url), "}\n\\end{figure}\n"));
   } else {
-    GetCurrentTarget()->append(StrCat(
-        "\n\\begin{figure}[H]\n\\centering\n\\includegraphics[max width="
-        "0.7\\linewidth]{",
-        image.url, "}\n\\caption*{", image.caption, "}\n\\end{figure}\n"));
+    GetCurrentTarget()->append(
+        StrCat("\n\\begin{figure}[H]\n\\centering\n\\includegraphics[max width="
+               "0.7\\linewidth]{",
+               context_->FindImageForLatex(image.url), "}\n\\caption*{",
+               image.caption, "}\n\\end{figure}\n"));
   }
 
   images_.pop_back();
@@ -290,14 +289,15 @@ void LatexGenerator::HandleTable(const ParseTreeTableNode& node) {
 
 void LatexGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
   if (node.GetChildren().empty()) {
-    std::string_view inline_code =
-        GetStringInNode(&node, /*prefix_offset=*/1, /*suffix_offset=*/1);
-    GetCurrentTarget()->append(fmt::format("\\texttt{{{}}}", inline_code));
+    GetCurrentTarget()->append("\\texttt{");
+    EmitChar(node.Start() + 1, node.End() - 1);
+    GetCurrentTarget()->append("}");
 
     return;
   }
 
-  MD2_ASSERT(node.GetChildren().size() == 2, "Verbatim does not have two nodes.");
+  MD2_ASSERT(node.GetChildren().size() == 2,
+             "Verbatim does not have two nodes.");
   const auto& code_name_node = node.GetChildren()[0];
   std::string_view name = md_.substr(
       code_name_node->Start(), code_name_node->End() - code_name_node->Start());
