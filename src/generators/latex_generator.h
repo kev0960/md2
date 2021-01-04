@@ -64,11 +64,16 @@ class LatexGenerator : public Generator {
   void HandleBox(const ParseTreeBoxNode& node);
   void HandleQuote(const ParseTreeQuoteNode& node);
 
+  void DisableLatexEscape();
+  void RestoreLatexEscape();
+
  private:
   bool should_escape_latex_ = true;
 
   std::vector<LatexLinkBuilder> links_;
   std::vector<LatexImageBuilder> images_;
+
+  std::vector<bool> escape_latex;
 };
 
 }  // namespace md2

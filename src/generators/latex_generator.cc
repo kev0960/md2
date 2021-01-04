@@ -325,7 +325,9 @@ void LatexGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
   } else if (name == "compiler-warning") {
     GetCurrentTarget()->append(
         "\n\\begin{mdcompilerwarning}\n\\begin{Verbatim}[breaklines=true]\n");
+    DisableLatexEscape();
     EmitChar(content_node->Start(), content_node->End());
+    RestoreLatexEscape();
     GetCurrentTarget()->append("\n\\end{Verbatim}\n\\end{mdcompilerwarning}\n");
   } else if (name == "embed") {
     // Ignore.
@@ -333,16 +335,21 @@ void LatexGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
   } else if (name == "exec") {
     GetCurrentTarget()->append(
         "\\begin{mdprogout}\n\\begin{Verbatim}[breaklines=true]\n");
+    DisableLatexEscape();
     EmitChar(content_node->Start(), content_node->End());
+    RestoreLatexEscape();
     GetCurrentTarget()->append("\n\\end{Verbatim}\n\\end{mdprogout}\n");
   } else if (name == "info") {
     GetCurrentTarget()->append(EmitTColorBoxHeader("green"));
     EmitChar(content_node->Start(), content_node->End());
     GetCurrentTarget()->append("\n\\end{tcolorbox}\n");
   } else if (name == "info-verb") {
+    DisableLatexEscape();
     GetCurrentTarget()->append(
         "\\begin{infoverb}\n\\begin{Verbatim}[breaklines=true]\n");
     EmitChar(content_node->Start(), content_node->End());
+    EmitChar(content_node->Start(), content_node->End());
+    RestoreLatexEscape();
     GetCurrentTarget()->append("\n\\end{Verbatim}\n\\end{infoverb}\n");
   } else if (name == "info-term") {
     GetCurrentTarget()->append("\\begin{minted}{bash}\n");
@@ -495,6 +502,16 @@ void LatexGenerator::HandleQuote(const ParseTreeQuoteNode& node) {
   });
 
   GetCurrentTarget()->append("\n\\end{displayquote}\n");
+}
+
+void LatexGenerator::DisableLatexEscape() {
+  escape_latex.push_back(should_escape_latex_);
+  should_escape_latex_ = false;
+}
+
+void LatexGenerator::RestoreLatexEscape() {
+  should_escape_latex_ = escape_latex.back();
+  escape_latex.pop_back();
 }
 
 }  // namespace md2
