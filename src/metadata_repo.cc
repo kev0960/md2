@@ -145,12 +145,28 @@ const Metadata* MetadataRepo::FindMetadataByPathname(
 
 std::string MetadataRepo::DumpFileHeaderAsJson() const {
   json file_headers;
+
+  // Construct prev_page mapping.
+  std::unordered_map<std::string, std::string> next_page_to_prev_map;
+  for (auto& [file_name, metadata] : repo_) {
+    next_page_to_prev_map[std::string(metadata->GetNextPage())] =
+        NormalizeFileName(file_name);
+  }
+
   for (auto& [file_name, metadata] : repo_) {
     json file;
+
     for (auto& [field_name, field] : metadata->GetAllFields()) {
       file[field_name] = field;
     }
-    file_headers[std::string(NormalizeFileName(file_name))] = file;
+
+    std::string normalized_file_name(NormalizeFileName(file_name));
+    if (auto itr = next_page_to_prev_map.find(normalized_file_name);
+        itr != next_page_to_prev_map.end()) {
+      file["prev_page"] = itr->second;
+    }
+
+    file_headers[normalized_file_name] = file;
   }
 
   return file_headers.dump(1);
