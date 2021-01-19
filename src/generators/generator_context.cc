@@ -6,6 +6,7 @@
 #include <optional>
 #include <string_view>
 #include <thread>
+#include <unordered_set>
 #include <utility>
 
 #include "logger.h"
@@ -20,12 +21,26 @@ static char kClangFormatConfig[] = "-style=google";
 constexpr size_t kBufferSize = 4096;
 constexpr std::string_view kDaumImageURL = "http://img1.daumcdn.net";
 
-static std::vector<std::string_view> kImageFileExtCandidate{".png", ".jpg",
-                                                            ".jpeg", ".gif"};
+static std::vector<std::string_view> kImageFileExtCandidate{
+    "png", "jpg", "jpeg", "gif", "svg", "webp"};
+
+static std::unordered_set<std::string_view> kLatexNotAllowedFileExt{
+    "gif", "svg", "webp"};
 
 bool IsFileExist(const std::string& file_name) {
   std::ifstream in(file_name);
   return in.good();
+}
+
+std::pair<std::string_view, std::string_view> GetFileNameAndExtension(
+    std::string_view file_name) {
+  size_t delim = file_name.find_last_of('.');
+  if (delim == std::string_view::npos) {
+    return std::make_pair(file_name, "");
+  }
+
+  return std::make_pair(file_name.substr(0, delim),
+                        file_name.substr(delim + 1));
 }
 
 void ReadFromPipe(int pipe, std::string* formatted_code) {
@@ -109,6 +124,38 @@ void DoClangFormatUsingFormatServer(int server_port, zmq::context_t& context,
   *formatted_code = formatted.to_string();
 }
 
+// file_path is relative path from the image_dir_path.
+std::vector<std::string> FindFileAndCandidates(
+    std::string_view file_path, std::string_view image_dir_path) {
+  auto [file_name, file_ext] = GetFileNameAndExtension(file_path);
+
+  std::vector<std::string> candidates;
+  if (!file_ext.empty()) {
+    candidates.push_back(std::string(file_path));
+  }
+
+  for (auto ext : kImageFileExtCandidate) {
+    std::string candidate_file_name = StrCat(file_name, ".", ext);
+    if (file_path != candidate_file_name) {
+      candidates.push_back(candidate_file_name);
+    }
+  }
+
+  std::vector<std::string> image_files;
+  for (const auto& file : candidates) {
+    if (IsFileExist(StrCat(image_dir_path, "/", file))) {
+      image_files.push_back(file);
+    }
+  }
+
+  // If no candidates are found, then just return the file.
+  if (image_files.empty()) {
+    image_files.push_back(std::string(file_path));
+  }
+
+  return image_files;
+}
+
 }  // namespace
 
 std::string_view GeneratorContext::GetClangFormatted(
@@ -184,29 +231,33 @@ std::string_view GeneratorContext::FindImageForHtml(
     return image_url;
   }
 
-  return files.back(); // The last one is webp (if exists).
+  return files.back();  // The last one is webp (if exists).
 }
 
-std::string GeneratorContext::FindImageForLatex(
-    const std::string& image_url) {
+std::string GeneratorContext::FindImageForLatex(const std::string& image_url) {
   const std::vector<std::string>& files = FindImage(image_url);
   if (files.empty()) {
     return image_url;
   }
 
-  std::string file = files.front();
-  if (file.substr(0, 4) == "/img") {
-    file = file.substr(4);
+  std::string file;
+
+  for (auto& file_name : files) {
+    auto [name, ext] = GetFileNameAndExtension(file_name);
+    if (kLatexNotAllowedFileExt.find(ext) == kLatexNotAllowedFileExt.end()) {
+      file = file_name;
+      break;
+    }
   }
 
-  return image_path_ + file; // First one is never webp.
+  return image_dir_path_ + file;
 }
 
 const std::vector<std::string>& GeneratorContext::FindImage(
     const std::string& image_url) {
-  if (const auto& actual_url = image_url_to_actual_url_.find(image_url);
-      actual_url != image_url_to_actual_url_.end()) {
-    return actual_url->second;
+  if (const auto& actual_path = image_url_to_actual_path_.find(image_url);
+      actual_path != image_url_to_actual_path_.end()) {
+    return actual_path->second;
   }
 
   if (image_url.find(kDaumImageURL) != std::string_view::npos) {
@@ -215,34 +266,14 @@ const std::vector<std::string>& GeneratorContext::FindImage(
                "Daum image url is malformed. " + image_url);
 
     std::string image_name = image_url.substr(id_start + 8);
-    std::string image_path;
-    for (std::string_view ext : kImageFileExtCandidate) {
-      std::string actual_image_path = StrCat(image_path_, "/", image_name, ext);
-      if (IsFileExist(actual_image_path)) {
-        image_name = StrCat("/img/", image_name, ext);
-        image_url_to_actual_url_[image_url].push_back(image_name);
-
-        image_path = actual_image_path;
-        break;
-      }
-    }
-
-    // Check whether webp exists.
-    size_t ext_pos = image_path.find_last_of('.');
-    if (ext_pos != std::string::npos) {
-      std::string webp_image_path = image_path.substr(0, ext_pos) + ".webp";
-      if (IsFileExist(webp_image_path)) {
-        image_name =
-            StrCat(image_name.substr(0, image_name.find_last_of('.')), ".webp");
-        image_url_to_actual_url_[image_url].push_back(image_name);
-      }
-    }
-
-    return image_url_to_actual_url_[image_url];
+    image_url_to_actual_path_[image_url] =
+        FindFileAndCandidates(StrCat("/img/", image_name), image_dir_path_);
+  } else {
+    image_url_to_actual_path_[image_url] =
+        FindFileAndCandidates(image_url, image_dir_path_);
   }
 
-  image_url_to_actual_url_[image_url] = {image_url};
-  return image_url_to_actual_url_[image_url];
+  return image_url_to_actual_path_[image_url];
 }
 
 const Metadata* GeneratorContext::FindMetadataByFilename(

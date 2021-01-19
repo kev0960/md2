@@ -12,9 +12,9 @@ std::string_view EscapeLatexChar(char c) {
     case '~':
       return "$\\sim$";
     case '^':
-      return "$\\hat$";
+      return "$\\hat{}$";
     case '\\':
-      return "\\textbackslash";
+      return "\\textbackslash ";
     case '&':
       return "\\&";
     case '%':
@@ -392,9 +392,9 @@ void LatexGenerator::HandleHeader(const ParseTreeHeaderNode& node) {
   if (std::all_of(header_symbol.begin(), header_symbol.end(),
                   [](const char c) { return c == '#'; })) {
     if (header_symbol.size() == 3) {
-      GetCurrentTarget()->append("\n\\subsection{");
+      GetCurrentTarget()->append("\n\\subsection*{");
     } else if (header_symbol.size() == 4) {
-      GetCurrentTarget()->append("\n\\subsubsection{");
+      GetCurrentTarget()->append("\n\\subsubsection*{");
     }
 
     HandleParseTreeNode(*node.GetChildren()[1]);
@@ -445,7 +445,9 @@ void LatexGenerator::HandleCommand(const ParseTreeCommandNode& node) {
 void LatexGenerator::HandleMath(const ParseTreeMathNode& node) {
   GetCurrentTarget()->append("$");
   // Math should be enclosed by $$.
+  DisableLatexEscape();
   EmitChar(node.Start() + 1, node.End() - 1);
+  RestoreLatexEscape();
   GetCurrentTarget()->append("$");
 }
 

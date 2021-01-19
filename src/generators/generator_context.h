@@ -13,11 +13,11 @@ namespace md2 {
 // Common object that is shared by generators.
 class GeneratorContext {
  public:
-  GeneratorContext(const MetadataRepo& repo, const std::string& image_path,
+  GeneratorContext(const MetadataRepo& repo, const std::string& image_dir_path,
                    bool use_clang_server, int clang_server_port,
                    zmq::context_t* context)
       : repo_(repo),
-        image_path_(image_path),
+        image_dir_path_(image_dir_path),
         use_clang_server_(use_clang_server),
         clang_server_port_(clang_server_port),
         context_(context) {}
@@ -46,10 +46,10 @@ class GeneratorContext {
   // Map from image link url to the actual path. If multiple images are
   // available, then they are inserted into the vector.
   std::unordered_map<std::string, std::vector<std::string>>
-      image_url_to_actual_url_;
+      image_url_to_actual_path_;
 
   const MetadataRepo& repo_;
-  std::string image_path_;
+  std::string image_dir_path_;
 
   bool use_clang_server_;
   int clang_server_port_;

@@ -15,7 +15,7 @@ void DoLatexTest(std::string content, std::string expected) {
   ParseTree tree = parser.GenerateParseTree(content);
 
   MetadataRepo repo;
-  GeneratorContext context(repo, "image_path", /*use_clang_server=*/false,
+  GeneratorContext context(repo, "image_path/", /*use_clang_server=*/false,
                            /*clang_server_port=*/0, nullptr);
   LatexGenerator generator(/*filename=*/"some_file.md", content, context, tree);
   generator.Generate();
@@ -24,6 +24,14 @@ void DoLatexTest(std::string content, std::string expected) {
 }
 
 TEST(LatexTest, Paragraph) { DoLatexTest("a", "\na\n"); }
+TEST(LatexTest, EscapeText) { 
+  // Need to append whitespace after \textbackslash.
+  DoLatexTest("'\\n'", "\n'\\textbackslash n'\n"); 
+
+  // Regular escapes
+  DoLatexTest("^", "\n$\\hat{}$\n"); 
+}
+
 TEST(LatexTest, ParagraphLongerLines) { DoLatexTest("abc", "\nabc\n"); }
 TEST(LatexTest, TwoParagraphs) { DoLatexTest("a\n\nb", "\na\n\nb\n"); }
 TEST(LatexTest, BoldInParagraph) {
@@ -91,31 +99,31 @@ TEST(LatexTest, InvalidLink2) {
 }
 
 TEST(LatexTest, Image) {
-  DoLatexTest("![alttext](http://img)",
+  DoLatexTest("![alttext](img)",
               "\n\n\\begin{figure}[H]\n\\centering\n\\includegraphics[max "
-              "width=0.7\\linewidth]{http://img}\n\\end{figure}\n\n");
+              "width=0.7\\linewidth]{image_path/img}\n\\end{figure}\n\n");
 }
 
 TEST(LatexTest, ImageWithCaption) {
   DoLatexTest(
-      "![alttext caption=abc](http://img)",
+      "![alttext caption=abc](img)",
       "\n\n\\begin{figure}[H]\n\\centering\n\\includegraphics[max "
-      "width=0.7\\linewidth]{http://img}\n\\caption*{abc}\n\\end{figure}\n\n");
+      "width=0.7\\linewidth]{image_path/img}\n\\caption*{abc}\n\\end{figure}\n\n");
 }
 
 TEST(LatexTest, ImageWithCaptionBold) {
-  DoLatexTest("![alttext caption=some**aa**](http://img)",
+  DoLatexTest("![alttext caption=some**aa**](img)",
               "\n\n\\begin{figure}[H]\n\\centering\n\\includegraphics[max "
-              "width=0.7\\linewidth]{http://"
+              "width=0.7\\linewidth]{image_path/"
               "img}\n\\caption*{some\\textbf{aa}}\n\\end{figure}\n\n");
 }
 
 TEST(LatexTest, ImageWithCaptionComplex) {
   // "caption=" inside of ** should be ignored.
   DoLatexTest(
-      "![alttext caption=some**cap***a*](http://img)",
+      "![alttext caption=some**cap***a*](img)",
       "\n\n\\begin{figure}[H]\n\\centering\n\\includegraphics[max "
-      "width=0.7\\linewidth]{http://"
+      "width=0.7\\linewidth]{image_path/"
       "img}\n\\caption*{some\\textbf{cap}\\emph{a}}\n\\end{figure}\n\n");
 }
 
@@ -223,11 +231,11 @@ some text
 }
 
 TEST(LatexTest, HeaderSimple) {
-  DoLatexTest("### header", "\n\\subsection{ header}\n");
+  DoLatexTest("### header", "\n\\subsection*{ header}\n");
 }
 
 TEST(LatexTest, HeaderSimple2) {
-  DoLatexTest("a\n### header", "\na\n\n\n\\subsection{ header}\n");
+  DoLatexTest("a\n### header", "\na\n\n\n\\subsection*{ header}\n");
 }
 
 TEST(LatexTest, NotHeader) {
