@@ -50,7 +50,9 @@ std::string_view DefaultDateWhenEmpty(std::string_view s) {
 }
 
 std::string BooleanString(bool b) {
-  if (b) { return "true"; }
+  if (b) {
+    return "true";
+  }
   return "false";
 }
 
@@ -106,21 +108,25 @@ bool Database::MaybeUpdateContent(
   std::string current_hash = GenerateSha256Hash(content).value_or("");
 
   if (prev_hash != current_hash) {
-    // Now insert into the database.
-    pqxx::work append_new_article_info(*conn_);
-    append_new_article_info.exec(
-        StrCat("UPDATE articles SET contents = contents || "
-               "row(now(), '",
-               /* content */ append_new_article_info.esc(content),
-               "', '', false)::article_content WHERE article_url = '",
-               append_new_article_info.esc(article_path_name), "';"));
+    try {
+      // Now insert into the database.
+      pqxx::work append_new_article_info(*conn_);
+      append_new_article_info.exec(
+          StrCat("UPDATE articles SET contents = contents || "
+                 "row(now(), '",
+                 /* content */ append_new_article_info.esc(content),
+                 "', '', false)::article_content WHERE article_url = '",
+                 append_new_article_info.esc(article_path_name), "';"));
 
-    append_new_article_info.exec(
-        StrCat("UPDATE articles SET current_content_sha256 = '", current_hash,
-               "' WHERE article_url = '",
-               append_new_article_info.esc(article_path_name), "';"));
-    append_new_article_info.commit();
-    updated = true;
+      append_new_article_info.exec(
+          StrCat("UPDATE articles SET current_content_sha256 = '", current_hash,
+                 "' WHERE article_url = '",
+                 append_new_article_info.esc(article_path_name), "';"));
+      append_new_article_info.commit();
+      updated = true;
+    } catch (std::exception& e) {
+      LOG(0) << "DB Update Error : " << article_path_name << " " << e.what();
+    }
   }
   return updated;
 }
