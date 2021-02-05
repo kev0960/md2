@@ -27,6 +27,9 @@ static std::vector<std::string_view> kImageFileExtCandidate{
 static std::unordered_set<std::string_view> kLatexNotAllowedFileExt{
     "gif", "svg", "webp"};
 
+std::vector<std::unordered_set<std::string_view>> kPreferredExtOrdering = {
+    {"webp"}, {"png"}, {"jpg", "jpeg"}, {"gif"}};
+
 bool IsFileExist(const std::string& file_name) {
   std::ifstream in(file_name);
   return in.good();
@@ -229,6 +232,17 @@ std::string_view GeneratorContext::FindImageForHtml(
   const std::vector<std::string>& files = FindImage(image_url);
   if (files.empty()) {
     return image_url;
+  }
+
+  // Web image priority
+  // webp > png > jpeg, jpg > ...
+  for (const auto& preferred_ext_set : kPreferredExtOrdering) {
+    for (std::string_view file : files) {
+      auto [name, ext] = GetFileNameAndExtension(file);
+      if (preferred_ext_set.count(ext)) {
+        return file;
+      }
+    }
   }
 
   return files.back();  // The last one is webp (if exists).

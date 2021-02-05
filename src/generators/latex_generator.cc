@@ -353,7 +353,9 @@ void LatexGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
     GetCurrentTarget()->append("\n\\end{Verbatim}\n\\end{infoverb}\n");
   } else if (name == "info-term") {
     GetCurrentTarget()->append("\\begin{minted}{bash}\n");
+    DisableLatexEscape();
     EmitChar(content_node->Start(), content_node->End());
+    RestoreLatexEscape();
     GetCurrentTarget()->append("\n\\end{minted}");
   }
 }

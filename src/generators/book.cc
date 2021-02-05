@@ -125,7 +125,6 @@ std::string BookGenerator::GenerateMainTex(
                                        {"csquotes", ""},
                                        {"caption", ""},
                                        {"fancyvrb", ""},
-                                       {"hyperref", "pdfencoding=auto"},
                                        {"titlesec", ""},
                                        {"verbatim", ""},
                                        {"spverbatim", ""},
@@ -289,8 +288,8 @@ std::string BookGenerator::GenerateMainTex(
 \newcommand\chap[1]{%
   \chapter*{#1}%
   \addcontentsline{toc}{chapter}{#1}}
-\setlength{\cftsubsecindent}{2cm}
-\setlength{\cftsubsubsecindent}{4cm}
+%\setlength{\cftsubsecindent}{2cm}
+%\setlength{\cftsubsubsecindent}{4cm}
 )";
 
   // Korean support.
