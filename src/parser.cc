@@ -20,14 +20,16 @@
 namespace md2 {
 namespace {
 
-static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\', '|', '{', '}'};
+static std::unordered_set<char> kEscapeableChars = {'*', '`', '\\',
+                                                    '|', '{', '}'};
 
 // Box names that should be always treated as verbatim (nested not allowed).
 static std::unordered_set<std::string> kVerbatimBoxNames = {
     "cpp",           "py",        "asm",
     "cpp-formatted", "embed",     "compiler-warning",
     "info",          "info-verb", "info-term",
-    "info-format",   "exec",      "objdump"};
+    "info-format",   "exec",      "objdump",
+    "rust"};
 
 // "alt" is not here because alt text is just a default when no xxx= is
 // specified.

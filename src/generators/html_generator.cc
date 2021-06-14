@@ -462,7 +462,8 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
         "class='exec-preview'>");
     EmitChar(content_node->Start(), content_node->End());
     GetCurrentTarget()->append("</pre>");
-  } else if (name == "info" || name == "info-term" || name == "info-verb") {
+  } else if (name == "info" || name == "info-term" || name == "info-verb" ||
+             name == "rust") {
     GetCurrentTarget()->append(fmt::format("<pre class='{}'>", name));
     EmitChar(content_node->Start(), content_node->End());
     GetCurrentTarget()->append("</pre>");
