@@ -33,7 +33,10 @@ enum SyntaxTokenType {
   INSTRUCTION,  // e.g mov, add, sub
   // Objdump only
   FUNCTION_SECTION,  // <some_function>
-  NONE               // Not matched to any token.
+  // Rust only
+  LIFETIME,
+  MACRO,
+  NONE  // Not matched to any token.
 };
 
 struct SyntaxToken {
@@ -74,6 +77,8 @@ class SyntaxHighlighter {
     class_to_style_map_.insert({"f", {{"color", "#a9dc76"}}});
     class_to_style_map_.insert({"l", {{"color", "#78dce8"}}});
     class_to_style_map_.insert({"g", {{"color", "#78dce8"}}});
+    class_to_style_map_.insert({"mc", {{"color", "#cece1c"}}});
+    class_to_style_map_.insert({"lf", {{"color", "#ff9d9d"}}});
     // Background 2d2a2e
   }
 

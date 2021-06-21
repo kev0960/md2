@@ -3,6 +3,7 @@
 #include "generators/generator_context.h"
 #include "generators/objdump_highlighter.h"
 #include "generators/py_syntax_highlighter.h"
+#include "generators/rust_syntax_highlighter.h"
 #include "gtest/gtest.h"
 #include "logger.h"
 #include "metadata_repo.h"
@@ -56,6 +57,8 @@ std::string TokenTypeToString(SyntaxTokenType type) {
       return "INSTRUCTION";
     case FUNCTION_SECTION:
       return "FUNCTION_SECTION";
+    case LIFETIME:
+      return "LIFETIME";
     case NONE:
       return "NONE";
   }
@@ -553,6 +556,132 @@ Disassembly of section .text:
   15:	c3                   	retq   
 )");
   syn.ParseCode();
+}
+
+class MockRustSyntaxHighlighter
+    : public RustSyntaxHighlighter,
+      public SyntaxHighlighterTester<MockRustSyntaxHighlighter> {
+ public:
+  MockRustSyntaxHighlighter(std::string_view content)
+      : RustSyntaxHighlighter(content, "rust") {}
+};
+
+TEST(RustSyntaxHighlighter, Comment) {
+  MockRustSyntaxHighlighter syn("abc // some comment\nnext");
+  syn.ParseCode();
+  syn.CheckSyntaxTokens({
+      {IDENTIFIER, 0, 3},
+      {WHITESPACE, 3, 4},
+      {COMMENT, 4, 19},
+      {WHITESPACE, 19, 20},
+      {IDENTIFIER, 20, 24},
+  });
+}
+
+TEST(RustSyntaxHighlighter, RawString) {
+  MockRustSyntaxHighlighter syn(R"(let a = r#"raw """"#;)");
+  syn.ParseCode();
+  syn.CheckSyntaxTokens({
+      {KEYWORD, 0, 3},
+      {WHITESPACE, 3, 4},
+      {IDENTIFIER, 4, 5},
+      {WHITESPACE, 5, 6},
+      {OPERATOR, 6, 7},
+      {WHITESPACE, 7, 8},
+      {STRING_LITERAL, 8, 20},
+      {PUNCTUATION, 20, 21},
+  });
+}
+
+TEST(RustSyntaxHighlighter, RegularString) {
+  MockRustSyntaxHighlighter syn(R"(let a = "somestring";)");
+  syn.ParseCode();
+  syn.CheckSyntaxTokens({
+      {KEYWORD, 0, 3},
+      {WHITESPACE, 3, 4},
+      {IDENTIFIER, 4, 5},
+      {WHITESPACE, 5, 6},
+      {OPERATOR, 6, 7},
+      {WHITESPACE, 7, 8},
+      {STRING_LITERAL, 8, 20},
+      {PUNCTUATION, 20, 21},
+  });
+}
+
+TEST(RustSyntaxHighlighter, RegularStringWithEscaped) {
+  MockRustSyntaxHighlighter syn(R"(let a = "some\"ring";)");
+  syn.ParseCode();
+  syn.CheckSyntaxTokens({
+      {KEYWORD, 0, 3},
+      {WHITESPACE, 3, 4},
+      {IDENTIFIER, 4, 5},
+      {WHITESPACE, 5, 6},
+      {OPERATOR, 6, 7},
+      {WHITESPACE, 7, 8},
+      {STRING_LITERAL, 8, 20},
+      {PUNCTUATION, 20, 21},
+  });
+}
+
+TEST(RustSyntaxHighlighter, Lifetime) {
+  MockRustSyntaxHighlighter syn(R"(pub fn func<T:'static>(&mut self) -> T {})");
+  syn.ParseCode();
+  syn.CheckSyntaxTokens({
+      {KEYWORD, 0, 3},
+      {WHITESPACE, 3, 4},
+      {KEYWORD, 4, 6},
+      {WHITESPACE, 6, 7},
+      {IDENTIFIER, 7, 11},
+      {OPERATOR, 11, 12},
+      {IDENTIFIER, 12, 13},
+      {OPERATOR, 13, 14},
+      {LIFETIME, 14, 21},
+      {OPERATOR, 21, 22},
+      {PARENTHESES, 22, 23},
+      {OPERATOR, 23, 24},
+      {KEYWORD, 24, 27},
+      {WHITESPACE, 27, 28},
+      {KEYWORD, 28, 32},
+      {PARENTHESES, 32, 33},
+      {WHITESPACE, 33, 34},
+      {OPERATOR, 34, 36},
+      {WHITESPACE, 36, 37},
+      {IDENTIFIER, 37, 38},
+      {WHITESPACE, 38, 39},
+      {BRACE, 39, 41},
+  });
+}
+
+TEST(RustSyntaxHighlighter, Char) {
+  MockRustSyntaxHighlighter syn(R"(let a = 'c';)");
+  syn.ParseCode();
+  syn.CheckSyntaxTokens({
+      {KEYWORD, 0, 3},
+      {WHITESPACE, 3, 4},
+      {IDENTIFIER, 4, 5},
+      {WHITESPACE, 5, 6},
+      {OPERATOR, 6, 7},
+      {WHITESPACE, 7, 8},
+      {STRING_LITERAL, 8, 11},
+      {PUNCTUATION, 11, 12},
+  });
+}
+
+TEST(RustSyntaxHighlighter, TypeKeyword) {
+  MockRustSyntaxHighlighter syn(R"(let a: u64 = 12)");
+  syn.ParseCode();
+  syn.CheckSyntaxTokens({
+      {KEYWORD, 0, 3},
+      {WHITESPACE, 3, 4},
+      {IDENTIFIER, 4, 5},
+      {OPERATOR, 5, 6},
+      {WHITESPACE, 6, 7},
+      {TYPE_KEYWORD, 7, 10},
+      {WHITESPACE, 10, 11},
+      {OPERATOR, 11, 12},
+      {WHITESPACE, 12, 13},
+      {NUMERIC_LITERAL, 13, 15},
+  });
 }
 
 }  // namespace md2

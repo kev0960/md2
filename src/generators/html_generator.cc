@@ -8,6 +8,7 @@
 #include "logger.h"
 #include "objdump_highlighter.h"
 #include "py_syntax_highlighter.h"
+#include "rust_syntax_highlighter.h"
 
 namespace md2 {
 namespace {
@@ -45,6 +46,8 @@ std::string RunSyntaxHighlighter(const GeneratorContext& context,
   } else if (language == "objdump") {
     highlighter =
         std::make_unique<ObjdumpHighlighter>(context, str_code, str_lang);
+  } else if (language == "rust") {
+    highlighter = std::make_unique<RustSyntaxHighlighter>(str_code, str_lang);
   } else {
     return str_code;
   }
@@ -439,7 +442,8 @@ void HTMLGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
         &CastNodeTypes<ParseTreeTextNode>(*content_node), md_);
     GetCurrentTarget()->append(
         RunSyntaxHighlighter(*context_, formatted_cpp, name));
-  } else if (name == "py" || name == "asm" || name == "objdump") {
+  } else if (name == "py" || name == "asm" || name == "objdump" ||
+             name == "rust") {
     GetCurrentTarget()->append(RunSyntaxHighlighter(
         *context_, GetStringInNode(content_node.get()), name));
   } else if (name == "cpp-formatted") {

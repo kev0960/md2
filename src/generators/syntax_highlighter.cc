@@ -55,6 +55,10 @@ std::string TokenTypeToClassName(const SyntaxTokenType token_type) {
       return "in";
     case FUNCTION_SECTION:
       return "fs";
+    case LIFETIME:
+      return "lf";
+    case MACRO:
+      return "mc";
     case NONE:
       return "";
   }
@@ -107,6 +111,10 @@ std::string_view TokenTypeToString(SyntaxTokenType type) {
       return "INSTRUCTION";
     case FUNCTION_SECTION:
       return "FUNCTION_SECTION";
+    case LIFETIME:
+      return "LIFETIME";
+    case MACRO:
+      return "MACRO";
     case NONE:
       return "NONE";
   }
