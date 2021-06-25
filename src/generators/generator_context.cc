@@ -28,7 +28,7 @@ static std::unordered_set<std::string_view> kLatexNotAllowedFileExt{
     "gif", "svg", "webp"};
 
 std::vector<std::unordered_set<std::string_view>> kPreferredExtOrdering = {
-    {"webp"}, {"png"}, {"jpg", "jpeg"}, {"gif"}};
+    {"gif"}, {"webp"}, {"png"}, {"jpg", "jpeg"}};
 
 bool IsFileExist(const std::string& file_name) {
   std::ifstream in(file_name);
