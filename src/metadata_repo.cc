@@ -17,11 +17,6 @@ std::string ConvertPathnameToFilename(std::string_view path_name) {
     return StrCat(path_name, ".md");
   }
 
-  int num = std::stoi(std::string(path_name));
-  if (num <= 228) {
-    return StrCat("dump_", path_name, ".md");
-  }
-
   return StrCat(path_name, ".md");
 }
 

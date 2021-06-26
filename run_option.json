@@ -1,5 +1,5 @@
 {
-  "input_dirs" : ["/home/jaebum/ModooCode/md", "/home/jaebum/ModooCode/python/md"],
+  "input_dirs" : ["/home/jaebum/ModooCode/md"],
   "output_dir" : "/home/jaebum/ModooCode/views/new",
   "image_path": "/home/jaebum/ModooCode/static",
   "json_output_dir" : "/home/jaebum/ModooCode",

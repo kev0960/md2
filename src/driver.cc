@@ -43,8 +43,7 @@ std::string GenerateOutputPath(std::string_view file_name,
                                std::string_view output_dir,
                                std::string_view ext) {
   fs::path p(file_name);
-  return StrCat(output_dir, "/", p.parent_path().c_str(), "/", p.stem().c_str(),
-                ".", ext);
+  return StrCat(output_dir, "/", p.stem().c_str(), ".", ext);
 }
 
 // if file_name <= 228 --> Then we should append dump_ at front.
@@ -163,10 +162,9 @@ void Driver::DoParse(std::string_view content, std::string_view file_name) {
   Parser parser;
   const ParseTree tree = parser.GenerateParseTree(content);
 
-  GeneratorContext context(repo_, options_.image_path,
-                           options_.use_clang_format_server,
-                           options_.clang_format_server_port,
-                           zmq_context_.get());
+  GeneratorContext context(
+      repo_, options_.image_path, options_.use_clang_format_server,
+      options_.clang_format_server_port, zmq_context_.get());
   if (options_.generate_html) {
     HTMLGenerator generator(file_name, content, context, tree);
     generator.Generate();
