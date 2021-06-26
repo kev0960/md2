@@ -46,22 +46,16 @@ std::string GenerateOutputPath(std::string_view file_name,
   return StrCat(output_dir, "/", p.stem().c_str(), ".", ext);
 }
 
-// if file_name <= 228 --> Then we should append dump_ at front.
 // If the file_name is not a number then this will return nullopt.
 std::optional<std::string> NextPageToActualFileName(
     const std::string& file_name) {
-  int file_num;
   try {
-    file_num = std::stoi(file_name);
+    std::stoi(file_name);
   } catch (std::invalid_argument& e) {
     return std::nullopt;
   }
 
-  if (file_num <= 228) {
-    return StrCat("dump_", file_name, ".md");
-  } else {
-    return StrCat(file_name, ".md");
-  }
+  return StrCat(file_name, ".md");
 }
 
 }  // namespace

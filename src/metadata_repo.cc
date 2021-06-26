@@ -231,11 +231,6 @@ std::string_view MetadataRepo::NormalizeFileName(std::string_view file_name) {
     file_name = file_name.substr(0, ext_start);
   }
 
-  // Remove "dump_" prefix.
-  if (!file_name.empty() && file_name.substr(0, 5) == "dump_") {
-    file_name = file_name.substr(5);
-  }
-
   return file_name;
 }
 
