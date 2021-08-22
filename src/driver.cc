@@ -141,7 +141,13 @@ void Driver::DoParse() {
     std::string_view content(file_content.c_str() + pos);
 
     pool.enqueue(
-        [this, content](std::string rel_path) { DoParse(content, rel_path); },
+        [this, content](std::string rel_path) {
+          size_t last_slash = rel_path.find_last_of('/');
+          if (last_slash != std::string::npos) {
+            rel_path = rel_path.substr(last_slash + 1);
+          }
+          DoParse(content, rel_path);
+        },
         rel_path);
   }
 }
