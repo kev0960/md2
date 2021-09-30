@@ -36,6 +36,9 @@ add_subdirectory(src)
 # The executable code is here
 add_subdirectory(app)
 
+# Add the server version of markdown parser.
+add_subdirectory(server)
+
 option(PACKAGE_TESTS "Build the tests" ON)
 if(PACKAGE_TESTS)
     enable_testing()
