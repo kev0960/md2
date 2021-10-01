@@ -39,6 +39,9 @@ struct DriverOptions {
 
   // If true, articles will be updated to Database.
   bool update_database = false;
+
+  // Port number for the md2 server.
+  int md2_server_port = 5555;
 };
 
 class Driver {

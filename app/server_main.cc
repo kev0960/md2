@@ -2,17 +2,26 @@
 #include <nlohmann/json.hpp>
 #include <unordered_set>
 #include <zmq.hpp>
+#include <fmt/format.h>
 
+#include "argparse.h"
 #include "server.h"
 #include "server_util.h"
 
 using json = nlohmann::json;
 
-int main() {
+int main(int argc, char* argv[]) {
+  md2::DriverOptions option = md2::ArgParse::EmitOption(argc, argv);
+
   zmq::context_t context;
 
   zmq::socket_t socket(context, ZMQ_REP);
-  socket.bind("tcp://*:5555");
+
+  std::string connection_str = fmt::format("tcp://*:{}", option.md2_server_port);
+  std::cout << "*********************************" << std::endl;
+  std::cout << "*   Md2 Server running at " << option.md2_server_port << "  *" << std::endl;
+  std::cout << "*********************************" << std::endl;
+  socket.bind(connection_str);
 
   md2::MarkdownServer server;
   while (true) {

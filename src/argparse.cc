@@ -52,6 +52,15 @@ std::optional<size_t> HandleSingleOption(std::string_view arg,
   return end;
 }
 
+std::optional<size_t> HandleSingleOption(std::string_view arg,
+                                         size_t option_detail_start,
+                                         int* option) {
+  auto [parsed_option, end] = GetOption(arg, option_detail_start);
+  *option = std::atoi(parsed_option.data());
+
+  return end;
+}
+
 template <typename T, typename Transformer>
 std::optional<size_t> HandleVectorOption(std::string_view arg,
                                          size_t option_detail_start,
@@ -211,6 +220,13 @@ std::optional<size_t> HandleDriverOption(
     option.generate_latex = false;
 
     return option_detail_start;
+  } else if (option_name == "md2_server_port") {
+    if (!option_detail_start) {
+      return std::nullopt;
+    }
+
+    return HandleSingleOption(arg, *option_detail_start,
+                              &option.md2_server_port);
   } else if (option_name == "book_to_dir") {
     if (!option_detail_start) {
       return std::nullopt;
