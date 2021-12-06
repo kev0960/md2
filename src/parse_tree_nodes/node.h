@@ -32,6 +32,7 @@ class ParseTreeNode {
     COMMAND,
     STRIKE_THROUGH,
     MATH,
+    MATH_NEWLINE,
     QUOTE
   };
 

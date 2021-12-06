@@ -455,6 +455,21 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
       continue;
     }
 
+    if (content.substr(index, 2) == "\\[") {
+      size_t start = index;
+      size_t current = index + 2;
+      while (content.substr(current, 2) != "\\]" && current < content.size()) {
+        current++;
+      }
+
+      if (current != content.size()) {
+        auto* node = CreateNewNode<ParseTreeNewlineMathNode>(current_node, start);
+        node->SetEnd(current + 2);
+        index = current + 2;
+      }
+      continue;
+    }
+
     if (content[index] == '*') {
       if (auto maybe_list =
               MaybeParseList(content, current_node, refs, index, index);

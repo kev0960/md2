@@ -140,6 +140,9 @@ void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
     case ParseTreeNode::MATH:
       HandleMath(CastNodeTypes<ParseTreeMathNode>(node));
       break;
+    case ParseTreeNode::MATH_NEWLINE:
+      HandleNewlineMath(CastNodeTypes<ParseTreeNewlineMathNode>(node));
+      break;
     case ParseTreeNode::BOX:
       HandleBox(CastNodeTypes<ParseTreeBoxNode>(node));
       break;
@@ -518,10 +521,28 @@ void HTMLGenerator::HandleCommand(const ParseTreeCommandNode& node) {
 }
 
 void HTMLGenerator::HandleMath(const ParseTreeMathNode& node) {
-  GetCurrentTarget()->append("<span class='math-latex'>");
-  // Math should be enclosed by $$.
-  EmitChar(node.Start() + 1, node.End() - 1);
-  GetCurrentTarget()->append("</span>");
+  if (GetGeneratorOptions().server_mode) {
+    GetCurrentTarget()->append("\\(");
+    EmitChar(node.Start() + 2, node.End() - 2);
+    GetCurrentTarget()->append("\\)");
+  } else {
+    GetCurrentTarget()->append("<span class='math-latex'>");
+    // Math should be enclosed by $$.
+    EmitChar(node.Start() + 1, node.End() - 1);
+    GetCurrentTarget()->append("</span>");
+  }
+}
+
+void HTMLGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
+  if (GetGeneratorOptions().server_mode) {
+    // Math already includes \[ and \].
+    EmitChar(node.Start(), node.End());
+  } else {
+    GetCurrentTarget()->append("<span class='math-latex'>$");
+    // Math should be enclosed by $, $.
+    EmitChar(node.Start() + 2, node.End() - 2);
+    GetCurrentTarget()->append("$</span>");
+  }
 }
 
 void HTMLGenerator::HandleBox(const ParseTreeBoxNode& node) {

@@ -39,6 +39,15 @@ class ParseTreeMathNode : public ParseTreeNode {
   NodeType GetNodeType() const override { return ParseTreeNode::MATH; }
 };
 
+class ParseTreeNewlineMathNode : public ParseTreeNode {
+ public:
+  ParseTreeNewlineMathNode(ParseTreeNode* parent, int start)
+      : ParseTreeNode(parent, start) {}
+
+  NodeType GetNodeType() const override { return ParseTreeNode::MATH_NEWLINE; }
+};
+
+
 }  // namespace md2
 
 #endif

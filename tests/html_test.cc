@@ -8,13 +8,17 @@ namespace {
 
 using ::testing::Eq;
 
-void DoHtmlTest(std::string content, std::string expected) {
+void DoHtmlTest(std::string content, std::string expected,
+                bool is_server_mode = false) {
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
 
   MetadataRepo repo;
+  GeneratorOptions options;
+  options.server_mode = is_server_mode;
+
   GeneratorContext context(repo, "image_path", /*use_clang_server=*/false,
-                           /*clang_server_port=*/0, nullptr);
+                           /*clang_server_port=*/0, nullptr, options);
   HTMLGenerator generator(/*filename=*/"some_file.md", content, context, tree);
   generator.Generate();
 
@@ -394,9 +398,23 @@ TEST(HtmlTest, CommandAndInvalidCommand) {
 }
 
 TEST(HtmlTest, Math) {
-  std::string content = R"(some $$1+2*3$$ math)";
+  std::string content = R"(some $$1+2*3$$$$b$$ math)";
+  DoHtmlTest(content,
+             "<p>some <span class='math-latex'>$1+2*3$</span><span class='math-latex'>$b$</span> math</p>");
+
+  DoHtmlTest(content,
+             "<p>some \\(1+2*3\\)\\(b\\) math</p>",
+             /*is_server_mode=*/true);
+}
+
+TEST(HtmlTest, NewlineMath) {
+  std::string content = R"(some \[1+2*3\] math)";
   DoHtmlTest(content,
              "<p>some <span class='math-latex'>$1+2*3$</span> math</p>");
+
+  DoHtmlTest(content,
+             "<p>some \\[1+2*3\\] math</p>",
+             /*is_server_mode=*/true);
 }
 
 TEST(HtmlTest, SideNote) {

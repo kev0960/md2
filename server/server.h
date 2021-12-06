@@ -24,7 +24,8 @@ class MarkdownServer {
       : generator_context_(metadata_repo_, image_dir_path_,
                            /*use_clang_server=*/false,
                            /*clang_server_port=*/-1,
-                           /*context=*/nullptr) {}
+                           /*context=*/nullptr,
+                           GeneratorOptions{.server_mode = true}) {}
 
   // Handles the request.
   zmq::message_t HandleRequest(const json& request);

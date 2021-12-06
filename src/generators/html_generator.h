@@ -61,6 +61,7 @@ class HTMLGenerator : public Generator {
   void HandleEscape(const ParseTreeEscapeNode& node);
   void HandleCommand(const ParseTreeCommandNode& node);
   void HandleMath(const ParseTreeMathNode& node);
+  void HandleNewlineMath(const ParseTreeNewlineMathNode& node);
   void HandleBox(const ParseTreeBoxNode& node);
   void HandleQuote(const ParseTreeQuoteNode& node);
 

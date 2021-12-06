@@ -27,6 +27,10 @@ class Generator {
   // Release the generated target.
   std::string&& ReleaseGeneratedTarget() && { return std::move(target_); }
 
+  const GeneratorOptions& GetGeneratorOptions() const {
+    return context_->GetGeneratorOptions();
+  }
+
  protected:
   virtual void HandleParseTreeNode(const ParseTreeNode& node) = 0;
 

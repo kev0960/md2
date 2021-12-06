@@ -10,17 +10,23 @@
 
 namespace md2 {
 
+struct GeneratorOptions {
+  bool server_mode = false;
+};
+
 // Common object that is shared by generators.
 class GeneratorContext {
  public:
   GeneratorContext(const MetadataRepo& repo, const std::string& image_dir_path,
                    bool use_clang_server, int clang_server_port,
-                   zmq::context_t* context)
+                   zmq::context_t* context,
+                   const GeneratorOptions& options = {})
       : repo_(repo),
         image_dir_path_(image_dir_path),
         use_clang_server_(use_clang_server),
         clang_server_port_(clang_server_port),
-        context_(context) {}
+        context_(context),
+        options_(options) {}
 
   std::string_view GetClangFormatted(const ParseTreeTextNode* node,
                                      std::string_view md);
@@ -35,6 +41,7 @@ class GeneratorContext {
   std::string FindImageForLatex(const std::string& image_url);
 
   const Metadata* FindMetadataByFilename(std::string_view filename) const;
+  const GeneratorOptions& GetGeneratorOptions() const { return options_; }
 
  private:
   const std::vector<std::string>& FindImage(const std::string& image_url);
@@ -56,6 +63,8 @@ class GeneratorContext {
 
   // ZMQ context (if used)
   zmq::context_t* context_;
+
+  const GeneratorOptions options_;
 };
 
 }  // namespace md2
