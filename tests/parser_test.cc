@@ -838,5 +838,28 @@ this is \ref{abc}.
                         }));
 }
 
+TEST(HtmlTest, BrokenMath) {
+  // This should not fall into an infinite loop.
+  std::string content = R"($$a$ $)";
+
+  DoParserTest(content, ParseTreeComparer({
+                            {ParseTreeNode::NODE, 0, 6, 0},
+                            {ParseTreeNode::PARAGRAPH, 0, 6, 1},
+                        }));
+
+  std::string content2 = R"(\[ a $)";
+  DoParserTest(content2, ParseTreeComparer({
+                            {ParseTreeNode::NODE, 0, 6, 0},
+                            {ParseTreeNode::PARAGRAPH, 0, 6, 1},
+                        }));
+
+  std::string content3 = R"($a)";
+  DoParserTest(content2, ParseTreeComparer({
+                            {ParseTreeNode::NODE, 0, 6, 0},
+                            {ParseTreeNode::PARAGRAPH, 0, 6, 1},
+                        }));
+}
+
+
 }  // namespace
 }  // namespace md2

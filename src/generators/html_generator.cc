@@ -301,13 +301,24 @@ void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
 }
 
 void HTMLGenerator::HandleTable(const ParseTreeTableNode& node) {
-  GetCurrentTarget()->append("<table><thead><tr>");
+  if (GetGeneratorOptions().server_mode) {
+    GetCurrentTarget()->append(
+        "<table class='border border-collapse border-gray'><thead "
+        "class='bg-gray'><tr>");
+  } else {
+    GetCurrentTarget()->append("<table><thead><tr>");
+  }
 
   const size_t row_size = node.GetRowSize();
 
   // The first row is always the header.
   for (size_t i = 0; i < row_size; i++) {
-    GetCurrentTarget()->append("<th>");
+    if (GetGeneratorOptions().server_mode) {
+      GetCurrentTarget()->append("<th class='w-1/2 border border-gray-300'>");
+    } else {
+      GetCurrentTarget()->append("<th>");
+    }
+
     HandleParseTreeNode(*node.GetChildren()[i]);
     GetCurrentTarget()->append("</th>");
   }
@@ -322,7 +333,11 @@ void HTMLGenerator::HandleTable(const ParseTreeTableNode& node) {
       GetCurrentTarget()->append("<tr>");
     }
 
-    GetCurrentTarget()->append("<td>");
+    if (GetGeneratorOptions().server_mode) {
+      GetCurrentTarget()->append("<td class='border border-gray-300'>");
+    } else {
+      GetCurrentTarget()->append("<td>");
+    }
     HandleParseTreeNode(*node.GetChildren()[i]);
     GetCurrentTarget()->append("</td>");
 
