@@ -40,7 +40,11 @@ std::pair<std::pair<int, int>, int> GetHeightAndWidthOfMath(
 }  // namespace
 
 void HwpGenerator::EmitChar(int index) {
-  GetCurrentTarget()->push_back(md_[index]);
+  if (md_[index] == '\t') {
+    GetCurrentTarget()->append("<TAB/>");
+  } else {
+    GetCurrentTarget()->push_back(md_[index]);
+  }
 }
 
 void HwpGenerator::EmitChar(int from, int to) {

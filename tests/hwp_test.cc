@@ -41,12 +41,18 @@ TEST(HwpTest, MathWithText) {
       "there is $$125,10;a+b$$ something",
       R"(<P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>there is </CHAR></TEXT><EQUATION BaseLine="66" BaseUnit="1000" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="1" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="1"><SIZE Height="125" HeightRelTo="Absolute" Protect="false" Width="10" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="56" Right="56" Top="0"/><SHAPECOMMENT>수식입니다.</SHAPECOMMENT></SHAPEOBJECT><SCRIPT>$$125,10;a+b</SCRIPT></EQUATION><TEXT CharShape="1"><CHAR> something</CHAR></TEXT></P>)");
 }
+
 TEST(HwpTest, BoldAndItalic) {
   DoHwpTest(
       "**a** and some *bb* and text",
       R"(<P ParaShape="0" Style="0"><TEXT CharShape="7"><CHAR>**a**</CHAR></TEXT><TEXT CharShape="1"><CHAR> and some </CHAR></TEXT><TEXT CharShape="8"><CHAR>*bb*</CHAR></TEXT><TEXT CharShape="1"><CHAR> and text</CHAR></TEXT></P>)");
 }
 
+TEST(HwpTest, EscapedTab) {
+  DoHwpTest(
+      "① ㄱ\t② ㄷ",
+      R"(<P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>① ㄱ<TAB/>② ㄷ</CHAR></TEXT></P>)");
+}
 }  // namespace
 }  // namespace md2
 
