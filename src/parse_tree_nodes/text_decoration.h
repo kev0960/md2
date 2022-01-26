@@ -47,7 +47,6 @@ class ParseTreeNewlineMathNode : public ParseTreeNode {
   NodeType GetNodeType() const override { return ParseTreeNode::MATH_NEWLINE; }
 };
 
-
 }  // namespace md2
 
 #endif

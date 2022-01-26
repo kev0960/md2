@@ -4,6 +4,7 @@
 #include "gtest/gtest.h"
 #include "logger.h"
 #include "parse_tree_builder.h"
+#include "parse_tree_nodes/text_decoration.h"
 
 namespace md2 {
 namespace {
@@ -849,17 +850,31 @@ TEST(HtmlTest, BrokenMath) {
 
   std::string content2 = R"(\[ a $)";
   DoParserTest(content2, ParseTreeComparer({
-                            {ParseTreeNode::NODE, 0, 6, 0},
-                            {ParseTreeNode::PARAGRAPH, 0, 6, 1},
-                        }));
+                             {ParseTreeNode::NODE, 0, 6, 0},
+                             {ParseTreeNode::PARAGRAPH, 0, 6, 1},
+                         }));
 
   std::string content3 = R"($a)";
   DoParserTest(content2, ParseTreeComparer({
-                            {ParseTreeNode::NODE, 0, 6, 0},
-                            {ParseTreeNode::PARAGRAPH, 0, 6, 1},
-                        }));
+                             {ParseTreeNode::NODE, 0, 6, 0},
+                             {ParseTreeNode::PARAGRAPH, 0, 6, 1},
+                         }));
 }
 
+TEST(HtmlTest, HangulMath) {
+  // This should not fall into an infinite loop.
+  std::string content = R"($$123,456;a+b+c$$)";
+
+  Parser parser;
+  ParseTree tree = parser.GenerateParseTree(content);
+
+  ParseTreeComparer({
+                        {ParseTreeNode::NODE, 0, 17, 0},
+                        {ParseTreeNode::PARAGRAPH, 0, 17, 1},
+                        {ParseTreeNode::MATH, 0, 17, 2},
+                    })
+      .Compare(tree);
+}
 
 }  // namespace
 }  // namespace md2

@@ -465,7 +465,8 @@ size_t Parser::GenericParser(std::string_view content, size_t start,
       }
 
       if (current != content.size()) {
-        auto* node = CreateNewNode<ParseTreeNewlineMathNode>(current_node, start);
+        auto* node =
+            CreateNewNode<ParseTreeNewlineMathNode>(current_node, start);
         node->SetEnd(current + 2);
         index = current + 2;
       } else {

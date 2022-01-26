@@ -17,7 +17,7 @@ target_link_libraries(libmd2
   stdc++fs)
 
 target_include_directories(libmd2 PUBLIC .)
-target_compile_features(libmd2 PUBLIC cxx_std_17)
+target_compile_features(libmd2 PUBLIC cxx_std_20)
 
 if (MSVC)
   target_compile_options(libmd2 PRIVATE /W4 /WX)

@@ -4,10 +4,14 @@ use std::ffi::{CStr, CString};
 #[link(name = "libmd2", kind = "static")]
 extern "C" {
     fn convert_markdown_to_html(md: *const c_char) -> *const c_char;
+    fn convert_markdown_to_hwp(md: *const c_char) -> *const c_char;
     fn deallocate(s: *const c_char);
 }
 
-pub fn markdown_to_html(md: &str) -> Result<String, String> {
+fn convert_markdown(
+    md: &str,
+    converter: unsafe extern "C" fn(*const c_char) -> *const c_char,
+) -> Result<String, String> {
     let html;
     unsafe {
         let c_str_md;
@@ -21,7 +25,7 @@ pub fn markdown_to_html(md: &str) -> Result<String, String> {
             }
         }
 
-        let c_html_ptr = convert_markdown_to_html(c_str_md.as_ptr());
+        let c_html_ptr = converter(c_str_md.as_ptr());
         let c_html = CStr::from_ptr(c_html_ptr);
 
         match c_html.to_str() {
@@ -38,6 +42,14 @@ pub fn markdown_to_html(md: &str) -> Result<String, String> {
     }
 
     Ok(html)
+}
+
+pub fn markdown_to_html(md: &str) -> Result<String, String> {
+    convert_markdown(md, convert_markdown_to_html)
+}
+
+pub fn markdown_to_hwp(md: &str) -> Result<String, String> {
+    convert_markdown(md, convert_markdown_to_hwp)
 }
 
 #[test]

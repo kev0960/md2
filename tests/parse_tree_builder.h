@@ -47,5 +47,31 @@ class ParseTreeComparer {
   std::vector<ParseTreeElement> tree_;
 };
 
+class NodeMatcher {
+ public:
+  explicit NodeMatcher(ParseTreeNode::NodeType matching_type)
+      : matching_type_(matching_type) {}
+
+  std::vector<const ParseTreeNode*> FetchMatchingNodes(const ParseTree& tree) {
+    FindAllMatches(*tree.GetRoot());
+
+    return matched_nodes_;
+  }
+
+ private:
+  void FindAllMatches(const ParseTreeNode& node) {
+    if (node.GetNodeType() == matching_type_) {
+      matched_nodes_.push_back(&node);
+    }
+
+    for (const auto& child : node.GetChildren()) {
+      FindAllMatches(*child);
+    }
+  }
+
+  ParseTreeNode::NodeType matching_type_;
+  std::vector<const ParseTreeNode*> matched_nodes_;
+};
+
 }  // namespace md2
 
