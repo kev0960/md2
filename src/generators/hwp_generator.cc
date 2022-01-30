@@ -24,7 +24,7 @@ constexpr std::string_view kMathHeightAndWidth =
 // Returns the pair of height and width, and the start index of the real math.
 std::pair<std::pair<int, int>, int> GetHeightAndWidthOfMath(
     std::string_view math) {
-  size_t height_start = math.find_first_not_of('$');
+  size_t height_start = 2;
   size_t height_end = math.find(',', height_start);
 
   int height = std::stoi(
@@ -40,10 +40,35 @@ std::pair<std::pair<int, int>, int> GetHeightAndWidthOfMath(
 }  // namespace
 
 void HwpGenerator::EmitChar(int index) {
-  if (md_[index] == '\t') {
-    GetCurrentTarget()->append("<TAB/>");
-  } else {
-    GetCurrentTarget()->push_back(md_[index]);
+  switch (md_[index]) {
+    case '\t': {
+      GetCurrentTarget()->append("<TAB/>");
+      break;
+    }
+    case '"': {
+      GetCurrentTarget()->append("&quot;");
+      break;
+    }
+    case '\'': {
+      GetCurrentTarget()->append("&apos;");
+      break;
+    }
+    case '<': {
+      GetCurrentTarget()->append("&lt;");
+      break;
+    }
+    case '>': {
+      GetCurrentTarget()->append("&gt;");
+      break;
+    }
+    case '&': {
+      GetCurrentTarget()->append("&amp;");
+      break;
+    }
+    default: {
+      GetCurrentTarget()->push_back(md_[index]);
+      break;
+    }
   }
 }
 
@@ -165,12 +190,15 @@ void HwpGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
 void HwpGenerator::HandleMath(const ParseTreeMathNode& node) {
   ParagraphWrapper wrapper(this, /*wrap_text=*/true);
 
+  GetCurrentTarget()->append("<TEXT>");
   GetCurrentTarget()->append(kMathEquationTag);
-  GetCurrentTarget()->append(fmt::format(kMathShapeObject, inst_id_, z_order_));
+  GetCurrentTarget()->append(
+      fmt::format(kMathShapeObject, inst_id_++, z_order_++));
 
   std::string_view math_in_node = GetStringInNode(&node);
 
-  auto [height_and_width, actual_start] = GetHeightAndWidthOfMath(math_in_node);
+  auto [height_and_width, actual_start_offset] =
+      GetHeightAndWidthOfMath(math_in_node);
 
   GetCurrentTarget()->append(fmt::format(
       kMathHeightAndWidth, height_and_width.first, height_and_width.second));
@@ -178,30 +206,34 @@ void HwpGenerator::HandleMath(const ParseTreeMathNode& node) {
   GetCurrentTarget()->append("</SHAPEOBJECT><SCRIPT>");
 
   // We have to omit ending "$$".
-  EmitChar(actual_start, node.End() - 2);
+  EmitChar(node.Start() + actual_start_offset, node.End() - 2);
 
   GetCurrentTarget()->append("</SCRIPT></EQUATION>");
+  GetCurrentTarget()->append("</TEXT>");
 }
 
 void HwpGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
   ParagraphWrapper wrapper(this, /*wrap_text=*/true);
 
+  GetCurrentTarget()->append("<TEXT>");
   GetCurrentTarget()->append(kMathEquationTag);
-  GetCurrentTarget()->append(fmt::format(kMathShapeObject, inst_id_, z_order_));
+  GetCurrentTarget()->append(
+      fmt::format(kMathShapeObject, inst_id_++, z_order_++));
 
-  std::string_view math_in_node =
-      GetStringInNode(&node, node.Start(), node.End());
-  auto [height_and_width, actual_start] = GetHeightAndWidthOfMath(math_in_node);
+  std::string_view math_in_node = GetStringInNode(&node);
+  auto [height_and_width, actual_start_offset] =
+      GetHeightAndWidthOfMath(math_in_node);
 
   GetCurrentTarget()->append(fmt::format(
       kMathHeightAndWidth, height_and_width.first, height_and_width.second));
   GetCurrentTarget()->append(kMathPositionAndMargin);
   GetCurrentTarget()->append("</SHAPEOBJECT><SCRIPT>");
 
-  // We have to omit ending "$$".
-  EmitChar(actual_start, node.End() - 2);
+  // We have to omit ending "\]".
+  EmitChar(node.Start() + actual_start_offset, node.End() - 2);
 
   GetCurrentTarget()->append("</SCRIPT></EQUATION>");
+  GetCurrentTarget()->append("</TEXT>");
 }
 
 void HwpGenerator::HandleText(const ParseTreeTextNode& node) {

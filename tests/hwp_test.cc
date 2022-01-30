@@ -26,20 +26,21 @@ void DoHwpTest(std::string content, std::string expected,
 }
 
 TEST(HwpTest, Paragraph) {
-  DoHwpTest("a",
-            R"(<P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>a</CHAR></TEXT></P>)");
+  DoHwpTest(
+      "a",
+      R"(<P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>a</CHAR></TEXT></P>)");
 }
 
 TEST(HwpTest, SimpleMath) {
   DoHwpTest(
       "$$125,1000;a+b$$",
-      R"(<P ParaShape="0" Style="0"><EQUATION BaseLine="66" BaseUnit="1000" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="1" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="1"><SIZE Height="125" HeightRelTo="Absolute" Protect="false" Width="1000" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="56" Right="56" Top="0"/><SHAPECOMMENT>수식입니다.</SHAPECOMMENT></SHAPEOBJECT><SCRIPT>a+b</SCRIPT></EQUATION></P>)");
+      R"(<P ParaShape="0" Style="0"><TEXT><EQUATION BaseLine="66" BaseUnit="1000" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="1" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="1"><SIZE Height="125" HeightRelTo="Absolute" Protect="false" Width="1000" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="56" Right="56" Top="0"/><SHAPECOMMENT>수식입니다.</SHAPECOMMENT></SHAPEOBJECT><SCRIPT>a+b</SCRIPT></EQUATION></TEXT></P>)");
 }
 
 TEST(HwpTest, MathWithText) {
   DoHwpTest(
-      "there is $$125,10;a+b$$ something",
-      R"(<P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>there is </CHAR></TEXT><EQUATION BaseLine="66" BaseUnit="1000" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="1" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="1"><SIZE Height="125" HeightRelTo="Absolute" Protect="false" Width="10" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="56" Right="56" Top="0"/><SHAPECOMMENT>수식입니다.</SHAPECOMMENT></SHAPEOBJECT><SCRIPT>$$125,10;a+b</SCRIPT></EQUATION><TEXT CharShape="1"><CHAR> something</CHAR></TEXT></P>)");
+      R"(there is $$125,10;a+b$$ something \[10,5;a\])",
+      R"(<P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>there is </CHAR></TEXT><TEXT><EQUATION BaseLine="66" BaseUnit="1000" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="1" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="1"><SIZE Height="125" HeightRelTo="Absolute" Protect="false" Width="10" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="56" Right="56" Top="0"/><SHAPECOMMENT>수식입니다.</SHAPECOMMENT></SHAPEOBJECT><SCRIPT>a+b</SCRIPT></EQUATION></TEXT><TEXT CharShape="1"><CHAR> something </CHAR></TEXT><TEXT><EQUATION BaseLine="66" BaseUnit="1000" LineMode="false" TextColor="0" Version="Equation Version 60"><SHAPEOBJECT InstId="2" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="2"><SIZE Height="10" HeightRelTo="Absolute" Protect="false" Width="5" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="56" Right="56" Top="0"/><SHAPECOMMENT>수식입니다.</SHAPECOMMENT></SHAPEOBJECT><SCRIPT>a</SCRIPT></EQUATION></TEXT></P>)");
 }
 
 TEST(HwpTest, BoldAndItalic) {
@@ -53,6 +54,7 @@ TEST(HwpTest, EscapedTab) {
       "① ㄱ\t② ㄷ",
       R"(<P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>① ㄱ<TAB/>② ㄷ</CHAR></TEXT></P>)");
 }
+
 }  // namespace
 }  // namespace md2
 

@@ -839,7 +839,7 @@ this is \ref{abc}.
                         }));
 }
 
-TEST(HtmlTest, BrokenMath) {
+TEST(ParserTest, BrokenMath) {
   // This should not fall into an infinite loop.
   std::string content = R"($$a$ $)";
 
@@ -861,17 +861,18 @@ TEST(HtmlTest, BrokenMath) {
                          }));
 }
 
-TEST(HtmlTest, HangulMath) {
+TEST(ParserTest, NewlineMath) {
   // This should not fall into an infinite loop.
-  std::string content = R"($$123,456;a+b+c$$)";
+  std::string content = R"(math and $$123,456;a+b+c$$ and \[123,456;abc\])";
 
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
 
   ParseTreeComparer({
-                        {ParseTreeNode::NODE, 0, 17, 0},
-                        {ParseTreeNode::PARAGRAPH, 0, 17, 1},
-                        {ParseTreeNode::MATH, 0, 17, 2},
+                        {ParseTreeNode::NODE, 0, 46, 0},
+                        {ParseTreeNode::PARAGRAPH, 0, 46, 1},
+                        {ParseTreeNode::MATH, 9, 26, 2},
+                        {ParseTreeNode::MATH_NEWLINE, 31, 46, 2},
                     })
       .Compare(tree);
 }
