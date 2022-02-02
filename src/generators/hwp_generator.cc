@@ -7,7 +7,7 @@ namespace md2 {
 namespace {
 
 constexpr std::string_view kMathEquationTag =
-    R"(<EQUATION BaseLine="66" BaseUnit="1000" LineMode="false" TextColor="0" Version="Equation Version 60">)";
+    R"(<EQUATION BaseLine="86" BaseUnit="1000" LineMode="false" TextColor="0" Version="Equation Version 60">)";
 
 constexpr std::string_view kMathShapeObject =
     R"(<SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Equation" TextFlow="BothSides" ZOrder="{}">)";
@@ -190,7 +190,7 @@ void HwpGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
 void HwpGenerator::HandleMath(const ParseTreeMathNode& node) {
   ParagraphWrapper wrapper(this, /*wrap_text=*/true);
 
-  GetCurrentTarget()->append("<TEXT>");
+  GetCurrentTarget()->append(R"(<TEXT CharShape="0">)");
   GetCurrentTarget()->append(kMathEquationTag);
   GetCurrentTarget()->append(
       fmt::format(kMathShapeObject, inst_id_++, z_order_++));
@@ -215,7 +215,7 @@ void HwpGenerator::HandleMath(const ParseTreeMathNode& node) {
 void HwpGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
   ParagraphWrapper wrapper(this, /*wrap_text=*/true);
 
-  GetCurrentTarget()->append("<TEXT>");
+  GetCurrentTarget()->append(R"(<TEXT CharShape="0">)");
   GetCurrentTarget()->append(kMathEquationTag);
   GetCurrentTarget()->append(
       fmt::format(kMathShapeObject, inst_id_++, z_order_++));
