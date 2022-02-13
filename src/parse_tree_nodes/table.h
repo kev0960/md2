@@ -18,10 +18,10 @@ class ParseTreeTableNode : public ParseTreeNode {
   // Will be only set once.
   void SetRowSizeIfNotSpecified();
 
-  constexpr int GetRowSize() const { return row_size_; }
+  constexpr int GetColSize() const { return col_size_; }
 
  private:
-  int row_size_ = 0;
+  int col_size_ = 0;
 };
 
 }  // namespace md2

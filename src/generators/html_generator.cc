@@ -309,7 +309,7 @@ void HTMLGenerator::HandleTable(const ParseTreeTableNode& node) {
     GetCurrentTarget()->append("<table><thead><tr>");
   }
 
-  const size_t row_size = node.GetRowSize();
+  const size_t row_size = node.GetColSize();
 
   // The first row is always the header.
   for (size_t i = 0; i < row_size; i++) {

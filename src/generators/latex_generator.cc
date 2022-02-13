@@ -251,22 +251,22 @@ void LatexGenerator::HandleImage(const ParseTreeImageNode& node) {
 }
 
 void LatexGenerator::HandleTable(const ParseTreeTableNode& node) {
-  const size_t row_size = node.GetRowSize();
-  if (row_size == 0) {
+  const size_t col_size = node.GetColSize();
+  if (col_size == 0) {
     return;
   }
 
   GetCurrentTarget()->append("\n\\begin{tabularx}{\\textwidth}");
   GetCurrentTarget()->append("{|");
-  for (size_t i = 0; i < row_size; i++) {
+  for (size_t i = 0; i < col_size; i++) {
     GetCurrentTarget()->append("X|");
   }
   GetCurrentTarget()->append("}\n\\hline\n");
 
   // The first row is always the header.
-  for (size_t i = 0; i < row_size; i++) {
+  for (size_t i = 0; i < col_size; i++) {
     HandleParseTreeNode(*node.GetChildren()[i]);
-    if (i != row_size - 1) {
+    if (i != col_size - 1) {
       GetCurrentTarget()->append(" & ");
     }
   }
@@ -275,9 +275,9 @@ void LatexGenerator::HandleTable(const ParseTreeTableNode& node) {
   // The second row of the table always indicates the alignment of the cells.
   // TODO Set the alignmnent of the columns.
 
-  for (size_t i = 2 * row_size; i < node.GetChildren().size(); i++) {
+  for (size_t i = 2 * col_size; i < node.GetChildren().size(); i++) {
     HandleParseTreeNode(*node.GetChildren()[i]);
-    if (i % row_size != row_size - 1) {
+    if (i % col_size != col_size - 1) {
       GetCurrentTarget()->append(" & ");
     } else {
       GetCurrentTarget()->append(" \\\\ \\hline\n ");
