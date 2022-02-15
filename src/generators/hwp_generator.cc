@@ -23,7 +23,7 @@ constexpr std::string_view kTableHeader =
 constexpr std::string_view kTableShapeObject =
     R"(<SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Table" TextFlow="LargestOnly" ZOrder="{}"><SIZE Height="{}" HeightRelTo="Absolute" Protect="false" Width="{}" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="850" Right="0" Top="0"/></SHAPEOBJECT><INSIDEMARGIN Bottom="141" Left="510" Right="510" Top="141"/>)";
 constexpr std::string_view kCell =
-    R"(<CELL BorderFill="11" ColAddr="{}" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="{}" Protect="false" RowAddr="0" RowSpan="1" Width="{}"><CELLMARGIN Bottom="141" Left="510" Right="510" Top="141"/><PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">)";
+    R"(<CELL BorderFill="11" ColAddr="{}" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="{}" Protect="false" RowAddr="{}" RowSpan="1" Width="{}"><CELLMARGIN Bottom="141" Left="510" Right="510" Top="141"/><PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">)";
 
 // Height and Width is embedded in math as follows:
 // $$150,200;a+b+c$$
@@ -289,20 +289,29 @@ void HwpGenerator::HandleTable(const ParseTreeTableNode& node) {
   GetCurrentTarget()->append(fmt::format(kTableHeader, col_size, row_size));
   GetCurrentTarget()->append(
       fmt::format(kTableShapeObject, inst_id_++, z_order_++, height, width));
+
+  int row_index = 0;
   for (size_t i = 0; i < node.GetChildren().size(); i++) {
+    if (col_size <= i && i < col_size * 2) {
+      // Ignore the second row.
+      continue;
+    }
+
     if (i % col_size == 0) {
       // This is the start of the row.
       GetCurrentTarget()->append("<ROW>");
     }
 
     GetCurrentTarget()->append(
-        fmt::format(kCell, i % col_size, /*height=*/1700, /*width=*/5500));
+        fmt::format(kCell, /*col_addr=*/i % col_size, /*height=*/1700,
+                    /*row_addr=*/row_index, /*width=*/5500));
     HandleParseTreeNode(*node.GetChildren()[i]);
     GetCurrentTarget()->append("</PARALIST></CELL>");
 
     if (i % col_size == col_size - 1) {
       // This is the end of the row.
       GetCurrentTarget()->append("</ROW>");
+      row_index ++;
     }
   }
 
