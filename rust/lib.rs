@@ -5,6 +5,7 @@ use std::ffi::{CStr, CString};
 extern "C" {
     fn convert_markdown_to_html(md: *const c_char) -> *const c_char;
     fn convert_markdown_to_hwp(md: *const c_char) -> *const c_char;
+    fn convert_markdown_to_latex(md: *const c_char) -> *const c_char;
     fn deallocate(s: *const c_char);
 }
 
@@ -52,6 +53,10 @@ pub fn markdown_to_hwp(md: &str) -> Result<String, String> {
     convert_markdown(md, convert_markdown_to_hwp)
 }
 
+pub fn markdown_to_latex(md: &str) -> Result<String, String> {
+    convert_markdown(md, convert_markdown_to_latex)
+}
+
 #[test]
 fn convert_test() {
     assert_eq!(
@@ -62,5 +67,10 @@ fn convert_test() {
     assert_eq!(
         markdown_to_html("**한글도 되나요**").unwrap(),
         "<p><span class='font-weight-bold'>한글도 되나요</span></p>".to_string()
+    );
+
+    assert_eq!(
+        markdown_to_latex("**한글도 되나요**").unwrap(),
+        "\n\\textbf{한글도 되나요}\n".to_string()
     );
 }

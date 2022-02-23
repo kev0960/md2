@@ -8,6 +8,9 @@ extern "C" {
   // Convert markdown to hwp.
   const char* convert_markdown_to_hwp(const char* md);
 
+  // Convert markdown to hwp.
+  const char* convert_markdown_to_latex(const char* md);
+
   // Custom deallocator for const char*.
   void deallocate(const char* s);
 }
