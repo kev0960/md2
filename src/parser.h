@@ -11,17 +11,12 @@ namespace md2 {
 // Map between the ref name and the actual node.
 using RefContainer = std::unordered_map<std::string, ParseTreeNode*>;
 
-struct ParserOptions {};
-
 // Parses Markdown and emits the parse tree.
 //
 // The parsed syntax tree will be converted to the target language (e.g html or
 // LaTeX) by the generator.
 class Parser {
  public:
-  explicit Parser(const ParserOptions& parser_options = {})
-      : parser_options_(parser_options) {}
-
   ParseTree GenerateParseTree(std::string_view content);
 
  private:
@@ -90,8 +85,6 @@ class Parser {
 
   // Construct List node from the consecutive list items.
   void PostProcessList(ParseTreeNode* root);
-
-  const ParserOptions parser_options_;
 };
 
 }  // namespace md2
