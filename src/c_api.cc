@@ -1,7 +1,7 @@
 #include "generators/generator_context.h"
 #include "generators/html_generator.h"
-#include "generators/latex_generator.h"
 #include "generators/hwp_generator.h"
+#include "generators/latex_generator.h"
 #include "metadata_repo.h"
 #include "parser.h"
 
@@ -54,16 +54,18 @@ const char* convert_markdown_to_hwp(const char* md) {
   return c_html;
 }
 
-const char* convert_markdown_to_latex(const char* md) {
+const char* convert_markdown_to_latex(const char* md,
+                                      const char* image_dir_path,
+                                      bool no_latex_image) {
   md2::Parser parser;
   const md2::ParseTree tree = parser.GenerateParseTree(md);
 
   md2::MetadataRepo metadata_repo;
   md2::GeneratorOptions options;
   options.server_mode = true;
-  options.no_latex_image = true;
+  options.no_latex_image = no_latex_image;
 
-  md2::GeneratorContext context(metadata_repo, "",
+  md2::GeneratorContext context(metadata_repo, image_dir_path, 
                                 /*use_clang_server=*/false,
                                 /*clang_server_port=*/-1,
                                 /*context=*/nullptr, options);
