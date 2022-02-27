@@ -61,6 +61,7 @@ const char* convert_markdown_to_latex(const char* md) {
   md2::MetadataRepo metadata_repo;
   md2::GeneratorOptions options;
   options.server_mode = true;
+  options.no_latex_image = true;
 
   md2::GeneratorContext context(metadata_repo, "",
                                 /*use_clang_server=*/false,

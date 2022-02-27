@@ -12,6 +12,7 @@ namespace md2 {
 
 struct GeneratorOptions {
   bool server_mode = false;
+  bool no_latex_image = false;
 };
 
 // Common object that is shared by generators.

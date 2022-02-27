@@ -294,5 +294,15 @@ TEST(LatexTest, NotQuote) {
   DoLatexTest(content, "\n\n  > this is not quote\n\n");
 }
 
+TEST(LatexTest, Math) {
+  std::string content = R"(some $$1+2$$ math)";
+  DoLatexTest(content, "\nsome $1+2$ math\n");
+}
+
+TEST(LatexTest, NewlineMath) {
+  std::string content = R"(some \[1+2\] math)";
+  DoLatexTest(content, "\nsome \\[1+2\\] math\n");
+}
+
 }  // namespace
 }  // namespace md2

@@ -76,9 +76,13 @@ void LatexGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
     case ParseTreeNode::LINK:
       HandleLink(CastNodeTypes<ParseTreeLinkNode>(node));
       break;
-    case ParseTreeNode::IMAGE:
+    case ParseTreeNode::IMAGE: {
+      if (context_->GetGeneratorOptions().no_latex_image) {
+        break;
+      }
       HandleImage(CastNodeTypes<ParseTreeImageNode>(node));
       break;
+    }
     case ParseTreeNode::TABLE:
       HandleTable(CastNodeTypes<ParseTreeTableNode>(node));
       break;
@@ -101,6 +105,9 @@ void LatexGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
       break;
     case ParseTreeNode::COMMAND:
       HandleCommand(CastNodeTypes<ParseTreeCommandNode>(node));
+      break;
+    case ParseTreeNode::MATH_NEWLINE:
+      HandleNewlineMath(CastNodeTypes<ParseTreeMathNode>(node));
       break;
     case ParseTreeNode::MATH:
       HandleMath(CastNodeTypes<ParseTreeMathNode>(node));
@@ -444,13 +451,18 @@ void LatexGenerator::HandleCommand(const ParseTreeCommandNode& node) {
   }
 }
 
+void LatexGenerator::HandleNewlineMath(const ParseTreeMathNode& node) {
+  // Newline Math is already enclosed by \[ and \].
+  DisableLatexEscape();
+  EmitChar(node.Start(), node.End());
+  RestoreLatexEscape();
+}
+
+
 void LatexGenerator::HandleMath(const ParseTreeMathNode& node) {
-  GetCurrentTarget()->append("$");
-  // Math should be enclosed by $$.
   DisableLatexEscape();
   EmitChar(node.Start() + 1, node.End() - 1);
   RestoreLatexEscape();
-  GetCurrentTarget()->append("$");
 }
 
 void LatexGenerator::HandleBox(const ParseTreeBoxNode& node) {

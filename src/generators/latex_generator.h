@@ -60,6 +60,7 @@ class LatexGenerator : public Generator {
   void HandleVerbatim(const ParseTreeVerbatimNode& node);
   void HandleEscape(const ParseTreeEscapeNode& node);
   void HandleCommand(const ParseTreeCommandNode& node);
+  void HandleNewlineMath(const ParseTreeMathNode& node);
   void HandleMath(const ParseTreeMathNode& node);
   void HandleBox(const ParseTreeBoxNode& node);
   void HandleQuote(const ParseTreeQuoteNode& node);
