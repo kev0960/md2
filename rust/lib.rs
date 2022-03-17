@@ -58,9 +58,9 @@ pub fn markdown_to_html(md: &str) -> Result<String, String> {
 
 #[repr(C)]
 pub struct HwpGenerateConfig {
-    para_shape: i32,
-    para_style: i32,
-    char_shape: i32,
+    pub para_shape: i32,
+    pub para_style: i32,
+    pub char_shape: i32,
 }
 
 pub fn markdown_to_hwp(md: &str, render_config: &HwpGenerateConfig) -> Result<String, String> {
