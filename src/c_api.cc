@@ -1,6 +1,7 @@
 #include "generators/generator_context.h"
 #include "generators/html_generator.h"
 #include "generators/hwp_generator.h"
+#include "generators/hwp_state.h"
 #include "generators/latex_generator.h"
 #include "metadata_repo.h"
 #include "parser.h"
@@ -30,7 +31,14 @@ const char* convert_markdown_to_html(const char* md) {
   return c_html;
 }
 
-const char* convert_markdown_to_hwp(const char* md) {
+typedef struct HwpGenerateConfig {
+  int para_shape;
+  int para_style;
+  int char_shape;
+} HwpGenerateConfig;
+
+const char* convert_markdown_to_hwp(const char* md,
+                                    const HwpGenerateConfig* render_config) {
   md2::Parser parser;
   const md2::ParseTree tree = parser.GenerateParseTree(md);
 
@@ -44,6 +52,13 @@ const char* convert_markdown_to_hwp(const char* md) {
                                 /*context=*/nullptr, options);
 
   md2::HwpGenerator generator("", md, context, tree);
+  generator.GetHwpStateManager().AddParaShape(
+      md2::HwpStateManager::HwpParaShapeType::PARA_REGULAR,
+      render_config->para_shape, render_config->para_style);
+  generator.GetHwpStateManager().AddTextShape(
+      md2::HwpStateManager::HwpCharShapeType::CHAR_REGULAR,
+      render_config->char_shape);
+
   generator.Generate();
 
   std::string html = std::move(generator).ReleaseGeneratedTarget();
@@ -65,7 +80,7 @@ const char* convert_markdown_to_latex(const char* md,
   options.server_mode = true;
   options.no_latex_image = no_latex_image;
 
-  md2::GeneratorContext context(metadata_repo, image_dir_path, 
+  md2::GeneratorContext context(metadata_repo, image_dir_path,
                                 /*use_clang_server=*/false,
                                 /*clang_server_port=*/-1,
                                 /*context=*/nullptr, options);

@@ -27,6 +27,7 @@ struct HwpCharShape {
 enum HwpParaAlign { JUSTIFY, LEFT, RIGHT };
 struct HwpParaShape {
   int id = 0;
+  int style = 0;
   HwpParaAlign align = HwpParaAlign::JUSTIFY;
   std::optional<std::string> heading = std::nullopt;
 
@@ -82,13 +83,40 @@ class HwpStateManager {
         .char_offsets = {0, 0, 0, 0, 0, 0, 0},
     };
 
-    para_shapes_[PARA_REGULAR] = HwpParaShape{
-        .id = 0, .margin_indent = 0, .margin_space = 160, .border_fill = 2};
+    para_shapes_[PARA_REGULAR] = HwpParaShape{.id = 0,
+                                              .style = 0,
+                                              .margin_indent = 0,
+                                              .margin_space = 160,
+                                              .border_fill = 2};
     para_shapes_[NUMBERING] = HwpParaShape{.id = 20,
+                                           .style = 0,
                                            .heading = "Number",
                                            .margin_indent = 0,
                                            .margin_space = 160,
                                            .border_fill = 2};
+  }
+
+  void AddParaShape(HwpParaShapeType para_shape, int id, int style) {
+    para_shapes_[para_shape] = HwpParaShape{.id = id,
+                                            .style = style,
+                                            .margin_indent = 0,
+                                            .margin_space = 160,
+                                            .border_fill = 2};
+  }
+
+  void AddTextShape(HwpCharShapeType char_shape, int id) {
+    char_shapes_[char_shape] = HwpCharShape{
+        .id = id,
+        .border_fill_id = 2,
+        .height = 1000,
+        .shade_color = 4294967295,
+        .text_color = 0,
+        .font_ids = {2, 2, 2, 2, 2, 2, 2},
+        .char_spacings = {0, 0, 0, 0, 0, 0, 0},
+        .ratios = {100, 100, 100, 100, 100, 100, 100},
+        .rel_sizes = {100, 100, 100, 100, 100, 100, 100},
+        .char_offsets = {0, 0, 0, 0, 0, 0, 0},
+    };
   }
 
   int GetCharShape(HwpCharShapeType char_shape) const {
@@ -96,8 +124,8 @@ class HwpStateManager {
   }
 
   std::pair<int, int> GetParaShape(HwpParaShapeType para_shape) const {
-    return std::make_pair(para_shapes_.find(para_shape)->second.id,
-                          /*style=*/0);
+    const auto& shape = para_shapes_.find(para_shape)->second;
+    return std::make_pair(shape.id, shape.style);
   }
 
  private:

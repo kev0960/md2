@@ -2,11 +2,15 @@
 #define C_API_H
 
 extern "C" {
+
+struct HwpGenerateConfig;
+
 // Convert markdown to html.
 const char* convert_markdown_to_html(const char* md);
 
 // Convert markdown to hwp.
-const char* convert_markdown_to_hwp(const char* md);
+const char* convert_markdown_to_hwp(const char* md,
+                                    const HwpGenerateConfig* render_config);
 
 // Convert markdown to hwp.
 const char* convert_markdown_to_latex(const char* md,

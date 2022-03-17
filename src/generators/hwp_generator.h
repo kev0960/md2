@@ -31,6 +31,8 @@ class HwpGenerator : public Generator {
     hwp_state_manager_.AddDefaultMappings();
   }
 
+  HwpStateManager& GetHwpStateManager() { return hwp_state_manager_; }
+
  private:
   void EmitChar(int index);
 
@@ -63,6 +65,7 @@ class HwpGenerator : public Generator {
 
   int inst_id_ = 1;
   int z_order_ = 1;
+  int bin_item_ = 1;
 
   class ParagraphWrapper {
    public:

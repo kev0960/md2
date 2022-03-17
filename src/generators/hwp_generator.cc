@@ -25,6 +25,18 @@ constexpr std::string_view kTableShapeObject =
 constexpr std::string_view kCell =
     R"(<CELL BorderFill="11" ColAddr="{}" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="{}" Protect="false" RowAddr="{}" RowSpan="1" Width="{}"><CELLMARGIN Bottom="141" Left="510" Right="510" Top="141"/><PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">)";
 
+// Inst Id, ZOrder, Height, Width
+// CurHeight CurWidth
+// Inst Id (Different from above)
+// OriHeight OriWidth
+// CenterX (= Width / 2) CenterY (= Height / 2)
+// X1, X2 = Width
+// Y2, Y3 = Height
+// Bottom = Height Right = Width
+// Height Width
+// BinItem
+constexpr std::string_view kImage = R"(<PICTURE Reverse="false"><SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Figure" ZOrder="{}"><SIZE Height="{}" HeightRelTo="Absolute" Protect="false" Width="{}" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><SHAPECOMMENT></SHAPECOMMENT></SHAPEOBJECT><SHAPECOMPONENT CurHeight="{}" CurWidth="{}" GroupLevel="0" HorzFlip="false" InstID="{}" OriHeight="{}" OriWidth="{}" VertFlip="false" XPos="0" YPos="0"><ROTATIONINFO Angle="0" CenterX="{}" CenterY="{}" Rotate="1"/><RENDERINGINFO><TRANSMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/><SCAMATRIX E1="0.80000" E2="0.00000" E3="0.00000" E4="0.00000" E5="0.80000" E6="0.00000"/><ROTMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/></RENDERINGINFO></SHAPECOMPONENT><IMAGERECT X0="0" X1="{}" X2="{}" X3="0" Y0="0" Y1="0" Y2="{}" Y3="{}"/><IMAGECLIP Bottom="{}" Left="0" Right="{}" Top="0"/><INSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><IMAGEDIM Height="{}" Width="{}"/><IMAGE Alpha="0" BinItem="{}" Bright="0" Contrast="0" Effect="RealPic"/><EFFECTS/></PICTURE>)";
+
 constexpr int kTableFullWidth = 42000;
 
 // Height and Width is embedded in math as follows:
@@ -44,6 +56,20 @@ std::pair<std::pair<int, int>, int> GetHeightAndWidthOfMath(
       std::string(math.substr(height_end + 1, width_end - (height_end + 1))));
 
   return std::make_pair(std::make_pair(height, width), width_end + 1);
+}
+
+// Height and Width is embedded in the image path as follows:
+// ![](100,120)
+//
+// It's because Hwp generator doesn't read the image file. It only uses height
+// and width info.
+std::pair<int, int> GetHeightAndWidthOfImage(std::string_view image_path) {
+  size_t height_end = image_path.find(',');
+
+  int height = std::stoi(std::string(image_path.substr(0, height_end)));
+  int width = std::stoi(std::string(image_path.substr(height_end + 1)));
+
+  return std::make_pair(height, width);
 }
 
 }  // namespace
@@ -278,7 +304,34 @@ void HwpGenerator::HandleLink(const ParseTreeLinkNode& node) {
   // Do not handle links for Hwp.
   (void)node;
 }
-void HwpGenerator::HandleImage(const ParseTreeImageNode& node) { (void)node; }
+void HwpGenerator::HandleImage(const ParseTreeImageNode& node) {
+  ParagraphWrapper wrapper(this, /*wrap_text=*/true);
+
+  int image_text_start = node.GetChildren()[1]->Start();
+  int image_text_end = node.GetChildren()[1]->End();
+
+  auto [height, width] = GetHeightAndWidthOfImage(
+      md_.substr(image_text_start + 1, image_text_end - image_text_start - 2));
+
+  // Inst Id, ZOrder, Height, Width
+  // CurHeight CurWidth
+  // Inst Id (Different from above)
+  // OriHeight OriWidth
+  // CenterX (= Width / 2) CenterY (= Height / 2)
+  // X1, X2 = Width
+  // Y2, Y3 = Height
+  // Bottom = Height Right = Width
+  // Height Width
+  // BinItem
+
+  GetCurrentTarget()->append(fmt::format(
+      kImage, inst_id_, z_order_++, height, width, height, width, inst_id_ + 1,
+      height, width, width / 2, height / 2, width, width, height, height,
+      height, width, height, width, bin_item_++));
+
+  inst_id_ += 2;
+}
+
 void HwpGenerator::HandleTable(const ParseTreeTableNode& node) {
   ParagraphWrapper wrapper(this, /*wrap_text=*/true);
 
