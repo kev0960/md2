@@ -605,7 +605,22 @@ void HTMLGenerator::HandleBox(const ParseTreeBoxNode& node) {
     GetCurrentTarget()->append("<div class='inline-note'>");
     HandleParseTreeNode(*node.GetChildren()[1]);
     GetCurrentTarget()->append("</div>");
-  } else if (box_name.substr(0, 4) == "ref-") {
+  } else if (box_name == "condition") {
+    GetCurrentTarget()->append("<div class='condition'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</div>");
+  } else if (box_name == "example") {
+    GetCurrentTarget()->append("<div class='example'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</div>");
+  } else if (box_name == "candidate") {
+    GetCurrentTarget()->append("<div class='candidate'>");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("</div>");
+  }
+
+
+  else if (box_name.substr(0, 4) == "ref-") {
     return;
   }
 }
