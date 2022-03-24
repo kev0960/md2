@@ -486,5 +486,28 @@ some code2
              "code2\n</span></pre></p></td></tr></tbody></table><p>\n</p>");
 }
 
+TEST(HtmlTest, HwpBoxes) {
+  std::string content = R"(
+```candidates
+* a
+
+* b
+
+* c
+```
+```examples
+* x
+
+* y
+
+* z
+```
+)";
+
+  DoHtmlTest(content, R"(<p>
+</p><div class='candidate'><ul><li><p>a</p></li><li><p>b</p></li><li><p>c</p></li></ul></div><p>
+</p><div class='example'><ul><li><p>x</p></li><li><p>y</p></li><li><p>z</p></li></ul></div><p>
+</p>)");
+}
 }  // namespace
 }  // namespace md2
