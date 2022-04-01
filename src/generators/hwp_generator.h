@@ -71,6 +71,7 @@ class HwpGenerator : public Generator {
    public:
     ParagraphWrapper(HwpGenerator* gen, bool wrap_text = false)
         : gen_(gen), wrap_text_(wrap_text) {
+          std::cout << "NEst count : " << gen_->paragraph_nest_count_;
       if (gen_->paragraph_nest_count_ == 0) {
         auto [shape, style] = gen_->hwp_state_manager_.GetParaShape(
             HwpStateManager::PARA_REGULAR);

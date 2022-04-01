@@ -324,10 +324,12 @@ void HwpGenerator::HandleImage(const ParseTreeImageNode& node) {
   // Height Width
   // BinItem
 
+  GetCurrentTarget()->append(R"(<TEXT CharShape="0">)");
   GetCurrentTarget()->append(fmt::format(
       kImage, inst_id_, z_order_++, height, width, height, width, inst_id_ + 1,
       height, width, width / 2, height / 2, width, width, height, height,
       height, width, height, width, bin_item_++));
+  GetCurrentTarget()->append(R"(</TEXT>)");
 
   inst_id_ += 2;
 }
