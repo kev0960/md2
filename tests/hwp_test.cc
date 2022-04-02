@@ -17,9 +17,11 @@ void DoHwpTest(std::string content, std::string expected,
   GeneratorOptions options;
   options.server_mode = is_server_mode;
 
+  HwpGenerator::HwpStatus hwp_status;
   GeneratorContext context(repo, "image_path", /*use_clang_server=*/false,
                            /*clang_server_port=*/0, nullptr, options);
-  HwpGenerator generator(/*filename=*/"some_file.md", content, context, tree);
+  HwpGenerator generator(/*filename=*/"some_file.md", content, context, tree,
+                         hwp_status);
   generator.Generate();
 
   EXPECT_EQ(std::string(generator.ShowOutput()), expected);

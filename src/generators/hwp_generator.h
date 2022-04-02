@@ -25,13 +25,22 @@ namespace md2 {
 // Generator for HML (XML version of hwp) documents.
 class HwpGenerator : public Generator {
  public:
+  struct HwpStatus {
+    int inst_id = 1;
+    int z_order = 1;
+    int bin_item = 1;
+  };
+
   HwpGenerator(std::string_view filename, std::string_view content,
-               GeneratorContext& context, const ParseTree& parse_tree)
-      : Generator(filename, content, context, parse_tree) {
+               GeneratorContext& context, const ParseTree& parse_tree,
+               const HwpStatus& initial_hwp_status)
+      : Generator(filename, content, context, parse_tree),
+        hwp_status_(initial_hwp_status) {
     hwp_state_manager_.AddDefaultMappings();
   }
 
   HwpStateManager& GetHwpStateManager() { return hwp_state_manager_; }
+  const HwpStatus& GetHwpStatus() const { return hwp_status_; }
 
  private:
   void EmitChar(int index);
@@ -60,18 +69,14 @@ class HwpGenerator : public Generator {
   void HandleQuote(const ParseTreeQuoteNode& node);
 
   HwpStateManager hwp_state_manager_;
+  HwpStatus hwp_status_;
 
   int paragraph_nest_count_ = 0;
-
-  int inst_id_ = 1;
-  int z_order_ = 1;
-  int bin_item_ = 1;
 
   class ParagraphWrapper {
    public:
     ParagraphWrapper(HwpGenerator* gen, bool wrap_text = false)
         : gen_(gen), wrap_text_(wrap_text) {
-          std::cout << "NEst count : " << gen_->paragraph_nest_count_;
       if (gen_->paragraph_nest_count_ == 0) {
         auto [shape, style] = gen_->hwp_state_manager_.GetParaShape(
             HwpStateManager::PARA_REGULAR);

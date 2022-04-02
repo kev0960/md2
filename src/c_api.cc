@@ -37,8 +37,15 @@ typedef struct HwpGenerateConfig {
   int char_shape;
 } HwpGenerateConfig;
 
+typedef struct HwpConversionStatus {
+  int bin_item;
+  int inst_id;
+  int z_order;
+} HwpConversionStatus;
+
 const char* convert_markdown_to_hwp(const char* md,
-                                    const HwpGenerateConfig* render_config) {
+                                    const HwpGenerateConfig* render_config,
+                                    HwpConversionStatus* conversion_status) {
   md2::Parser parser;
   const md2::ParseTree tree = parser.GenerateParseTree(md);
 
@@ -51,7 +58,12 @@ const char* convert_markdown_to_hwp(const char* md,
                                 /*clang_server_port=*/-1,
                                 /*context=*/nullptr, options);
 
-  md2::HwpGenerator generator("", md, context, tree);
+  md2::HwpGenerator generator("", md, context, tree,
+                              md2::HwpGenerator::HwpStatus{
+                                  .inst_id = conversion_status->inst_id,
+                                  .z_order = conversion_status->z_order,
+                                  .bin_item = conversion_status->bin_item,
+                              });
   generator.GetHwpStateManager().AddParaShape(
       md2::HwpStateManager::HwpParaShapeType::PARA_REGULAR,
       render_config->para_shape, render_config->para_style);
@@ -60,6 +72,10 @@ const char* convert_markdown_to_hwp(const char* md,
       render_config->char_shape);
 
   generator.Generate();
+
+  conversion_status->bin_item = generator.GetHwpStatus().bin_item;
+  conversion_status->z_order = generator.GetHwpStatus().z_order;
+  conversion_status->inst_id = generator.GetHwpStatus().inst_id;
 
   std::string html = std::move(generator).ReleaseGeneratedTarget();
 

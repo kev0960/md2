@@ -35,7 +35,8 @@ constexpr std::string_view kCell =
 // Bottom = Height Right = Width
 // Height Width
 // BinItem
-constexpr std::string_view kImage = R"(<PICTURE Reverse="false"><SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Figure" ZOrder="{}"><SIZE Height="{}" HeightRelTo="Absolute" Protect="false" Width="{}" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><SHAPECOMMENT></SHAPECOMMENT></SHAPEOBJECT><SHAPECOMPONENT CurHeight="{}" CurWidth="{}" GroupLevel="0" HorzFlip="false" InstID="{}" OriHeight="{}" OriWidth="{}" VertFlip="false" XPos="0" YPos="0"><ROTATIONINFO Angle="0" CenterX="{}" CenterY="{}" Rotate="1"/><RENDERINGINFO><TRANSMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/><SCAMATRIX E1="0.80000" E2="0.00000" E3="0.00000" E4="0.00000" E5="0.80000" E6="0.00000"/><ROTMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/></RENDERINGINFO></SHAPECOMPONENT><IMAGERECT X0="0" X1="{}" X2="{}" X3="0" Y0="0" Y1="0" Y2="{}" Y3="{}"/><IMAGECLIP Bottom="{}" Left="0" Right="{}" Top="0"/><INSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><IMAGEDIM Height="{}" Width="{}"/><IMAGE Alpha="0" BinItem="{}" Bright="0" Contrast="0" Effect="RealPic"/><EFFECTS/></PICTURE>)";
+constexpr std::string_view kImage =
+    R"(<PICTURE Reverse="false"><SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Figure" ZOrder="{}"><SIZE Height="{}" HeightRelTo="Absolute" Protect="false" Width="{}" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><SHAPECOMMENT></SHAPECOMMENT></SHAPEOBJECT><SHAPECOMPONENT CurHeight="{}" CurWidth="{}" GroupLevel="0" HorzFlip="false" InstID="{}" OriHeight="{}" OriWidth="{}" VertFlip="false" XPos="0" YPos="0"><ROTATIONINFO Angle="0" CenterX="{}" CenterY="{}" Rotate="1"/><RENDERINGINFO><TRANSMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/><SCAMATRIX E1="0.80000" E2="0.00000" E3="0.00000" E4="0.00000" E5="0.80000" E6="0.00000"/><ROTMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/></RENDERINGINFO></SHAPECOMPONENT><IMAGERECT X0="0" X1="{}" X2="{}" X3="0" Y0="0" Y1="0" Y2="{}" Y3="{}"/><IMAGECLIP Bottom="{}" Left="0" Right="{}" Top="0"/><INSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><IMAGEDIM Height="{}" Width="{}"/><IMAGE Alpha="0" BinItem="{}" Bright="0" Contrast="0" Effect="RealPic"/><EFFECTS/></PICTURE>)";
 
 constexpr int kTableFullWidth = 42000;
 
@@ -227,8 +228,8 @@ void HwpGenerator::HandleMath(const ParseTreeMathNode& node) {
 
   GetCurrentTarget()->append(R"(<TEXT CharShape="0">)");
   GetCurrentTarget()->append(kMathEquationTag);
-  GetCurrentTarget()->append(
-      fmt::format(kMathShapeObject, inst_id_++, z_order_++));
+  GetCurrentTarget()->append(fmt::format(
+      kMathShapeObject, hwp_status_.inst_id++, hwp_status_.z_order++));
 
   std::string_view math_in_node = GetStringInNode(&node);
 
@@ -252,8 +253,8 @@ void HwpGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
 
   GetCurrentTarget()->append(R"(<TEXT CharShape="0">)");
   GetCurrentTarget()->append(kMathEquationTag);
-  GetCurrentTarget()->append(
-      fmt::format(kMathShapeObject, inst_id_++, z_order_++));
+  GetCurrentTarget()->append(fmt::format(
+      kMathShapeObject, hwp_status_.inst_id++, hwp_status_.z_order++));
 
   std::string_view math_in_node = GetStringInNode(&node);
   auto [height_and_width, actual_start_offset] =
@@ -325,13 +326,14 @@ void HwpGenerator::HandleImage(const ParseTreeImageNode& node) {
   // BinItem
 
   GetCurrentTarget()->append(R"(<TEXT CharShape="0">)");
-  GetCurrentTarget()->append(fmt::format(
-      kImage, inst_id_, z_order_++, height, width, height, width, inst_id_ + 1,
-      height, width, width / 2, height / 2, width, width, height, height,
-      height, width, height, width, bin_item_++));
+  GetCurrentTarget()->append(
+      fmt::format(kImage, hwp_status_.inst_id, hwp_status_.z_order++, height,
+                  width, height, width, hwp_status_.inst_id + 1, height, width,
+                  width / 2, height / 2, width, width, height, height, height,
+                  width, height, width, hwp_status_.bin_item++));
   GetCurrentTarget()->append(R"(</TEXT>)");
 
-  inst_id_ += 2;
+  hwp_status_.inst_id += 2;
 }
 
 void HwpGenerator::HandleTable(const ParseTreeTableNode& node) {
@@ -343,8 +345,9 @@ void HwpGenerator::HandleTable(const ParseTreeTableNode& node) {
   const int height = 1700 * row_size;
 
   GetCurrentTarget()->append(fmt::format(kTableHeader, col_size, row_size));
-  GetCurrentTarget()->append(fmt::format(kTableShapeObject, inst_id_++,
-                                         z_order_++, height, kTableFullWidth));
+  GetCurrentTarget()->append(
+      fmt::format(kTableShapeObject, hwp_status_.inst_id++,
+                  hwp_status_.z_order++, height, kTableFullWidth));
 
   int row_index = 0;
   for (size_t i = 0; i < node.GetChildren().size(); i++) {
