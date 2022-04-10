@@ -368,7 +368,13 @@ void LatexGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
 }
 
 void LatexGenerator::HandleList(const ParseTreeListNode& node) {
-  if (node.IsOrdered()) {
+  if (IsInBoxEnvironment("conditions")) {
+    GetCurrentTarget()->append("\n\\begin{enumerate}[가.]");
+  } else if (IsInBoxEnvironment("examples")) {
+    GetCurrentTarget()->append("\n\\begin{enumerate}[ㄱ.]");
+  } else if (IsInBoxEnvironment("candidates")) {
+    GetCurrentTarget()->append("\n\\begin{tasks}(5)");
+  } else if (node.IsOrdered()) {
     GetCurrentTarget()->append("\n\\begin{enumerate}");
   } else {
     GetCurrentTarget()->append("\n\\begin{itemize}");
@@ -378,7 +384,13 @@ void LatexGenerator::HandleList(const ParseTreeListNode& node) {
     HandleParseTreeNode(*child);
   }
 
-  if (node.IsOrdered()) {
+  if (IsInBoxEnvironment("conditions")) {
+    GetCurrentTarget()->append("\n\\end{enumerate}");
+  } else if (IsInBoxEnvironment("examples")) {
+    GetCurrentTarget()->append("\n\\end{enumerate}");
+  } else if (IsInBoxEnvironment("candidates")) {
+    GetCurrentTarget()->append("\n\\end{tasks}");
+  } else if (node.IsOrdered()) {
     GetCurrentTarget()->append("\n\\end{enumerate}");
   } else {
     GetCurrentTarget()->append("\n\\end{itemize}");
@@ -386,7 +398,11 @@ void LatexGenerator::HandleList(const ParseTreeListNode& node) {
 }
 
 void LatexGenerator::HandleListItem(const ParseTreeListItemNode& node) {
-  GetCurrentTarget()->append("\n\\item ");
+  if (IsInBoxEnvironment("candidates")) {
+    GetCurrentTarget()->append("\n\\task");
+  } else {
+    GetCurrentTarget()->append("\n\\item ");
+  }
 
   for (const auto& child : node.GetChildren()) {
     HandleParseTreeNode(*child);
@@ -458,7 +474,6 @@ void LatexGenerator::HandleNewlineMath(const ParseTreeMathNode& node) {
   RestoreLatexEscape();
 }
 
-
 void LatexGenerator::HandleMath(const ParseTreeMathNode& node) {
   DisableLatexEscape();
   EmitChar(node.Start() + 1, node.End() - 1);
@@ -471,6 +486,8 @@ void LatexGenerator::HandleBox(const ParseTreeBoxNode& node) {
 
   std::string_view box_name = md_.substr(
       box_name_node->Start(), box_name_node->End() - box_name_node->Start());
+
+  BoxInserter box_inserter(&current_box_, box_name);
 
   if (box_name == "info-text") {
     GetCurrentTarget()->append(EmitTColorBoxHeader("green"));
@@ -501,6 +518,16 @@ void LatexGenerator::HandleBox(const ParseTreeBoxNode& node) {
     GetCurrentTarget()->append("\\footnote{");
     HandleParseTreeNode(*node.GetChildren()[1]);
     GetCurrentTarget()->append("}");
+  } else if (box_name == "conditions") {
+    GetCurrentTarget()->append("\\begin{RectBox}[$<$ 조건 $>$ ]\n");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("\n\\end{RectBox}");
+  } else if (box_name == "examples") {
+    GetCurrentTarget()->append("\\begin{RectBox}[$<$ 보기 $>$ ]\n");
+    HandleParseTreeNode(*node.GetChildren()[1]);
+    GetCurrentTarget()->append("\n\\end{RectBox}");
+  } else if (box_name == "candidates") {
+    HandleParseTreeNode(*node.GetChildren()[1]);
   } else if (box_name == "note") {
     // TODO Implement the note in latex.
     return;
@@ -528,6 +555,16 @@ void LatexGenerator::DisableLatexEscape() {
 void LatexGenerator::RestoreLatexEscape() {
   should_escape_latex_ = escape_latex.back();
   escape_latex.pop_back();
+}
+
+bool LatexGenerator::IsInBoxEnvironment(std::string_view box_name) const {
+  for (const auto& box : current_box_) {
+    if (box == box_name) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 }  // namespace md2

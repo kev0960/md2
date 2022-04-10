@@ -304,5 +304,59 @@ TEST(LatexTest, NewlineMath) {
   DoLatexTest(content, "\nsome \\[1+2\\] math\n");
 }
 
+TEST(LatexTest, HwpBoxes) {
+  std::string content = R"(
+```candidates
+* a
+
+* b
+
+* c
+```
+```examples
+* x
+
+* y
+
+* z
+```
+)";
+
+  DoLatexTest(content, R"(
+
+
+
+\begin{tasks}(5)
+\task
+a
+
+\task
+b
+
+\task
+c
+
+\end{tasks}
+
+
+\begin{RectBox}[$<$ 보기 $>$ ]
+
+\begin{enumerate}[ㄱ.]
+\item 
+x
+
+\item 
+y
+
+\item 
+z
+
+\end{enumerate}
+\end{RectBox}
+
+
+)");
+}
+
 }  // namespace
 }  // namespace md2
