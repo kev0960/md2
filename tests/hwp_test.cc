@@ -92,7 +92,7 @@ TEST(HwpTest, Boxes) {
 )";
 
   DoHwpTest(content, R"(<P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>
-</CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>① <TAB /></CHAR><CHAR>a</CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>② <TAB /></CHAR><CHAR>b</CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>③ <TAB /></CHAR><CHAR>c</CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>
+</CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>① </CHAR><CHAR>a</CHAR></TEXT><TEXT CharShape="1"><CHAR><TAB />② </CHAR><CHAR>b</CHAR></TEXT><TEXT CharShape="1"><CHAR><TAB />③ </CHAR><CHAR>c</CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>
 </CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>ㄱ. </CHAR><CHAR>x</CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>ㄴ. </CHAR><CHAR>y</CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>ㄷ. </CHAR><CHAR>z</CHAR></TEXT></P><P ParaShape="0" Style="0"><TEXT CharShape="1"><CHAR>
 </CHAR></TEXT></P>)");
 }

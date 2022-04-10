@@ -136,8 +136,8 @@ class HwpGenerator : public Generator {
 
   class ParagraphWrapper {
    public:
-    ParagraphWrapper(HwpGenerator* gen) : gen_(gen) {
-      if (!gen_->NestedInP()) {
+    ParagraphWrapper(HwpGenerator* gen, bool skip = false) : gen_(gen) {
+      if (!skip && !gen_->NestedInP()) {
         gen_->xml_tree_.push_back(HwpXmlTag::P);
 
         auto [shape, style] = gen_->hwp_state_manager_.GetParaShape(

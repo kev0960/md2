@@ -77,7 +77,7 @@ std::pair<int, int> GetHeightAndWidthOfImage(std::string_view image_path) {
 
 std::string GetPrefixForListItem(std::string_view box_name, int index) {
   static std::vector<std::string> candidate_prefix = {
-      "① <TAB />", "② <TAB />", "③ <TAB />", "④ <TAB />", "⑤ <TAB />"};
+      "① ", "<TAB />② ", "<TAB />③ ", "<TAB />④ ", "<TAB />⑤ "};
   static std::vector<std::string> example_prefix = {"ㄱ. ", "ㄴ. ", "ㄷ. ",
                                                     "ㄹ. ", "ㅁ. "};
   static std::vector<std::string> condition_prefix = {"(가) ", "(나) ", "(다) ",
@@ -419,13 +419,18 @@ void HwpGenerator::HandleTable(const ParseTreeTableNode& node) {
 }
 
 void HwpGenerator::HandleList(const ParseTreeListNode& node) {
+  // Only wrap with paragraph for candidate box env.
+  ParagraphWrapper wrapper(this, /*skip=*/!IsInBoxEnvironment("candidates"));
+
   for (const auto& child : node.GetChildren()) {
     HandleParseTreeNode(*child);
   }
 }
 
 void HwpGenerator::HandleListItem(const ParseTreeListItemNode& node) {
-  ParagraphWrapper wrapper(this);
+  // Items in "candiadates" should be rendered in a horizontal fashion so we
+  // should not render P tag.
+  ParagraphWrapper wrapper(this, /*skip=*/IsInBoxEnvironment("candidates"));
   TextWrapper text_wrapper(
       this, hwp_state_manager_.GetCharShape(HwpStateManager::CHAR_REGULAR));
 
