@@ -73,42 +73,92 @@ class HwpGenerator : public Generator {
 
   int paragraph_nest_count_ = 0;
 
+  enum HwpXmlTag {
+    P,
+    TEXT,
+    CHAR,
+    TABLE,
+    CELL,
+    PARALIST,
+    ROW,
+  };
+  std::vector<HwpXmlTag> xml_tree_;
+
+  bool NestedInP() const {
+    for (auto itr = xml_tree_.rbegin(); itr != xml_tree_.rend(); itr++) {
+      if (*itr == HwpXmlTag::P) {
+        return true;
+      } else if (*itr == HwpXmlTag::PARALIST) {
+        // Child of PARALIST is P.
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+  bool NestedInText() const {
+    for (auto itr = xml_tree_.rbegin(); itr != xml_tree_.rend(); itr++) {
+      if (*itr == HwpXmlTag::TEXT) {
+        return true;
+      } else if (*itr == HwpXmlTag::P) {
+        // Child of PARALIST is P.
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+  class TextWrapper {
+   public:
+    TextWrapper(HwpGenerator* gen, int char_shape) : gen_(gen) {
+      if (!gen_->NestedInText()) {
+        gen_->xml_tree_.push_back(HwpXmlTag::TEXT);
+
+        gen_->GetCurrentTarget()->append(
+            fmt::format(R"(<TEXT CharShape="{}">)", char_shape));
+        text_added_ = true;
+      }
+    }
+
+    ~TextWrapper() {
+      if (text_added_) {
+        gen_->xml_tree_.pop_back();
+        gen_->GetCurrentTarget()->append("</TEXT>");
+      }
+    }
+
+   private:
+    HwpGenerator* gen_;
+    bool text_added_ = false;
+  };
+
   class ParagraphWrapper {
    public:
-    ParagraphWrapper(HwpGenerator* gen, bool wrap_text = false)
-        : gen_(gen), wrap_text_(wrap_text) {
-      if (gen_->paragraph_nest_count_ == 0) {
+    ParagraphWrapper(HwpGenerator* gen) : gen_(gen) {
+      if (!gen_->NestedInP()) {
+        gen_->xml_tree_.push_back(HwpXmlTag::P);
+
         auto [shape, style] = gen_->hwp_state_manager_.GetParaShape(
             HwpStateManager::PARA_REGULAR);
+        gen_->GetCurrentTarget()->append(
+            fmt::format(R"(<P ParaShape="{}" Style="{}">)", shape, style));
 
-        if (wrap_text_) {
-          gen_->GetCurrentTarget()->append(fmt::format(
-              R"(<P ParaShape="{}" Style="{}"><TEXT CharShape="{}">)", shape,
-              style,
-              gen_->hwp_state_manager_.GetCharShape(
-                  HwpStateManager::CHAR_REGULAR)));
-        } else {
-          gen_->GetCurrentTarget()->append(
-              fmt::format(R"(<P ParaShape="{}" Style="{}">)", shape, style));
-        }
         paragraph_added_ = true;
       }
     }
 
     ~ParagraphWrapper() {
       if (paragraph_added_) {
-        if (wrap_text_) {
-          gen_->GetCurrentTarget()->append("</TEXT></P>");
-        } else {
-          gen_->GetCurrentTarget()->append("</P>");
-        }
+        gen_->xml_tree_.pop_back();
+        gen_->GetCurrentTarget()->append("</P>");
       }
     }
 
    private:
     HwpGenerator* gen_;
     bool paragraph_added_ = false;
-    bool wrap_text_ = false;
   };
 };
 

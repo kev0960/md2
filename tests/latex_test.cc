@@ -291,7 +291,7 @@ TEST(LatexTest, NotQuote) {
   std::string content = R"(
   > this is not quote
 )";
-  DoLatexTest(content, "\n\n  > this is not quote\n\n");
+  DoLatexTest(content, "\n\n  $>$ this is not quote\n\n");
 }
 
 TEST(LatexTest, Math) {

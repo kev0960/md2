@@ -98,7 +98,6 @@ std::string GetPrefixForListItem(std::string_view box_name, int index) {
   return std::to_string(index + 1);
 }
 
-
 }  // namespace
 
 void HwpGenerator::EmitChar(int index) {
@@ -214,22 +213,27 @@ void HwpGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
     return;
   }
 
-  auto [shape, style] =
-      hwp_state_manager_.GetParaShape(HwpStateManager::PARA_REGULAR);
-  GetCurrentTarget()->append(
-      fmt::format(R"(<P ParaShape="{}" Style="{}">)", shape, style));
+  bool p_added = false;
+  if (!NestedInP()) {
+    auto [shape, style] =
+        hwp_state_manager_.GetParaShape(HwpStateManager::PARA_REGULAR);
+    GetCurrentTarget()->append(
+        fmt::format(R"(<P ParaShape="{}" Style="{}">)", shape, style));
 
-  paragraph_nest_count_++;
+    xml_tree_.push_back(HwpXmlTag::P);
+    p_added = true;
+  }
 
   int current_start = node.Start();
   for (const auto& child_node : node.GetChildren()) {
     // Handle the regular texts.
     if (current_start < child_node->Start()) {
-      GetCurrentTarget()->append(fmt::format(
-          R"(<TEXT CharShape="{}"><CHAR>)",
-          hwp_state_manager_.GetCharShape(HwpStateManager::CHAR_REGULAR)));
+      TextWrapper text_wrapper(
+          this, hwp_state_manager_.GetCharShape(HwpStateManager::CHAR_REGULAR));
+
+      GetCurrentTarget()->append("<CHAR>");
       EmitChar(current_start, child_node->Start());
-      GetCurrentTarget()->append("</CHAR></TEXT>");
+      GetCurrentTarget()->append("</CHAR>");
     }
 
     HandleParseTreeNode(*child_node);
@@ -237,22 +241,24 @@ void HwpGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
   }
 
   if (current_start < node.End()) {
-    GetCurrentTarget()->append(fmt::format(
-        R"(<TEXT CharShape="{}"><CHAR>)",
-        hwp_state_manager_.GetCharShape(HwpStateManager::CHAR_REGULAR)));
+    TextWrapper text_wrapper(
+        this, hwp_state_manager_.GetCharShape(HwpStateManager::CHAR_REGULAR));
+
+    GetCurrentTarget()->append("<CHAR>");
     EmitChar(current_start, node.End());
-    GetCurrentTarget()->append("</CHAR></TEXT>");
+    GetCurrentTarget()->append("</CHAR>");
   }
 
-  GetCurrentTarget()->append("</P>");
-
-  paragraph_nest_count_--;
+  if (p_added) {
+    xml_tree_.pop_back();
+    GetCurrentTarget()->append("</P>");
+  }
 }
 
 void HwpGenerator::HandleMath(const ParseTreeMathNode& node) {
-  ParagraphWrapper wrapper(this, /*wrap_text=*/true);
+  ParagraphWrapper wrapper(this);
+  TextWrapper text_wrapper(this, 0);
 
-  GetCurrentTarget()->append(R"(<TEXT CharShape="0">)");
   GetCurrentTarget()->append(kMathEquationTag);
   GetCurrentTarget()->append(fmt::format(
       kMathShapeObject, hwp_status_.inst_id++, hwp_status_.z_order++));
@@ -271,13 +277,12 @@ void HwpGenerator::HandleMath(const ParseTreeMathNode& node) {
   EmitChar(node.Start() + actual_start_offset, node.End() - 2);
 
   GetCurrentTarget()->append("</SCRIPT></EQUATION>");
-  GetCurrentTarget()->append("</TEXT>");
 }
 
 void HwpGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
-  ParagraphWrapper wrapper(this, /*wrap_text=*/true);
+  ParagraphWrapper wrapper(this);
+  TextWrapper text_wrapper(this, 0);
 
-  GetCurrentTarget()->append(R"(<TEXT CharShape="0">)");
   GetCurrentTarget()->append(kMathEquationTag);
   GetCurrentTarget()->append(fmt::format(
       kMathShapeObject, hwp_status_.inst_id++, hwp_status_.z_order++));
@@ -295,7 +300,6 @@ void HwpGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
   EmitChar(node.Start() + actual_start_offset, node.End() - 2);
 
   GetCurrentTarget()->append("</SCRIPT></EQUATION>");
-  GetCurrentTarget()->append("</TEXT>");
 }
 
 void HwpGenerator::HandleText(const ParseTreeTextNode& node) {
@@ -306,21 +310,23 @@ void HwpGenerator::HandleText(const ParseTreeTextNode& node) {
 void HwpGenerator::HandleBold(const ParseTreeBoldNode& node) {
   ParagraphWrapper wrapper(this);
 
-  GetCurrentTarget()->append(
-      fmt::format(R"(<TEXT CharShape="{}"><CHAR>)",
-                  hwp_state_manager_.GetCharShape(HwpStateManager::BOLD)));
+  TextWrapper text_wrapper(
+      this, hwp_state_manager_.GetCharShape(HwpStateManager::BOLD));
+
+  GetCurrentTarget()->append("<CHAR>");
   EmitChar(node.Start(), node.End());
-  GetCurrentTarget()->append("</CHAR></TEXT>");
+  GetCurrentTarget()->append("</CHAR>");
 }
 
 void HwpGenerator::HandleItalic(const ParseTreeItalicNode& node) {
   ParagraphWrapper wrapper(this);
 
-  GetCurrentTarget()->append(
-      fmt::format(R"(<TEXT CharShape="{}"><CHAR>)",
-                  hwp_state_manager_.GetCharShape(HwpStateManager::ITALIC)));
+  TextWrapper text_wrapper(
+      this, hwp_state_manager_.GetCharShape(HwpStateManager::ITALIC));
+
+  GetCurrentTarget()->append("<CHAR>");
   EmitChar(node.Start(), node.End());
-  GetCurrentTarget()->append("</CHAR></TEXT>");
+  GetCurrentTarget()->append("</CHAR>");
 }
 
 void HwpGenerator::HandleStrikeThrough(const ParseTreeStrikeThroughNode& node) {
@@ -332,7 +338,8 @@ void HwpGenerator::HandleLink(const ParseTreeLinkNode& node) {
   (void)node;
 }
 void HwpGenerator::HandleImage(const ParseTreeImageNode& node) {
-  ParagraphWrapper wrapper(this, /*wrap_text=*/true);
+  ParagraphWrapper wrapper(this);
+  TextWrapper text_wrapper(this, 0);
 
   int image_text_start = node.GetChildren()[1]->Start();
   int image_text_end = node.GetChildren()[1]->End();
@@ -351,19 +358,19 @@ void HwpGenerator::HandleImage(const ParseTreeImageNode& node) {
   // Height Width
   // BinItem
 
-  GetCurrentTarget()->append(R"(<TEXT CharShape="0">)");
   GetCurrentTarget()->append(
       fmt::format(kImage, hwp_status_.inst_id, hwp_status_.z_order++, height,
                   width, height, width, hwp_status_.inst_id + 1, height, width,
                   width / 2, height / 2, width, width, height, height, height,
                   width, height, width, hwp_status_.bin_item++));
-  GetCurrentTarget()->append(R"(</TEXT>)");
 
   hwp_status_.inst_id += 2;
 }
 
 void HwpGenerator::HandleTable(const ParseTreeTableNode& node) {
-  ParagraphWrapper wrapper(this, /*wrap_text=*/true);
+  ParagraphWrapper wrapper(this);
+  TextWrapper text_wrapper(
+      this, hwp_state_manager_.GetCharShape(HwpStateManager::CHAR_REGULAR));
 
   const size_t col_size = node.GetColSize();
   const size_t row_size = node.GetChildren().size() / col_size - 1;
@@ -385,17 +392,25 @@ void HwpGenerator::HandleTable(const ParseTreeTableNode& node) {
     if (i % col_size == 0) {
       // This is the start of the row.
       GetCurrentTarget()->append("<ROW>");
+      xml_tree_.push_back(HwpXmlTag::ROW);
     }
 
     GetCurrentTarget()->append(fmt::format(
         kCell, /*col_addr=*/i % col_size, /*height=*/1700,
         /*row_addr=*/row_index, /*width=*/kTableFullWidth / col_size));
+    xml_tree_.push_back(HwpXmlTag::CELL);
+    xml_tree_.push_back(HwpXmlTag::PARALIST);
+
     HandleParseTreeNode(*node.GetChildren()[i]);
+
     GetCurrentTarget()->append("</PARALIST></CELL>");
+    xml_tree_.pop_back();
+    xml_tree_.pop_back();
 
     if (i % col_size == col_size - 1) {
       // This is the end of the row.
       GetCurrentTarget()->append("</ROW>");
+      xml_tree_.pop_back();
       row_index++;
     }
   }
@@ -410,16 +425,16 @@ void HwpGenerator::HandleList(const ParseTreeListNode& node) {
 }
 
 void HwpGenerator::HandleListItem(const ParseTreeListItemNode& node) {
-  ParagraphWrapper wrapper(this, /*wrap_text=*/true);
+  ParagraphWrapper wrapper(this);
+  TextWrapper text_wrapper(
+      this, hwp_state_manager_.GetCharShape(HwpStateManager::CHAR_REGULAR));
 
   std::string prefix;
   if (IsInBoxEnvironment("candidates")) {
     prefix = GetPrefixForListItem("candidates", node.ListIndex());
-  }
-  else if (IsInBoxEnvironment("examples")) {
+  } else if (IsInBoxEnvironment("examples")) {
     prefix = GetPrefixForListItem("examples", node.ListIndex());
-  }
-  else if (IsInBoxEnvironment("conditions")) {
+  } else if (IsInBoxEnvironment("conditions")) {
     prefix = GetPrefixForListItem("conditions", node.ListIndex());
   }
 

@@ -29,6 +29,10 @@ std::string_view EscapeLatexChar(char c) {
       return "\\{";
     case '}':
       return "\\}";
+    case '<':
+      return "$<$";
+    case '>':
+      return "$>$";
   }
 
   return "";
@@ -470,7 +474,15 @@ void LatexGenerator::HandleCommand(const ParseTreeCommandNode& node) {
 void LatexGenerator::HandleNewlineMath(const ParseTreeMathNode& node) {
   // Newline Math is already enclosed by \[ and \].
   DisableLatexEscape();
-  EmitChar(node.Start(), node.End());
+
+  if (!current_box_.empty() && (current_box_.back() == "conditions" ||
+                                current_box_.back() == "examples" ||
+                                current_box_.back() == "candidates")) {
+    // Then we never use newline.
+    EmitChar(node.Start() + 1, node.End() - 1);
+  } else {
+    EmitChar(node.Start(), node.End());
+  }
   RestoreLatexEscape();
 }
 
