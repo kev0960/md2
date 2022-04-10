@@ -285,6 +285,7 @@ std::unique_ptr<ParseTreeListNode> ConstructListFromListItems(
 
         // Otherwise mark the end of the list and pop.
         current_lists.back().first->SetEnd(children[current]->Start());
+        current_lists.back().first->SetListItemIndexes();
         current_lists.pop_back();
       }
 
@@ -316,6 +317,7 @@ std::unique_ptr<ParseTreeListNode> ConstructListFromListItems(
 
   for (auto [current_list, depth] : current_lists) {
     current_list->SetEnd(list_end);
+    current_list->SetListItemIndexes();
   }
 
   return top_level_list;

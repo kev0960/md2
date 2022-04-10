@@ -369,7 +369,7 @@ void LatexGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
 
 void LatexGenerator::HandleList(const ParseTreeListNode& node) {
   if (IsInBoxEnvironment("conditions")) {
-    GetCurrentTarget()->append("\n\\begin{enumerate}[가.]");
+    GetCurrentTarget()->append("\n\\begin{enumerate}[(가)]");
   } else if (IsInBoxEnvironment("examples")) {
     GetCurrentTarget()->append("\n\\begin{enumerate}[ㄱ.]");
   } else if (IsInBoxEnvironment("candidates")) {
@@ -555,16 +555,6 @@ void LatexGenerator::DisableLatexEscape() {
 void LatexGenerator::RestoreLatexEscape() {
   should_escape_latex_ = escape_latex.back();
   escape_latex.pop_back();
-}
-
-bool LatexGenerator::IsInBoxEnvironment(std::string_view box_name) const {
-  for (const auto& box : current_box_) {
-    if (box == box_name) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 }  // namespace md2

@@ -50,6 +50,9 @@ class Generator {
 
   std::string* GetCurrentTarget() { return targets_.back(); }
 
+  // Return whether the current box environment equals to box_name.
+  bool IsInBoxEnvironment(std::string_view box_name) const;
+
   template <typename Node>
   std::string_view GetStringInNode(Node* node, int prefix_offset = 0,
                                    int suffix_offset = 0) {
@@ -72,6 +75,23 @@ class Generator {
 
   // Mapping between the reference name and the generated data.
   std::unordered_map<std::string, std::string> ref_to_generated_;
+
+  class BoxInserter {
+   public:
+    BoxInserter(std::vector<std::string>* box_list, std::string_view box_name)
+        : box_list_(box_list) {
+      box_list_->push_back(std::string(box_name));
+    };
+
+    ~BoxInserter() { box_list_->pop_back(); }
+
+   private:
+    std::vector<std::string>* box_list_;
+  };
+
+  // Name of the current box env (```box like).
+  std::vector<std::string> current_box_;
+
 };
 
 }  // namespace md2

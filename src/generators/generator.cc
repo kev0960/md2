@@ -82,4 +82,12 @@ std::string_view Generator::GetReferenceNodeGeneratedOutput(
   return ref_to_generated_[ref_name];
 }
 
+bool Generator::IsInBoxEnvironment(std::string_view box_name) const {
+  if (current_box_.empty()) {
+    return false;
+  }
+
+  return current_box_.back() == box_name;
+}
+
 }  // namespace md2

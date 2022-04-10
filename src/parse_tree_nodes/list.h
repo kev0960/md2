@@ -19,6 +19,8 @@ class ParseTreeListNode : public ParseTreeNode {
 
   constexpr bool IsOrdered() const { return is_ordered_; }
 
+  void SetListItemIndexes();
+
  private:
   bool is_ordered_ = false;
 };
@@ -40,9 +42,14 @@ class ParseTreeListItemNode : public ParseTreeNode {
   constexpr int GetListDepth() const { return list_depth_; }
   constexpr bool IsOrdered() const { return is_ordered_; }
 
+  void SetListIndex(int list_index) { list_index_ = list_index; }
+  int ListIndex() const { return list_index_; }
+
  private:
   int list_depth_;  // Number of spaces before '*'.
   bool is_ordered_ = false;
+
+  int list_index_ = 0;
 };
 
 }  // namespace md2

@@ -20,8 +20,10 @@ constexpr std::string_view kMathHeightAndWidth =
 
 constexpr std::string_view kTableHeader =
     R"(<TABLE BorderFill="11" CellSpacing="0" ColCount="{}" PageBreak="Cell" RepeatHeader="true" RowCount="{}">)";
+
 constexpr std::string_view kTableShapeObject =
     R"(<SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Table" TextFlow="LargestOnly" ZOrder="{}"><SIZE Height="{}" HeightRelTo="Absolute" Protect="false" Width="{}" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="850" Right="0" Top="0"/></SHAPEOBJECT><INSIDEMARGIN Bottom="141" Left="510" Right="510" Top="141"/>)";
+
 constexpr std::string_view kCell =
     R"(<CELL BorderFill="11" ColAddr="{}" ColSpan="1" Dirty="false" Editable="false" HasMargin="false" Header="false" Height="{}" Protect="false" RowAddr="{}" RowSpan="1" Width="{}"><CELLMARGIN Bottom="141" Left="510" Right="510" Top="141"/><PARALIST LineWrap="Break" LinkListID="0" LinkListIDNext="0" TextDirection="0" VertAlign="Center">)";
 
@@ -72,6 +74,30 @@ std::pair<int, int> GetHeightAndWidthOfImage(std::string_view image_path) {
 
   return std::make_pair(height, width);
 }
+
+std::string GetPrefixForListItem(std::string_view box_name, int index) {
+  static std::vector<std::string> candidate_prefix = {
+      "① <TAB />", "② <TAB />", "③ <TAB />", "④ <TAB />", "⑤ <TAB />"};
+  static std::vector<std::string> example_prefix = {"ㄱ. ", "ㄴ. ", "ㄷ. ",
+                                                    "ㄹ. ", "ㅁ. "};
+  static std::vector<std::string> condition_prefix = {"(가) ", "(나) ", "(다) ",
+                                                      "(라) ", "(마) "};
+
+  if (index >= 5) {
+    return std::to_string(index + 1);
+  }
+
+  if (box_name == "candidates") {
+    return candidate_prefix[index];
+  } else if (box_name == "examples") {
+    return example_prefix[index];
+  } else if (box_name == "conditions") {
+    return condition_prefix[index];
+  }
+
+  return std::to_string(index + 1);
+}
+
 
 }  // namespace
 
@@ -377,10 +403,33 @@ void HwpGenerator::HandleTable(const ParseTreeTableNode& node) {
   GetCurrentTarget()->append("</TABLE>");
 }
 
-void HwpGenerator::HandleList(const ParseTreeListNode& node) { (void)node; }
-void HwpGenerator::HandleListItem(const ParseTreeListItemNode& node) {
-  (void)node;
+void HwpGenerator::HandleList(const ParseTreeListNode& node) {
+  for (const auto& child : node.GetChildren()) {
+    HandleParseTreeNode(*child);
+  }
 }
+
+void HwpGenerator::HandleListItem(const ParseTreeListItemNode& node) {
+  ParagraphWrapper wrapper(this, /*wrap_text=*/true);
+
+  std::string prefix;
+  if (IsInBoxEnvironment("candidates")) {
+    prefix = GetPrefixForListItem("candidates", node.ListIndex());
+  }
+  else if (IsInBoxEnvironment("examples")) {
+    prefix = GetPrefixForListItem("examples", node.ListIndex());
+  }
+  else if (IsInBoxEnvironment("conditions")) {
+    prefix = GetPrefixForListItem("conditions", node.ListIndex());
+  }
+
+  GetCurrentTarget()->append(fmt::format("<CHAR>{}</CHAR>", prefix));
+
+  for (const auto& child : node.GetChildren()) {
+    HandleParseTreeNode(*child);
+  }
+}
+
 void HwpGenerator::HandleHeader(const ParseTreeHeaderNode& node) { (void)node; }
 void HwpGenerator::HandleVerbatim(const ParseTreeVerbatimNode& node) {
   (void)node;
@@ -390,7 +439,24 @@ void HwpGenerator::HandleCommand(const ParseTreeCommandNode& node) {
   (void)node;
 }
 
-void HwpGenerator::HandleBox(const ParseTreeBoxNode& node) { (void)node; }
+void HwpGenerator::HandleBox(const ParseTreeBoxNode& node) {
+  MD2_ASSERT(node.GetChildren().size() == 2, "");
+  const auto& box_name_node = node.GetChildren()[0];
+
+  std::string_view box_name = md_.substr(
+      box_name_node->Start(), box_name_node->End() - box_name_node->Start());
+
+  BoxInserter box_inserter(&current_box_, box_name);
+
+  if (box_name == "conditions") {
+    HandleParseTreeNode(*node.GetChildren()[1]);
+  } else if (box_name == "examples") {
+    HandleParseTreeNode(*node.GetChildren()[1]);
+  } else if (box_name == "candidates") {
+    HandleParseTreeNode(*node.GetChildren()[1]);
+  }
+}
+
 void HwpGenerator::HandleQuote(const ParseTreeQuoteNode& node) { (void)node; }
 
 }  // namespace md2

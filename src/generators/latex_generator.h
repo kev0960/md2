@@ -68,8 +68,6 @@ class LatexGenerator : public Generator {
   void DisableLatexEscape();
   void RestoreLatexEscape();
 
-  bool IsInBoxEnvironment(std::string_view box_name) const;
-
  private:
   bool should_escape_latex_ = true;
 
@@ -77,22 +75,6 @@ class LatexGenerator : public Generator {
   std::vector<LatexImageBuilder> images_;
 
   std::vector<bool> escape_latex;
-
-  // Name of the current box env (```box like).
-  std::vector<std::string> current_box_;
-
-  class BoxInserter {
-   public:
-    BoxInserter(std::vector<std::string>* box_list, std::string_view box_name)
-        : box_list_(box_list) {
-      box_list_->push_back(std::string(box_name));
-    };
-
-    ~BoxInserter() { box_list_->pop_back(); }
-
-   private:
-    std::vector<std::string>* box_list_;
-  };
 };
 
 }  // namespace md2
