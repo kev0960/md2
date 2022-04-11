@@ -554,7 +554,12 @@ void HTMLGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
                                 current_box_.back() == "examples" ||
                                 current_box_.back() == "candidates");
 
-  if (!no_newline_math && GetGeneratorOptions().server_mode) {
+  if (no_newline_math) {
+    GetCurrentTarget()->append("<span class='math-latex'>$");
+    // Math should be enclosed by $, $.
+    EmitChar(node.Start() + 2, node.End() - 2);
+    GetCurrentTarget()->append("$</span>");
+  } else if (GetGeneratorOptions().server_mode) {
     // Math already includes \[ and \].
     EmitChar(node.Start(), node.End());
   } else {
