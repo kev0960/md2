@@ -549,7 +549,12 @@ void HTMLGenerator::HandleMath(const ParseTreeMathNode& node) {
 }
 
 void HTMLGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
-  if (GetGeneratorOptions().server_mode) {
+  bool no_newline_math =
+      !current_box_.empty() && (current_box_.back() == "conditions" ||
+                                current_box_.back() == "examples" ||
+                                current_box_.back() == "candidates");
+
+  if (!no_newline_math && GetGeneratorOptions().server_mode) {
     // Math already includes \[ and \].
     EmitChar(node.Start(), node.End());
   } else {
@@ -618,7 +623,6 @@ void HTMLGenerator::HandleBox(const ParseTreeBoxNode& node) {
     HandleParseTreeNode(*node.GetChildren()[1]);
     GetCurrentTarget()->append("</div>");
   }
-
 
   else if (box_name.substr(0, 4) == "ref-") {
     return;
