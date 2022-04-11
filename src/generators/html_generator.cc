@@ -554,19 +554,20 @@ void HTMLGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
                                 current_box_.back() == "examples" ||
                                 current_box_.back() == "candidates");
 
-  if (no_newline_math) {
-    GetCurrentTarget()->append("<span class='math-latex'>$");
-    // Math should be enclosed by $, $.
-    EmitChar(node.Start() + 2, node.End() - 2);
-    GetCurrentTarget()->append("$</span>");
-  } else if (GetGeneratorOptions().server_mode) {
+  if (!no_newline_math && GetGeneratorOptions().server_mode) {
     // Math already includes \[ and \].
     EmitChar(node.Start(), node.End());
   } else {
-    GetCurrentTarget()->append("<span class='math-latex'>$");
-    // Math should be enclosed by $, $.
-    EmitChar(node.Start() + 2, node.End() - 2);
-    GetCurrentTarget()->append("$</span>");
+    if (GetGeneratorOptions().server_mode) {
+      GetCurrentTarget()->append("\\(");
+      EmitChar(node.Start() + 2, node.End() - 2);
+      GetCurrentTarget()->append("\\)");
+    } else {
+      GetCurrentTarget()->append("<span class='math-latex'>$");
+      // Math should be enclosed by $, $.
+      EmitChar(node.Start() + 2, node.End() - 2);
+      GetCurrentTarget()->append("$</span>");
+    }
   }
 }
 
@@ -576,6 +577,8 @@ void HTMLGenerator::HandleBox(const ParseTreeBoxNode& node) {
 
   std::string_view box_name = md_.substr(
       box_name_node->Start(), box_name_node->End() - box_name_node->Start());
+
+  BoxInserter box_inserter(&current_box_, box_name);
 
   if (box_name == "info-text") {
     GetCurrentTarget()->append("<div class='info'>");
@@ -627,9 +630,7 @@ void HTMLGenerator::HandleBox(const ParseTreeBoxNode& node) {
     GetCurrentTarget()->append("<div class='candidate'>");
     HandleParseTreeNode(*node.GetChildren()[1]);
     GetCurrentTarget()->append("</div>");
-  }
-
-  else if (box_name.substr(0, 4) == "ref-") {
+  } else if (box_name.substr(0, 4) == "ref-") {
     return;
   }
 }
