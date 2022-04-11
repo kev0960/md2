@@ -508,6 +508,42 @@ TEST(HtmlTest, HwpBoxes) {
 </p><div class='candidate'><ul><li><p>a</p></li><li><p>b</p></li><li><p>c</p></li></ul></div><p>
 </p><div class='example'><ul><li><p>x</p></li><li><p>y</p></li><li><p>z</p></li></ul></div><p>
 </p>)");
+
 }
+
+TEST(HtmlTest, NoNewlineMathInHwpEnv) {
+  std::string content = R"(함수 $$f(x)=  int _{0} ^{x} {} sin` LEFT ( pi `cos`t RIGHT ) `dt`$$에 대하여 <보기>에서 옳은 것만을 있는 대로 고른 것은?
+
+
+```examples
+1. \[f` prime (0)=0\]
+
+1. 함수 $$y=f(x)`$$의 그래프는 원점에 대하여 대칭이다.
+
+1. \[f( pi )=0\]
+
+
+```
+
+```candidates
+1. ㄱ
+
+1. ㄷ
+
+1. ㄱ, ㄴ
+
+1. ㄴ, ㄷ
+
+1. ㄱ, ㄴ, ㄷ
+
+
+```
+)";
+
+  DoHtmlTest(content, R"(<p>함수 <span class='math-latex'>$f(x)=  int _{0} ^{x} {} sin` LEFT ( pi `cos`t RIGHT ) `dt`$</span>에 대하여 &lt;보기&gt;에서 옳은 것만을 있는 대로 고른 것은?</p><p>
+</p><div class='example'><ol><li><p><span class='math-latex'>$f` prime (0)=0$</span></p></li><li><p>함수 <span class='math-latex'>$y=f(x)`$</span>의 그래프는 원점에 대하여 대칭이다.</p></li><li><p><span class='math-latex'>$f( pi )=0$</span></p></li></ol></div><div class='candidate'><ol><li><p>ㄱ</p></li><li><p>ㄷ</p></li><li><p>ㄱ, ㄴ</p></li><li><p>ㄴ, ㄷ</p></li><li><p>ㄱ, ㄴ, ㄷ</p></li></ol></div><p>
+</p>)");
+}
+
 }  // namespace
 }  // namespace md2
