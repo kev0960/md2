@@ -176,7 +176,7 @@ TEST(HtmlTest, ImageWithCaptionItalicAndSizeNoAlt) {
 TEST(HtmlTest, InlineImage) {
   DoHtmlTest(
       "some ![size=123,456,100,200](http://img) in middle",
-      "<p>some <figure style='width: 456; height: 123'><picture><img "
+      "<p>some <figure style='width: 456px; height: 123px'><picture><img "
       "class='content-img' src='http://img' "
       "alt=''></picture><figcaption></figcaption></figure> in middle</p>",
       /*is_server_mode=*/true);

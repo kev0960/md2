@@ -309,8 +309,8 @@ void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
         GetCurHeightAndWidthFromImageSize(image.size);
 
     GetCurrentTarget()->append(StrCat(
-        "<figure style='width: ", cur_width, "; height: ", cur_height,
-        "'><picture><img class='content-img' src='",
+        "<figure style='width: ", cur_width, "px; height: ", cur_height,
+        "px'><picture><img class='content-img' src='",
         context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
         "</picture><figcaption>", image.caption, "</figcaption></figure>"));
   } else {
