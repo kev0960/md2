@@ -314,7 +314,7 @@ TEST(LatexTest, HwpBoxes) {
 * c
 ```
 ```examples
-* x
+* \[x\]
 
 * y
 
@@ -343,7 +343,7 @@ c
 
 \begin{enumerate}[ㄱ.]
 \item 
-x
+$x$
 
 \item 
 y

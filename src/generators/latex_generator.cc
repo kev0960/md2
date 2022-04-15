@@ -479,7 +479,9 @@ void LatexGenerator::HandleNewlineMath(const ParseTreeMathNode& node) {
                                 current_box_.back() == "examples" ||
                                 current_box_.back() == "candidates")) {
     // Then we never use newline.
-    EmitChar(node.Start() + 1, node.End() - 1);
+    GetCurrentTarget()->append("$");
+    EmitChar(node.Start() + 2, node.End() - 2);
+    GetCurrentTarget()->append("$");
   } else {
     EmitChar(node.Start(), node.End());
   }
