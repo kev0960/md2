@@ -84,6 +84,17 @@ std::string EscapeString(std::string_view s) {
   return escaped;
 }
 
+std::pair<std::string_view, std::string_view> GetCurHeightAndWidthFromImageSize(
+    std::string_view image_size) {
+  size_t first_comma = image_size.find(',');
+  std::string_view cur_height = image_size.substr(0, first_comma);
+  std::string_view cur_width =
+      image_size.substr(first_comma + 1, image_size.find(',', first_comma + 1) -
+                                             (first_comma + 1));
+
+  return std::make_pair(cur_height, cur_width);
+}
+
 }  // namespace
 
 void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
@@ -293,10 +304,21 @@ void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
   targets_.pop_back();
 
   const HTMLImageBuilder& image = images_.back();
-  GetCurrentTarget()->append(StrCat(
-      "<figure><picture><img class='content-img' src='",
-      context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
-      "</picture><figcaption>", image.caption, "</figcaption></figure>"));
+  if (GetGeneratorOptions().server_mode && !image.size.empty()) {
+    auto [cur_height, cur_width] =
+        GetCurHeightAndWidthFromImageSize(image.size);
+
+    GetCurrentTarget()->append(StrCat(
+        "<figure style='width: ", cur_width, "; height: ", cur_height,
+        "'><picture><img class='content-img' src='",
+        context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
+        "</picture><figcaption>", image.caption, "</figcaption></figure>"));
+  } else {
+    GetCurrentTarget()->append(StrCat(
+        "<figure><picture><img class='content-img' src='",
+        context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
+        "</picture><figcaption>", image.caption, "</figcaption></figure>"));
+  }
   images_.pop_back();
 }
 

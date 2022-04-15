@@ -173,6 +173,15 @@ TEST(HtmlTest, ImageWithCaptionItalicAndSizeNoAlt) {
              "</figcaption></figure></p>");
 }
 
+TEST(HtmlTest, InlineImage) {
+  DoHtmlTest(
+      "some ![size=123,456,100,200](http://img) in middle",
+      "<p>some <figure style='width: 456; height: 123'><picture><img "
+      "class='content-img' src='http://img' "
+      "alt=''></picture><figcaption></figcaption></figure> in middle</p>",
+      /*is_server_mode=*/true);
+}
+
 TEST(HtmlTest, HeaderSimple) {
   DoHtmlTest("### header",
              "<h3 id='page-heading-0' class='header-general'> header</h3>");
@@ -400,10 +409,10 @@ TEST(HtmlTest, CommandAndInvalidCommand) {
 TEST(HtmlTest, Math) {
   std::string content = R"(some $$1+2*3$$$$b$$ math)";
   DoHtmlTest(content,
-             "<p>some <span class='math-latex'>$1+2*3$</span><span class='math-latex'>$b$</span> math</p>");
+             "<p>some <span class='math-latex'>$1+2*3$</span><span "
+             "class='math-latex'>$b$</span> math</p>");
 
-  DoHtmlTest(content,
-             "<p>some \\(1+2*3\\)\\(b\\) math</p>",
+  DoHtmlTest(content, "<p>some \\(1+2*3\\)\\(b\\) math</p>",
              /*is_server_mode=*/true);
 }
 
@@ -412,8 +421,7 @@ TEST(HtmlTest, NewlineMath) {
   DoHtmlTest(content,
              "<p>some <span class='math-latex'>$1+2*3$</span> math</p>");
 
-  DoHtmlTest(content,
-             "<p>some \\[1+2*3\\] math</p>",
+  DoHtmlTest(content, "<p>some \\[1+2*3\\] math</p>",
              /*is_server_mode=*/true);
 }
 
@@ -508,11 +516,11 @@ TEST(HtmlTest, HwpBoxes) {
 </p><div class='candidate'><ul><li><p>a</p></li><li><p>b</p></li><li><p>c</p></li></ul></div><p>
 </p><div class='example'><ul><li><p>x</p></li><li><p>y</p></li><li><p>z</p></li></ul></div><p>
 </p>)");
-
 }
 
 TEST(HtmlTest, NoNewlineMathInHwpEnv) {
-  std::string content = R"(함수 $$f(x)=  int _{0} ^{x} {} sin` LEFT ( pi `cos`t RIGHT ) `dt`$$에 대하여 <보기>에서 옳은 것만을 있는 대로 고른 것은?
+  std::string content =
+      R"(함수 $$f(x)=  int _{0} ^{x} {} sin` LEFT ( pi `cos`t RIGHT ) `dt`$$에 대하여 <보기>에서 옳은 것만을 있는 대로 고른 것은?
 
 
 ```examples
@@ -540,7 +548,9 @@ TEST(HtmlTest, NoNewlineMathInHwpEnv) {
 ```
 )";
 
-  DoHtmlTest(content, R"(<p>함수 <span class='math-latex'>$f(x)=  int _{0} ^{x} {} sin` LEFT ( pi `cos`t RIGHT ) `dt`$</span>에 대하여 &lt;보기&gt;에서 옳은 것만을 있는 대로 고른 것은?</p><p>
+  DoHtmlTest(
+      content,
+      R"(<p>함수 <span class='math-latex'>$f(x)=  int _{0} ^{x} {} sin` LEFT ( pi `cos`t RIGHT ) `dt`$</span>에 대하여 &lt;보기&gt;에서 옳은 것만을 있는 대로 고른 것은?</p><p>
 </p><div class='example'><ol><li><p><span class='math-latex'>$f` prime (0)=0$</span></p></li><li><p>함수 <span class='math-latex'>$y=f(x)`$</span>의 그래프는 원점에 대하여 대칭이다.</p></li><li><p><span class='math-latex'>$f( pi )=0$</span></p></li></ol></div><div class='candidate'><ol><li><p>ㄱ</p></li><li><p>ㄷ</p></li><li><p>ㄱ, ㄴ</p></li><li><p>ㄴ, ㄷ</p></li><li><p>ㄱ, ㄴ, ㄷ</p></li></ol></div><p>
 </p>)");
 }
