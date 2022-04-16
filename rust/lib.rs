@@ -3,7 +3,10 @@ use std::ffi::{CStr, CString};
 
 #[link(name = "libmd2", kind = "static")]
 extern "C" {
-    fn convert_markdown_to_html(md: *const c_char) -> *const c_char;
+    fn convert_markdown_to_html(
+        md: *const c_char,
+        render_config: *const HtmlGenerateConfig,
+    ) -> *const c_char;
     fn convert_markdown_to_hwp(
         md: *const c_char,
         config: *const HwpGenerateConfig,
@@ -17,10 +20,7 @@ extern "C" {
     fn deallocate(s: *const c_char);
 }
 
-fn convert_markdown(
-    md: &str,
-    converter: unsafe extern "C" fn(*const c_char) -> *const c_char,
-) -> Result<String, String> {
+pub fn markdown_to_html(md: &str, config: &HtmlGenerateConfig) -> Result<String, String> {
     let html;
     unsafe {
         let c_str_md;
@@ -34,7 +34,7 @@ fn convert_markdown(
             }
         }
 
-        let c_html_ptr = converter(c_str_md.as_ptr());
+        let c_html_ptr = convert_markdown_to_html(c_str_md.as_ptr(), config);
         let c_html = CStr::from_ptr(c_html_ptr);
 
         match c_html.to_str() {
@@ -53,8 +53,9 @@ fn convert_markdown(
     Ok(html)
 }
 
-pub fn markdown_to_html(md: &str) -> Result<String, String> {
-    convert_markdown(md, convert_markdown_to_html)
+#[repr(C)]
+pub struct HtmlGenerateConfig {
+    pub inline_image_max_height: i32,
 }
 
 #[repr(C)]
@@ -156,12 +157,24 @@ pub fn markdown_to_latex(md: &str, image_dir_path: &str, no_image: bool) -> Resu
 #[test]
 fn convert_test() {
     assert_eq!(
-        markdown_to_html("**a**").unwrap(),
+        markdown_to_html(
+            "**a**",
+            &HtmlGenerateConfig {
+                inline_image_max_height: 10
+            }
+        )
+        .unwrap(),
         "<p><span class='font-weight-bold'>a</span></p>".to_owned()
     );
 
     assert_eq!(
-        markdown_to_html("**한글도 되나요**").unwrap(),
+        markdown_to_html(
+            "**한글도 되나요**",
+            &HtmlGenerateConfig {
+                inline_image_max_height: 10
+            }
+        )
+        .unwrap(),
         "<p><span class='font-weight-bold'>한글도 되나요</span></p>".to_owned()
     );
 }

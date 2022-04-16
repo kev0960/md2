@@ -3,11 +3,13 @@
 
 extern "C" {
 
+struct HtmlGenerateConfig;
 struct HwpGenerateConfig;
 struct HwpConversionStatus;
 
 // Convert markdown to html.
-const char* convert_markdown_to_html(const char* md);
+const char* convert_markdown_to_html(const char* md,
+                                     HtmlGenerateConfig* render_config);
 
 // Convert markdown to hwp.
 const char* convert_markdown_to_hwp(const char* md,

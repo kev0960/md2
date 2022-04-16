@@ -9,7 +9,8 @@ namespace {
 using ::testing::Eq;
 
 void DoHtmlTest(std::string content, std::string expected,
-                bool is_server_mode = false) {
+                bool is_server_mode = false,
+                HtmlGeneratorOptions html_options = HtmlGeneratorOptions{}) {
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
 
@@ -19,7 +20,8 @@ void DoHtmlTest(std::string content, std::string expected,
 
   GeneratorContext context(repo, "image_path", /*use_clang_server=*/false,
                            /*clang_server_port=*/0, nullptr, options);
-  HTMLGenerator generator(/*filename=*/"some_file.md", content, context, tree);
+  HTMLGenerator generator(/*filename=*/"some_file.md", content, context, tree,
+                          html_options);
   generator.Generate();
 
   EXPECT_EQ(std::string(generator.ShowOutput()), expected);
@@ -174,12 +176,22 @@ TEST(HtmlTest, ImageWithCaptionItalicAndSizeNoAlt) {
 }
 
 TEST(HtmlTest, InlineImage) {
+  HtmlGeneratorOptions option;
+  option.inline_image_max_height = 50;
+
   DoHtmlTest(
-      "some ![size=123,456,100,200](http://img) in middle",
-      "<p>some <figure style='width: 456px; height: 123px'><picture><img "
-      "class='content-img' src='http://img' "
+      "some ![size=30,20,300,200](http://img) in middle",
+      "<p>some <figure style='width: 13.333334px; height: 20.000000px; "
+      "display: inline-block'><picture><img class='content-img' "
+      "src='http://img' alt=''></picture><figcaption></figcaption></figure> in "
+      "middle</p>",
+      /*is_server_mode=*/true, option);
+
+  DoHtmlTest(
+      "some ![size=300,200,300,200](http://img) in middle",
+      "<p>some <figure><picture><img class='content-img' src='http://img' "
       "alt=''></picture><figcaption></figcaption></figure> in middle</p>",
-      /*is_server_mode=*/true);
+      /*is_server_mode=*/true, option);
 }
 
 TEST(HtmlTest, HeaderSimple) {

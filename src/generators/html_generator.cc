@@ -305,14 +305,28 @@ void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
 
   const HTMLImageBuilder& image = images_.back();
   if (GetGeneratorOptions().server_mode && !image.size.empty()) {
-    auto [cur_height, cur_width] =
+    auto [str_cur_height, str_cur_width] =
         GetCurHeightAndWidthFromImageSize(image.size);
+    int cur_height = std::stoi(std::string(str_cur_height));
+    int cur_width = std::stoi(std::string(str_cur_width));
 
-    GetCurrentTarget()->append(StrCat(
-        "<figure style='width: ", cur_width, "px; height: ", cur_height,
-        "px'><picture><img class='content-img' src='",
-        context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
-        "</picture><figcaption>", image.caption, "</figcaption></figure>"));
+    if (cur_height < options_.inline_image_max_height) {
+      // Then we treat this image as a inline image.
+      float resized_cur_width = 20.0f / cur_height * cur_width;
+      float resized_cur_height = 20;
+
+      GetCurrentTarget()->append(StrCat(
+          "<figure style='width: ", std::to_string(resized_cur_width),
+          "px; height: ", std::to_string(resized_cur_height),
+          "px; display: inline-block'><picture><img class='content-img' src='",
+          context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
+          "</picture><figcaption>", image.caption, "</figcaption></figure>"));
+    } else {
+      GetCurrentTarget()->append(StrCat(
+          "<figure><picture><img class='content-img' src='",
+          context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
+          "</picture><figcaption>", image.caption, "</figcaption></figure>"));
+    }
   } else {
     GetCurrentTarget()->append(StrCat(
         "<figure><picture><img class='content-img' src='",

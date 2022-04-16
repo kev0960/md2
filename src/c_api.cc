@@ -7,7 +7,13 @@
 #include "parser.h"
 
 extern "C" {
-const char* convert_markdown_to_html(const char* md) {
+
+typedef struct HtmlGenerateConfig {
+  int inline_image_max_height;
+} HtmlGenerateConfig;
+
+const char* convert_markdown_to_html(const char* md,
+                                     HtmlGenerateConfig* render_config) {
   md2::Parser parser;
   const md2::ParseTree tree = parser.GenerateParseTree(md);
 
@@ -20,7 +26,10 @@ const char* convert_markdown_to_html(const char* md) {
                                 /*clang_server_port=*/-1,
                                 /*context=*/nullptr, options);
 
-  md2::HTMLGenerator generator("", md, context, tree);
+  md2::HTMLGenerator generator(
+      "", md, context, tree,
+      md2::HtmlGeneratorOptions{.inline_image_max_height =
+                                    render_config->inline_image_max_height});
   generator.Generate();
 
   std::string html = std::move(generator).ReleaseGeneratedTarget();

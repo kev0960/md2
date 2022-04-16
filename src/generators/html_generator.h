@@ -33,11 +33,16 @@ struct HTMLImageBuilder {
   std::string url;
 };
 
+struct HtmlGeneratorOptions {
+  int inline_image_max_height = 0;
+};
+
 class HTMLGenerator : public Generator {
  public:
   HTMLGenerator(std::string_view filename, std::string_view content,
-                GeneratorContext& context, const ParseTree& parse_tree)
-      : Generator(filename, content, context, parse_tree) {}
+                GeneratorContext& context, const ParseTree& parse_tree,
+                const HtmlGeneratorOptions& options = HtmlGeneratorOptions{})
+      : Generator(filename, content, context, parse_tree), options_(options) {}
 
  private:
   void EmitChar(int index);
@@ -68,6 +73,7 @@ class HTMLGenerator : public Generator {
   std::vector<HTMLLinkBuilder> links_;
   std::vector<HTMLImageBuilder> images_;
 
+  const HtmlGeneratorOptions options_;
   bool should_escape_html_ = true;
 
   int header_index_ = 0;
