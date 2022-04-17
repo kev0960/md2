@@ -72,6 +72,7 @@ class HwpGenerator : public Generator {
   HwpStatus hwp_status_;
 
   int paragraph_nest_count_ = 0;
+  int total_paragraph_count_ = 0;
 
   enum HwpXmlTag {
     P,

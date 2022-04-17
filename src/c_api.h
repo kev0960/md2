@@ -12,8 +12,10 @@ const char* convert_markdown_to_html(const char* md,
                                      HtmlGenerateConfig* render_config);
 
 // Convert markdown to hwp.
+// We need to pass vector<HwpGenerateConfig>
 const char* convert_markdown_to_hwp(const char* md,
-                                    const HwpGenerateConfig* render_config,
+                                    const HwpGenerateConfig* render_config_start,
+                                    int render_config_len,
                                     HwpConversionStatus* conversion_status);
 
 // Convert markdown to hwp.

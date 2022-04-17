@@ -97,6 +97,32 @@ TEST(HwpTest, Boxes) {
 </CHAR></TEXT></P>)");
 }
 
+TEST(HwpTest, ParagraphWithProblemStartConfig) {
+  std::string content = "first\n\nsecond";
+  Parser parser;
+  ParseTree tree = parser.GenerateParseTree(content);
+
+  MetadataRepo repo;
+  GeneratorOptions options;
+  options.server_mode = true;
+
+  HwpGenerator::HwpStatus hwp_status;
+  GeneratorContext context(repo, "image_path", /*use_clang_server=*/false,
+                           /*clang_server_port=*/0, nullptr, options);
+  HwpGenerator generator(/*filename=*/"some_file.md", content, context, tree,
+                         hwp_status);
+  generator.GetHwpStateManager().AddParaShape(
+      md2::HwpStateManager::HwpParaShapeType::PROBLEM_START_PARA, 10, 11);
+  generator.GetHwpStateManager().AddTextShape(
+      md2::HwpStateManager::HwpCharShapeType::PROBLEM_START_CHAR, 12);
+  generator.Generate();
+
+  EXPECT_EQ(std::string(generator.ShowOutput()),
+            "<P ParaShape=\"10\" Style=\"11\"><TEXT "
+            "CharShape=\"12\"><CHAR>first</CHAR></TEXT></P><P ParaShape=\"0\" "
+            "Style=\"0\"><TEXT CharShape=\"1\"><CHAR>second</CHAR></TEXT></P>");
+}
+
 }  // namespace
 }  // namespace md2
 

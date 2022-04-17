@@ -10,6 +10,7 @@ extern "C" {
     fn convert_markdown_to_hwp(
         md: *const c_char,
         config: *const HwpGenerateConfig,
+        render_config_len: i32,
         conversion_status: *mut HwpConversionStatus,
     ) -> *const c_char;
     fn convert_markdown_to_latex(
@@ -60,6 +61,7 @@ pub struct HtmlGenerateConfig {
 
 #[repr(C)]
 pub struct HwpGenerateConfig {
+    pub entry_name: *const c_char,
     pub para_shape: i32,
     pub para_style: i32,
     pub char_shape: i32,
@@ -74,7 +76,7 @@ pub struct HwpConversionStatus {
 
 pub fn markdown_to_hwp(
     md: &str,
-    render_config: &HwpGenerateConfig,
+    render_config: &Vec<HwpGenerateConfig>,
     hwp_conversion_status: &mut HwpConversionStatus,
 ) -> Result<String, String> {
     let html;
@@ -89,9 +91,13 @@ pub fn markdown_to_hwp(
                 return Err(e.to_string());
             }
         }
-
-        let c_html_ptr =
-            convert_markdown_to_hwp(c_str_md.as_ptr(), render_config, hwp_conversion_status);
+        let render_config_len = render_config.len() as i32;
+        let c_html_ptr = convert_markdown_to_hwp(
+            c_str_md.as_ptr(),
+            render_config.as_ptr(),
+            render_config_len,
+            hwp_conversion_status,
+        );
         let c_html = CStr::from_ptr(c_html_ptr);
 
         match c_html.to_str() {
@@ -203,14 +209,16 @@ fn hwp_test() {
         z_order: 1,
     };
 
+    let entry_name = CString::new("problem_start").unwrap();
     assert_eq!(
         markdown_to_hwp(
             "a ![](123,456)",
-            &HwpGenerateConfig {
+            &vec![HwpGenerateConfig {
+                entry_name: entry_name.as_ptr(),
                 para_shape: 17,
                 para_style: 1,
                 char_shape: 13
-            },
+            }],
             &mut hwp_conversion_status
         )
         .unwrap(),

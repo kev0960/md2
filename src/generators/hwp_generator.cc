@@ -216,7 +216,7 @@ void HwpGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
   bool p_added = false;
   if (!NestedInP()) {
     auto [shape, style] =
-        hwp_state_manager_.GetParaShape(HwpStateManager::PARA_REGULAR);
+        hwp_state_manager_.GetRegularParaShape(total_paragraph_count_);
     GetCurrentTarget()->append(
         fmt::format(R"(<P ParaShape="{}" Style="{}">)", shape, style));
 
@@ -229,7 +229,7 @@ void HwpGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
     // Handle the regular texts.
     if (current_start < child_node->Start()) {
       TextWrapper text_wrapper(
-          this, hwp_state_manager_.GetCharShape(HwpStateManager::CHAR_REGULAR));
+          this, hwp_state_manager_.GetRegularCharShape(total_paragraph_count_));
 
       GetCurrentTarget()->append("<CHAR>");
       EmitChar(current_start, child_node->Start());
@@ -242,7 +242,7 @@ void HwpGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
 
   if (current_start < node.End()) {
     TextWrapper text_wrapper(
-        this, hwp_state_manager_.GetCharShape(HwpStateManager::CHAR_REGULAR));
+        this, hwp_state_manager_.GetRegularCharShape(total_paragraph_count_));
 
     GetCurrentTarget()->append("<CHAR>");
     EmitChar(current_start, node.End());
@@ -252,6 +252,9 @@ void HwpGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
   if (p_added) {
     xml_tree_.pop_back();
     GetCurrentTarget()->append("</P>");
+
+    // Only increase paragraph count if the paragraph is actuallly added.
+    total_paragraph_count_ ++;
   }
 }
 

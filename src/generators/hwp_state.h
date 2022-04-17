@@ -38,8 +38,8 @@ struct HwpParaShape {
 
 class HwpStateManager {
  public:
-  enum HwpCharShapeType { CHAR_REGULAR, BOLD, ITALIC };
-  enum HwpParaShapeType { PARA_REGULAR, NUMBERING };
+  enum HwpCharShapeType { CHAR_REGULAR, BOLD, ITALIC, PROBLEM_START_CHAR };
+  enum HwpParaShapeType { PARA_REGULAR, NUMBERING, PROBLEM_START_PARA };
 
   void AddDefaultMappings() {
     char_shapes_[CHAR_REGULAR] = HwpCharShape{
@@ -119,8 +119,30 @@ class HwpStateManager {
     };
   }
 
+  int GetRegularCharShape(int paragraph_nest_count) const {
+    if (paragraph_nest_count == 0) {
+      if (auto itr = char_shapes_.find(PROBLEM_START_CHAR);
+          itr != char_shapes_.end()) {
+        return itr->second.id;
+      }
+    }
+
+    return GetCharShape(HwpCharShapeType::CHAR_REGULAR);
+  }
+
   int GetCharShape(HwpCharShapeType char_shape) const {
     return char_shapes_.find(char_shape)->second.id;
+  }
+
+  std::pair<int, int> GetRegularParaShape(int paragraph_nest_count) const {
+    if (paragraph_nest_count == 0) {
+      if (auto itr = para_shapes_.find(PROBLEM_START_PARA);
+          itr != para_shapes_.end()) {
+        return std::make_pair(itr->second.id, itr->second.style);
+      }
+    }
+
+    return GetParaShape(HwpParaShapeType::PARA_REGULAR);
   }
 
   std::pair<int, int> GetParaShape(HwpParaShapeType para_shape) const {

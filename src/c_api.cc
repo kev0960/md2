@@ -41,6 +41,7 @@ const char* convert_markdown_to_html(const char* md,
 }
 
 typedef struct HwpGenerateConfig {
+  const char* entry_name;
   int para_shape;
   int para_style;
   int char_shape;
@@ -54,6 +55,7 @@ typedef struct HwpConversionStatus {
 
 const char* convert_markdown_to_hwp(const char* md,
                                     const HwpGenerateConfig* render_config,
+                                    int render_config_len,
                                     HwpConversionStatus* conversion_status) {
   md2::Parser parser;
   const md2::ParseTree tree = parser.GenerateParseTree(md);
@@ -73,12 +75,25 @@ const char* convert_markdown_to_hwp(const char* md,
                                   .z_order = conversion_status->z_order,
                                   .bin_item = conversion_status->bin_item,
                               });
-  generator.GetHwpStateManager().AddParaShape(
-      md2::HwpStateManager::HwpParaShapeType::PARA_REGULAR,
-      render_config->para_shape, render_config->para_style);
-  generator.GetHwpStateManager().AddTextShape(
-      md2::HwpStateManager::HwpCharShapeType::CHAR_REGULAR,
-      render_config->char_shape);
+
+  for (int i = 0; i < render_config_len; i++) {
+    std::string entry_name = render_config[i].entry_name;
+    if (entry_name == "problem_start") {
+      generator.GetHwpStateManager().AddParaShape(
+          md2::HwpStateManager::HwpParaShapeType::PROBLEM_START_PARA,
+          render_config->para_shape, render_config->para_style);
+      generator.GetHwpStateManager().AddTextShape(
+          md2::HwpStateManager::HwpCharShapeType::PROBLEM_START_CHAR,
+          render_config->char_shape);
+    } else if(entry_name == "default") {
+      generator.GetHwpStateManager().AddParaShape(
+          md2::HwpStateManager::HwpParaShapeType::PARA_REGULAR,
+          render_config->para_shape, render_config->para_style);
+      generator.GetHwpStateManager().AddTextShape(
+          md2::HwpStateManager::HwpCharShapeType::CHAR_REGULAR,
+          render_config->char_shape);
+    }
+  }
 
   generator.Generate();
 
