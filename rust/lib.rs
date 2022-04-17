@@ -9,7 +9,7 @@ extern "C" {
     ) -> *const c_char;
     fn convert_markdown_to_hwp(
         md: *const c_char,
-        config: *const HwpGenerateConfig,
+        config: *const HwpGenerateConfigInternal,
         render_config_len: i32,
         conversion_status: *mut HwpConversionStatus,
     ) -> *const c_char;
@@ -60,7 +60,7 @@ pub struct HtmlGenerateConfig {
 }
 
 #[repr(C)]
-pub struct HwpGenerateConfig {
+pub struct HwpGenerateConfigInternal {
     pub entry_name: *const c_char,
     pub para_shape: i32,
     pub para_style: i32,
@@ -74,14 +74,46 @@ pub struct HwpConversionStatus {
     pub z_order: i32,
 }
 
+pub struct HwpGenerateConfig {
+    pub entry_name: String,
+    pub para_shape: i32,
+    pub para_style: i32,
+    pub char_shape: i32,
+}
+
 pub fn markdown_to_hwp(
     md: &str,
-    render_config: &Vec<HwpGenerateConfig>,
+    render_configs: &Vec<HwpGenerateConfig>,
     hwp_conversion_status: &mut HwpConversionStatus,
 ) -> Result<String, String> {
     let html;
     unsafe {
         let c_str_md;
+
+        let entry_names: Vec<Result<CString, std::ffi::NulError>> = render_configs
+            .into_iter()
+            .map(|config| CString::new(config.entry_name.clone()))
+            .collect();
+
+        for entry in &entry_names {
+            if entry.is_err() {
+                return Err(entry.as_ref().err().unwrap().to_string());
+            }
+        }
+
+        let render_configs_len = render_configs.len();
+
+        let mut c_render_configs = Vec::new();
+        c_render_configs.reserve(render_configs_len);
+
+        for i in 0..render_configs_len {
+            c_render_configs.push(HwpGenerateConfigInternal {
+                entry_name: entry_names.get(i).unwrap().as_ref().unwrap().as_ptr(),
+                para_style: render_configs[i].para_style,
+                para_shape: render_configs[i].para_shape,
+                char_shape: render_configs[i].char_shape,
+            });
+        }
 
         match CString::new(md) {
             Ok(s) => {
@@ -91,11 +123,10 @@ pub fn markdown_to_hwp(
                 return Err(e.to_string());
             }
         }
-        let render_config_len = render_config.len() as i32;
         let c_html_ptr = convert_markdown_to_hwp(
             c_str_md.as_ptr(),
-            render_config.as_ptr(),
-            render_config_len,
+            c_render_configs.as_ptr(),
+            render_configs_len as i32,
             hwp_conversion_status,
         );
         let c_html = CStr::from_ptr(c_html_ptr);
@@ -209,12 +240,11 @@ fn hwp_test() {
         z_order: 1,
     };
 
-    let entry_name = CString::new("problem_start").unwrap();
     assert_eq!(
         markdown_to_hwp(
             "a ![](123,456)",
             &vec![HwpGenerateConfig {
-                entry_name: entry_name.as_ptr(),
+                entry_name: "problem_start".to_owned(),
                 para_shape: 17,
                 para_style: 1,
                 char_shape: 13
