@@ -2,6 +2,7 @@
 
 #include "fmt/format.h"
 #include "generator_util.h"
+#include "string_util.h"
 
 namespace md2 {
 namespace {
@@ -32,13 +33,13 @@ constexpr std::string_view kCell =
 // Inst Id (Different from above)
 // OriHeight OriWidth
 // CenterX (= Width / 2) CenterY (= Height / 2)
+// E1, E5
 // X1, X2 = Width
 // Y2, Y3 = Height
 // Bottom = Height Right = Width
-// Height Width
 // BinItem
 constexpr std::string_view kImage =
-    R"(<PICTURE Reverse="false"><SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Figure" ZOrder="{}"><SIZE Height="{}" HeightRelTo="Absolute" Protect="false" Width="{}" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><SHAPECOMMENT></SHAPECOMMENT></SHAPEOBJECT><SHAPECOMPONENT CurHeight="{}" CurWidth="{}" GroupLevel="0" HorzFlip="false" InstID="{}" OriHeight="{}" OriWidth="{}" VertFlip="false" XPos="0" YPos="0"><ROTATIONINFO Angle="0" CenterX="{}" CenterY="{}" Rotate="1"/><RENDERINGINFO><TRANSMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/><SCAMATRIX E1="0.80000" E2="0.00000" E3="0.00000" E4="0.00000" E5="0.80000" E6="0.00000"/><ROTMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/></RENDERINGINFO></SHAPECOMPONENT><IMAGERECT X0="0" X1="{}" X2="{}" X3="0" Y0="0" Y1="0" Y2="{}" Y3="{}"/><IMAGECLIP Bottom="{}" Left="0" Right="{}" Top="0"/><INSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><IMAGEDIM Height="{}" Width="{}"/><IMAGE Alpha="0" BinItem="{}" Bright="0" Contrast="0" Effect="RealPic"/><EFFECTS/></PICTURE>)";
+    R"(<PICTURE Reverse="false"><SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Figure" ZOrder="{}"><SIZE Height="{}" HeightRelTo="Absolute" Protect="false" Width="{}" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><SHAPECOMMENT></SHAPECOMMENT></SHAPEOBJECT><SHAPECOMPONENT CurHeight="{}" CurWidth="{}" GroupLevel="0" HorzFlip="false" InstID="{}" OriHeight="{}" OriWidth="{}" VertFlip="false" XPos="0" YPos="0"><ROTATIONINFO Angle="0" CenterX="{}" CenterY="{}" Rotate="1"/><RENDERINGINFO><TRANSMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/><SCAMATRIX E1="{:.5f}" E2="0.00000" E3="0.00000" E4="0.00000" E5="{:.5f}" E6="0.00000"/><ROTMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/></RENDERINGINFO></SHAPECOMPONENT><IMAGERECT X0="0" X1="{}" X2="{}" X3="0" Y0="0" Y1="0" Y2="{}" Y3="{}"/><IMAGECLIP Bottom="{}" Left="0" Right="{}" Top="0"/><INSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><IMAGE Alpha="0" BinItem="{}" Bright="0" Contrast="0" Effect="RealPic"/><EFFECTS/></PICTURE>)";
 
 constexpr int kTableFullWidth = 42000;
 
@@ -96,6 +97,32 @@ std::string GetPrefixForListItem(std::string_view box_name, int index) {
   }
 
   return std::to_string(index + 1);
+}
+
+struct HwpImageSize {
+  int cur_height;
+  int cur_width;
+  int ori_height;
+  int ori_width;
+};
+
+std::optional<HwpImageSize> GetHwpImageSize(std::string_view image_size) {
+  if (image_size.empty()) {
+    return std::nullopt;
+  }
+
+  std::vector<std::string_view> sizes = SplitStringByChar(image_size, ',');
+  if (sizes.size() != 4) {
+    return std::nullopt;
+  }
+
+  HwpImageSize size;
+  size.cur_height = std::stoi(std::string(sizes[0]));
+  size.cur_width = std::stoi(std::string(sizes[1]));
+  size.ori_height = std::stoi(std::string(sizes[2]));
+  size.ori_width = std::stoi(std::string(sizes[3]));
+
+  return size;
 }
 
 }  // namespace
@@ -254,7 +281,7 @@ void HwpGenerator::HandleParagraph(const ParseTreeParagraphNode& node) {
     GetCurrentTarget()->append("</P>");
 
     // Only increase paragraph count if the paragraph is actuallly added.
-    total_paragraph_count_ ++;
+    total_paragraph_count_++;
   }
 }
 
@@ -306,8 +333,16 @@ void HwpGenerator::HandleNewlineMath(const ParseTreeNewlineMathNode& node) {
 }
 
 void HwpGenerator::HandleText(const ParseTreeTextNode& node) {
-  // Do not handle text node.
-  (void)node;
+  if (targets_.size() <= 1) {
+    return;
+  }
+
+  if (node.Start() >= node.End()) {
+    return;
+  }
+
+  // We only handle text for the nested case (e.g description in the image.)
+  EmitChar(node.Start(), node.End());
 }
 
 void HwpGenerator::HandleBold(const ParseTreeBoldNode& node) {
@@ -344,28 +379,56 @@ void HwpGenerator::HandleImage(const ParseTreeImageNode& node) {
   ParagraphWrapper wrapper(this);
   TextWrapper text_wrapper(this, 0);
 
-  int image_text_start = node.GetChildren()[1]->Start();
-  int image_text_end = node.GetChildren()[1]->End();
+  const ParseTreeNode* desc_node = node.GetChildren()[0].get();
+  MD2_ASSERT(desc_node->GetNodeType() == ParseTreeNode::NODE, "");
 
-  auto [height, width] = GetHeightAndWidthOfImage(
-      md_.substr(image_text_start + 1, image_text_end - image_text_start - 2));
+  const ParseTreeNode* desc = desc_node->GetChildren()[0].get();
+  MD2_ASSERT(desc->GetNodeType() == ParseTreeNode::TEXT, "");
 
-  // Inst Id, ZOrder, Height, Width
-  // CurHeight CurWidth
-  // Inst Id (Different from above)
-  // OriHeight OriWidth
-  // CenterX (= Width / 2) CenterY (= Height / 2)
-  // X1, X2 = Width
-  // Y2, Y3 = Height
-  // Bottom = Height Right = Width
-  // Height Width
-  // BinItem
+  const auto keyword_to_index = node.GetKeywordToIndex();
+  std::string image_size;
+  if (auto index = keyword_to_index.find("size");
+      index != keyword_to_index.end()) {
+    targets_.push_back(&image_size);
+    HandleParseTreeNode(*desc->GetChildren().at(index->second));
+    targets_.pop_back();
+  }
 
-  GetCurrentTarget()->append(
-      fmt::format(kImage, hwp_status_.inst_id, hwp_status_.z_order++, height,
-                  width, height, width, hwp_status_.inst_id + 1, height, width,
-                  width / 2, height / 2, width, width, height, height, height,
-                  width, height, width, hwp_status_.bin_item++));
+  std::optional<HwpImageSize> size = GetHwpImageSize(image_size);
+  if (!size.has_value()) {
+    int image_text_start = node.GetChildren()[1]->Start();
+    int image_text_end = node.GetChildren()[1]->End();
+
+    auto [height, width] = GetHeightAndWidthOfImage(md_.substr(
+        image_text_start + 1, image_text_end - image_text_start - 2));
+
+    // Inst Id, ZOrder, CurHeight, CurWidth
+    // CurHeight CurWidth
+    // Inst Id (Different from above)
+    // OriHeight OriWidth
+    // CenterX (= CurWidth / 2) CenterY (= CurHeight / 2)
+    // E1, E5
+    // X1, X2 = Width
+    // Y2, Y3 = Height
+    // Bottom = Height Right = Width
+    // BinItem
+
+    GetCurrentTarget()->append(
+        fmt::format(kImage, hwp_status_.inst_id, hwp_status_.z_order++, height,
+                    width, height, width, hwp_status_.inst_id + 1, height,
+                    width, width / 2, height / 2, 1.f, 1.f, width, width,
+                    height, height, height, width, hwp_status_.bin_item++));
+  } else {
+    const HwpImageSize& sz = *size;
+    GetCurrentTarget()->append(fmt::format(
+        kImage, hwp_status_.inst_id, hwp_status_.z_order++, sz.cur_height,
+        sz.cur_width, sz.cur_height, sz.cur_width, hwp_status_.inst_id + 1,
+        sz.ori_height, sz.ori_width, sz.cur_width / 2, sz.cur_height / 2,
+        /*E1=*/static_cast<float>(sz.cur_width) / sz.ori_width,
+        /*E5=*/static_cast<float>(sz.cur_height) / sz.ori_height, sz.ori_width,
+        sz.ori_width, sz.ori_height, sz.ori_height, sz.ori_height, sz.ori_width,
+        hwp_status_.bin_item++));
+  }
 
   hwp_status_.inst_id += 2;
 }
