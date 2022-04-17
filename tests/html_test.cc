@@ -188,7 +188,7 @@ TEST(HtmlTest, InlineImage) {
       /*is_server_mode=*/true, option);
 
   DoHtmlTest(
-      "some ![size=300,200,300,200](http://img) in middle",
+      "some ![size=2000,2000,3000,2000](http://img) in middle",
       "<p>some <figure><picture><img class='content-img' src='http://img' "
       "alt=''></picture><figcaption></figcaption></figure> in middle</p>",
       /*is_server_mode=*/true, option);

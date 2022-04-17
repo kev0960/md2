@@ -307,8 +307,9 @@ void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
   if (GetGeneratorOptions().server_mode && !image.size.empty()) {
     auto [str_cur_height, str_cur_width] =
         GetCurHeightAndWidthFromImageSize(image.size);
-    int cur_height = std::stoi(std::string(str_cur_height));
-    int cur_width = std::stoi(std::string(str_cur_width));
+    // These are in hangul unit so need to divide by 18.
+    float cur_height = std::stoi(std::string(str_cur_height)) / 18.f; 
+    float cur_width = std::stoi(std::string(str_cur_width)) / 18.f;
 
     if (cur_height < options_.inline_image_max_height) {
       // Then we treat this image as a inline image.
