@@ -81,17 +81,17 @@ const char* convert_markdown_to_hwp(const char* md,
     if (entry_name == "problem_start") {
       generator.GetHwpStateManager().AddParaShape(
           md2::HwpStateManager::HwpParaShapeType::PROBLEM_START_PARA,
-          render_config->para_shape, render_config->para_style);
+          render_config[i].para_shape, render_config[i].para_style);
       generator.GetHwpStateManager().AddTextShape(
           md2::HwpStateManager::HwpCharShapeType::PROBLEM_START_CHAR,
-          render_config->char_shape);
+          render_config[i].char_shape);
     } else if(entry_name == "default") {
       generator.GetHwpStateManager().AddParaShape(
           md2::HwpStateManager::HwpParaShapeType::PARA_REGULAR,
-          render_config->para_shape, render_config->para_style);
+          render_config[i].para_shape, render_config[i].para_style);
       generator.GetHwpStateManager().AddTextShape(
           md2::HwpStateManager::HwpCharShapeType::CHAR_REGULAR,
-          render_config->char_shape);
+          render_config[i].char_shape);
     }
   }
 
