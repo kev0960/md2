@@ -31,15 +31,16 @@ constexpr std::string_view kCell =
 // Inst Id, ZOrder, Height, Width
 // CurHeight CurWidth
 // Inst Id (Different from above)
-// OriHeight OriWidth
+// OriHeight OriWidth XPos YPos
 // CenterX (= Width / 2) CenterY (= Height / 2)
-// E1, E5
+// TransMatrix E3, E6
+// ScaleMatrix E1, E3, E5, E6
 // X1, X2 = Width
 // Y2, Y3 = Height
-// Bottom = Height Right = Width
+// Bottom = Height Left Right = Width Top
 // BinItem
 constexpr std::string_view kImage =
-    R"(<PICTURE Reverse="false"><SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Figure" ZOrder="{}"><SIZE Height="{}" HeightRelTo="Absolute" Protect="false" Width="{}" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><SHAPECOMMENT></SHAPECOMMENT></SHAPEOBJECT><SHAPECOMPONENT CurHeight="{}" CurWidth="{}" GroupLevel="0" HorzFlip="false" InstID="{}" OriHeight="{}" OriWidth="{}" VertFlip="false" XPos="0" YPos="0"><ROTATIONINFO Angle="0" CenterX="{}" CenterY="{}" Rotate="1"/><RENDERINGINFO><TRANSMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/><SCAMATRIX E1="{:.5f}" E2="0.00000" E3="0.00000" E4="0.00000" E5="{:.5f}" E6="0.00000"/><ROTMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/></RENDERINGINFO></SHAPECOMPONENT><IMAGERECT X0="0" X1="{}" X2="{}" X3="0" Y0="0" Y1="0" Y2="{}" Y3="{}"/><IMAGECLIP Bottom="{}" Left="0" Right="{}" Top="0"/><INSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><IMAGE Alpha="0" BinItem="{}" Bright="0" Contrast="0" Effect="RealPic"/><EFFECTS/></PICTURE>)";
+    R"(<PICTURE Reverse="false"><SHAPEOBJECT InstId="{}" Lock="false" NumberingType="Figure" ZOrder="{}"><SIZE Height="{}" HeightRelTo="Absolute" Protect="false" Width="{}" WidthRelTo="Absolute"/><POSITION AffectLSpacing="false" AllowOverlap="false" FlowWithText="true" HoldAnchorAndSO="false" HorzAlign="Left" HorzOffset="0" HorzRelTo="Para" TreatAsChar="true" VertAlign="Top" VertOffset="0" VertRelTo="Para"/><OUTSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><SHAPECOMMENT></SHAPECOMMENT></SHAPEOBJECT><SHAPECOMPONENT CurHeight="{}" CurWidth="{}" GroupLevel="0" HorzFlip="false" InstID="{}" OriHeight="{}" OriWidth="{}" VertFlip="false" XPos="{}" YPos="{}"><ROTATIONINFO Angle="0" CenterX="{}" CenterY="{}" Rotate="1"/><RENDERINGINFO><TRANSMATRIX E1="1.00000" E2="0.00000" E3="{:.5f}" E4="0.00000" E5="1.00000" E6="{:.5f}"/><SCAMATRIX E1="{:.5f}" E2="0.00000" E3="{:.5f}" E4="0.00000" E5="{:.5f}" E6="{:.5f}"/><ROTMATRIX E1="1.00000" E2="0.00000" E3="0.00000" E4="0.00000" E5="1.00000" E6="0.00000"/></RENDERINGINFO></SHAPECOMPONENT><IMAGERECT X0="0" X1="{}" X2="{}" X3="0" Y0="0" Y1="0" Y2="{}" Y3="{}"/><IMAGECLIP Bottom="{}" Left="{}" Right="{}" Top="{}"/><INSIDEMARGIN Bottom="0" Left="0" Right="0" Top="0"/><IMAGE Alpha="0" BinItem="{}" Bright="0" Contrast="0" Effect="RealPic"/><EFFECTS/></PICTURE>)";
 
 constexpr int kTableFullWidth = 42000;
 
@@ -104,6 +105,8 @@ struct HwpImageSize {
   int cur_width;
   int ori_height;
   int ori_width;
+  int xpos, ypos;
+  int bottom, left, right, top;
 };
 
 std::optional<HwpImageSize> GetHwpImageSize(std::string_view image_size) {
@@ -112,15 +115,37 @@ std::optional<HwpImageSize> GetHwpImageSize(std::string_view image_size) {
   }
 
   std::vector<std::string_view> sizes = SplitStringByChar(image_size, ',');
-  if (sizes.size() != 4) {
+  if (sizes.size() == 0) {
     return std::nullopt;
   }
 
   HwpImageSize size;
-  size.cur_height = std::stoi(std::string(sizes[0]));
-  size.cur_width = std::stoi(std::string(sizes[1]));
-  size.ori_height = std::stoi(std::string(sizes[2]));
-  size.ori_width = std::stoi(std::string(sizes[3]));
+
+  if (sizes.size() == 4) {
+    size.cur_height = std::stoi(std::string(sizes[0]));
+    size.cur_width = std::stoi(std::string(sizes[1]));
+    size.ori_height = std::stoi(std::string(sizes[2]));
+    size.ori_width = std::stoi(std::string(sizes[3]));
+    size.xpos = 0;
+    size.ypos = 0;
+    size.bottom = size.ori_height;
+    size.left = 0;
+    size.right = size.ori_width;
+    size.top = 0;
+  } else if (sizes.size() == 10) {
+    size.cur_height = std::stoi(std::string(sizes[0]));
+    size.cur_width = std::stoi(std::string(sizes[1]));
+    size.ori_height = std::stoi(std::string(sizes[2]));
+    size.ori_width = std::stoi(std::string(sizes[3]));
+    size.xpos = std::stoi(std::string(sizes[4]));
+    size.ypos = std::stoi(std::string(sizes[5]));
+    size.bottom = std::stoi(std::string(sizes[6]));
+    size.left = std::stoi(std::string(sizes[7]));
+    size.right = std::stoi(std::string(sizes[8]));
+    size.top = std::stoi(std::string(sizes[9]));
+  } else {
+    return std::nullopt;
+  }
 
   return size;
 }
@@ -405,29 +430,36 @@ void HwpGenerator::HandleImage(const ParseTreeImageNode& node) {
     // Inst Id, ZOrder, CurHeight, CurWidth
     // CurHeight CurWidth
     // Inst Id (Different from above)
-    // OriHeight OriWidth
+    // OriHeight OriWidth XPos YPos
     // CenterX (= CurWidth / 2) CenterY (= CurHeight / 2)
-    // E1, E5
+    // TransMatrix E3, E6
+    // ScaleMatrix E1, E3, E5, E6
     // X1, X2 = Width
     // Y2, Y3 = Height
-    // Bottom = Height Right = Width
+    // Bottom = Height Left Right = Width Top
     // BinItem
 
-    GetCurrentTarget()->append(
-        fmt::format(kImage, hwp_status_.inst_id, hwp_status_.z_order++, height,
-                    width, height, width, hwp_status_.inst_id + 1, height,
-                    width, width / 2, height / 2, 1.f, 1.f, width, width,
-                    height, height, height, width, hwp_status_.bin_item++));
+    GetCurrentTarget()->append(fmt::format(
+        kImage, hwp_status_.inst_id, hwp_status_.z_order++, height, width,
+        height, width, hwp_status_.inst_id + 1, height, width, /*xpos=*/0,
+        /*ypos=*/0, width / 2, height / 2, /*E3=*/0.f, /*E6=*/0.f, 1.f, 0.f,
+        1.f, 0.f, width, width, height, height, /*bottom=*/height, /*left=*/0,
+        /*right=*/width,
+        /*top=*/0, hwp_status_.bin_item++));
   } else {
     const HwpImageSize& sz = *size;
     GetCurrentTarget()->append(fmt::format(
         kImage, hwp_status_.inst_id, hwp_status_.z_order++, sz.cur_height,
         sz.cur_width, sz.cur_height, sz.cur_width, hwp_status_.inst_id + 1,
-        sz.ori_height, sz.ori_width, sz.cur_width / 2, sz.cur_height / 2,
+        sz.ori_height, sz.ori_width, /*xpos=*/sz.xpos, /*ypos=*/sz.ypos,
+        sz.cur_width / 2, sz.cur_height / 2, static_cast<float>(sz.xpos),
+        static_cast<float>(sz.ypos),
         /*E1=*/static_cast<float>(sz.cur_width) / sz.ori_width,
-        /*E5=*/static_cast<float>(sz.cur_height) / sz.ori_height, sz.ori_width,
-        sz.ori_width, sz.ori_height, sz.ori_height, sz.ori_height, sz.ori_width,
-        hwp_status_.bin_item++));
+        /*E3=*/sz.xpos == 0 ? 0.f : -static_cast<float>(sz.xpos),
+        /*E5=*/static_cast<float>(sz.cur_height) / sz.ori_height,
+        /*E6=*/sz.ypos == 0 ? 0.f : -static_cast<float>(sz.ypos), sz.ori_width,
+        sz.ori_width, sz.ori_height, sz.ori_height, sz.bottom, sz.left,
+        sz.right, sz.top, hwp_status_.bin_item++));
   }
 
   hwp_status_.inst_id += 2;

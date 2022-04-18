@@ -103,6 +103,37 @@ TEST(HwpTest, ImageWithSizeInfo) {
       "Effect=\"RealPic\"/><EFFECTS/></PICTURE></TEXT></P>");
 }
 
+TEST(HwpTest, ImageWithSizeInfoAndClip) {
+  DoHwpTest(
+      "![size=14284,21018,23040,33900,-12014,-8165,96060,0,141300,0](123,456)",
+      "<P ParaShape=\"0\" Style=\"0\"><TEXT CharShape=\"0\"><PICTURE "
+      "Reverse=\"false\"><SHAPEOBJECT InstId=\"1\" Lock=\"false\" "
+      "NumberingType=\"Figure\" ZOrder=\"1\"><SIZE Height=\"14284\" "
+      "HeightRelTo=\"Absolute\" Protect=\"false\" Width=\"21018\" "
+      "WidthRelTo=\"Absolute\"/><POSITION AffectLSpacing=\"false\" "
+      "AllowOverlap=\"false\" FlowWithText=\"true\" HoldAnchorAndSO=\"false\" "
+      "HorzAlign=\"Left\" HorzOffset=\"0\" HorzRelTo=\"Para\" "
+      "TreatAsChar=\"true\" VertAlign=\"Top\" VertOffset=\"0\" "
+      "VertRelTo=\"Para\"/><OUTSIDEMARGIN Bottom=\"0\" Left=\"0\" Right=\"0\" "
+      "Top=\"0\"/><SHAPECOMMENT></SHAPECOMMENT></SHAPEOBJECT><SHAPECOMPONENT "
+      "CurHeight=\"14284\" CurWidth=\"21018\" GroupLevel=\"0\" "
+      "HorzFlip=\"false\" InstID=\"2\" OriHeight=\"23040\" OriWidth=\"33900\" "
+      "VertFlip=\"false\" XPos=\"-12014\" YPos=\"-8165\"><ROTATIONINFO "
+      "Angle=\"0\" CenterX=\"10509\" CenterY=\"7142\" "
+      "Rotate=\"1\"/><RENDERINGINFO><TRANSMATRIX E1=\"1.00000\" E2=\"0.00000\" "
+      "E3=\"-12014.00000\" E4=\"0.00000\" E5=\"1.00000\" "
+      "E6=\"-8165.00000\"/><SCAMATRIX E1=\"0.62000\" E2=\"0.00000\" "
+      "E3=\"12014.00000\" E4=\"0.00000\" E5=\"0.61997\" "
+      "E6=\"8165.00000\"/><ROTMATRIX E1=\"1.00000\" E2=\"0.00000\" "
+      "E3=\"0.00000\" E4=\"0.00000\" E5=\"1.00000\" "
+      "E6=\"0.00000\"/></RENDERINGINFO></SHAPECOMPONENT><IMAGERECT X0=\"0\" "
+      "X1=\"33900\" X2=\"33900\" X3=\"0\" Y0=\"0\" Y1=\"0\" Y2=\"23040\" "
+      "Y3=\"23040\"/><IMAGECLIP Bottom=\"96060\" Left=\"0\" Right=\"141300\" "
+      "Top=\"0\"/><INSIDEMARGIN Bottom=\"0\" Left=\"0\" Right=\"0\" "
+      "Top=\"0\"/><IMAGE Alpha=\"0\" BinItem=\"1\" Bright=\"0\" Contrast=\"0\" "
+      "Effect=\"RealPic\"/><EFFECTS/></PICTURE></TEXT></P>");
+}
+
 TEST(HwpTest, Boxes) {
   std::string content = R"(
 ```candidates
