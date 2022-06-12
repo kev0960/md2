@@ -16,6 +16,7 @@ const char* convert_markdown_to_html(const char* md,
 const char* convert_markdown_to_hwp(const char* md,
                                     const HwpGenerateConfig* render_config_start,
                                     int render_config_len,
+                                    bool wrap_paragraph,
                                     HwpConversionStatus* conversion_status);
 
 // Convert markdown to hwp.

@@ -56,6 +56,7 @@ typedef struct HwpConversionStatus {
 const char* convert_markdown_to_hwp(const char* md,
                                     const HwpGenerateConfig* render_config,
                                     int render_config_len,
+                                    bool should_wrap_paragraph,
                                     HwpConversionStatus* conversion_status) {
   md2::Parser parser;
   const md2::ParseTree tree = parser.GenerateParseTree(md);
@@ -74,7 +75,8 @@ const char* convert_markdown_to_hwp(const char* md,
                                   .inst_id = conversion_status->inst_id,
                                   .z_order = conversion_status->z_order,
                                   .bin_item = conversion_status->bin_item,
-                              });
+                              },
+                              should_wrap_paragraph);
 
   for (int i = 0; i < render_config_len; i++) {
     std::string entry_name = render_config[i].entry_name;
@@ -85,7 +87,7 @@ const char* convert_markdown_to_hwp(const char* md,
       generator.GetHwpStateManager().AddTextShape(
           md2::HwpStateManager::HwpCharShapeType::PROBLEM_START_CHAR,
           render_config[i].char_shape);
-    } else if(entry_name == "default") {
+    } else if (entry_name == "default") {
       generator.GetHwpStateManager().AddParaShape(
           md2::HwpStateManager::HwpParaShapeType::PARA_REGULAR,
           render_config[i].para_shape, render_config[i].para_style);

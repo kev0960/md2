@@ -33,9 +33,10 @@ class HwpGenerator : public Generator {
 
   HwpGenerator(std::string_view filename, std::string_view content,
                GeneratorContext& context, const ParseTree& parse_tree,
-               const HwpStatus& initial_hwp_status)
+               const HwpStatus& initial_hwp_status, bool should_wrap_paragraph)
       : Generator(filename, content, context, parse_tree),
-        hwp_status_(initial_hwp_status) {
+        hwp_status_(initial_hwp_status),
+        should_wrap_paragraph_(should_wrap_paragraph) {
     hwp_state_manager_.AddDefaultMappings();
   }
 
@@ -70,6 +71,7 @@ class HwpGenerator : public Generator {
 
   HwpStateManager hwp_state_manager_;
   HwpStatus hwp_status_;
+  bool should_wrap_paragraph_;
 
   int paragraph_nest_count_ = 0;
   int total_paragraph_count_ = 0;
@@ -86,6 +88,11 @@ class HwpGenerator : public Generator {
   std::vector<HwpXmlTag> xml_tree_;
 
   bool NestedInP() const {
+    // If wrap_paragraph_ is false, then the entire hml is already wrapped inside of the paragraph.
+    if (!should_wrap_paragraph_) {
+      return true;
+    }
+
     for (auto itr = xml_tree_.rbegin(); itr != xml_tree_.rend(); itr++) {
       if (*itr == HwpXmlTag::P) {
         return true;

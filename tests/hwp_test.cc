@@ -9,7 +9,7 @@ namespace {
 using ::testing::Eq;
 
 void DoHwpTest(std::string content, std::string expected,
-               bool is_server_mode = false) {
+               bool is_server_mode = false, bool should_wrap_paragraph = true) {
   Parser parser;
   ParseTree tree = parser.GenerateParseTree(content);
 
@@ -21,7 +21,7 @@ void DoHwpTest(std::string content, std::string expected,
   GeneratorContext context(repo, "image_path", /*use_clang_server=*/false,
                            /*clang_server_port=*/0, nullptr, options);
   HwpGenerator generator(/*filename=*/"some_file.md", content, context, tree,
-                         hwp_status);
+                         hwp_status, should_wrap_paragraph);
   generator.Generate();
 
   EXPECT_EQ(std::string(generator.ShowOutput()), expected);
@@ -171,7 +171,7 @@ TEST(HwpTest, ParagraphWithProblemStartConfig) {
   GeneratorContext context(repo, "image_path", /*use_clang_server=*/false,
                            /*clang_server_port=*/0, nullptr, options);
   HwpGenerator generator(/*filename=*/"some_file.md", content, context, tree,
-                         hwp_status);
+                         hwp_status, /*should_wrap_paragraph=*/true);
   generator.GetHwpStateManager().AddParaShape(
       md2::HwpStateManager::HwpParaShapeType::PROBLEM_START_PARA, 10, 11);
   generator.GetHwpStateManager().AddTextShape(
@@ -182,6 +182,11 @@ TEST(HwpTest, ParagraphWithProblemStartConfig) {
             "<P ParaShape=\"10\" Style=\"11\"><TEXT "
             "CharShape=\"12\"><CHAR>first</CHAR></TEXT></P><P ParaShape=\"0\" "
             "Style=\"0\"><TEXT CharShape=\"1\"><CHAR>second</CHAR></TEXT></P>");
+}
+
+TEST(HwpTest, NoWrapWithParagraph) {
+  DoHwpTest("a", R"(<TEXT CharShape="1"><CHAR>a</CHAR></TEXT>)",
+            /*is_server_mode=*/false, /*should_wrap_paragraph=*/false);
 }
 
 }  // namespace

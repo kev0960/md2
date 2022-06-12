@@ -11,6 +11,7 @@ extern "C" {
         md: *const c_char,
         config: *const HwpGenerateConfigInternal,
         render_config_len: i32,
+        should_wrap_paragraph: bool,
         conversion_status: *mut HwpConversionStatus,
     ) -> *const c_char;
     fn convert_markdown_to_latex(
@@ -84,6 +85,7 @@ pub struct HwpGenerateConfig {
 pub fn markdown_to_hwp(
     md: &str,
     render_configs: &Vec<HwpGenerateConfig>,
+    should_wrap_paragraph: bool,
     hwp_conversion_status: &mut HwpConversionStatus,
 ) -> Result<String, String> {
     let html;
@@ -127,6 +129,7 @@ pub fn markdown_to_hwp(
             c_str_md.as_ptr(),
             c_render_configs.as_ptr(),
             render_configs_len as i32,
+            should_wrap_paragraph,
             hwp_conversion_status,
         );
         let c_html = CStr::from_ptr(c_html_ptr);
@@ -254,6 +257,7 @@ fn hwp_test() {
                 para_style: 3,
                 char_shape: 4
             }],
+            true,
             &mut hwp_conversion_status
         )
         .unwrap(),
