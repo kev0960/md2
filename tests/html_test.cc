@@ -194,6 +194,22 @@ TEST(HtmlTest, InlineImage) {
       /*is_server_mode=*/true, option);
 }
 
+TEST(HtmlTest, ImageUseAbsolutePath) {
+  HtmlGeneratorOptions option;
+  option.use_absolute_image_path = true;
+
+  DoHtmlTest("some ![size=30,20,300,200](static/img/a.png) image",
+             "<p>some <figure><picture><img class='content-img' "
+             "src='/static/img/a.png' "
+             "alt=''></picture><figcaption></figcaption></figure> image</p>",
+             /*is_server_mode=*/true, option);
+
+  DoHtmlTest("already ![size=30,20,300,200](/static/img/a.png) absolute",
+             "<p>already <figure><picture><img class='content-img' "
+             "src='/static/img/a.png' "
+             "alt=''></picture><figcaption></figcaption></figure> absolute</p>",
+             /*is_server_mode=*/true, option);
+}
 TEST(HtmlTest, HeaderSimple) {
   DoHtmlTest("### header",
              "<h3 id='page-heading-0' class='header-general'> header</h3>");

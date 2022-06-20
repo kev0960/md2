@@ -58,6 +58,7 @@ pub fn markdown_to_html(md: &str, config: &HtmlGenerateConfig) -> Result<String,
 #[repr(C)]
 pub struct HtmlGenerateConfig {
     pub inline_image_max_height: i32,
+    pub use_absolute_image_path: bool,
 }
 
 #[repr(C)]
@@ -200,7 +201,8 @@ fn convert_test() {
         markdown_to_html(
             "**a**",
             &HtmlGenerateConfig {
-                inline_image_max_height: 10
+                inline_image_max_height: 10,
+                use_absolute_image_path: false
             }
         )
         .unwrap(),
@@ -211,7 +213,8 @@ fn convert_test() {
         markdown_to_html(
             "**한글도 되나요**",
             &HtmlGenerateConfig {
-                inline_image_max_height: 10
+                inline_image_max_height: 10,
+                use_absolute_image_path: false
             }
         )
         .unwrap(),

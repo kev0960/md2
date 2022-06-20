@@ -10,6 +10,9 @@ extern "C" {
 
 typedef struct HtmlGenerateConfig {
   int inline_image_max_height;
+
+  // If set, then always append '/' at front for the image path.
+  bool use_absolute_image_path = false;
 } HtmlGenerateConfig;
 
 const char* convert_markdown_to_html(const char* md,
@@ -28,8 +31,10 @@ const char* convert_markdown_to_html(const char* md,
 
   md2::HTMLGenerator generator(
       "", md, context, tree,
-      md2::HtmlGeneratorOptions{.inline_image_max_height =
-                                    render_config->inline_image_max_height});
+      md2::HtmlGeneratorOptions{
+          .inline_image_max_height = render_config->inline_image_max_height,
+          .use_absolute_image_path = render_config->use_absolute_image_path});
+
   generator.Generate();
 
   std::string html = std::move(generator).ReleaseGeneratedTarget();

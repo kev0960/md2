@@ -35,6 +35,9 @@ struct HTMLImageBuilder {
 
 struct HtmlGeneratorOptions {
   int inline_image_max_height = 0;
+
+  // If set, then always append '/' at front for the image path.
+  bool use_absolute_image_path = false;
 };
 
 class HTMLGenerator : public Generator {

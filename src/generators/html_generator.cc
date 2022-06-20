@@ -95,6 +95,14 @@ std::pair<std::string_view, std::string_view> GetCurHeightAndWidthFromImageSize(
   return std::make_pair(cur_height, cur_width);
 }
 
+std::string MakeAbsoluteImagePath(std::string_view path) {
+  if (!path.empty() && path[0] != '/') {
+    return StrCat("/", path);
+  }
+
+  return std::string(path);
+}
+
 }  // namespace
 
 void HTMLGenerator::HandleParseTreeNode(const ParseTreeNode& node) {
@@ -304,11 +312,16 @@ void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
   targets_.pop_back();
 
   const HTMLImageBuilder& image = images_.back();
+  std::string image_url(context_->FindImageForHtml(image.url));
+  if (options_.use_absolute_image_path) {
+    image_url = MakeAbsoluteImagePath(image_url);
+  }
+
   if (GetGeneratorOptions().server_mode && !image.size.empty()) {
     auto [str_cur_height, str_cur_width] =
         GetCurHeightAndWidthFromImageSize(image.size);
     // These are in hangul unit so need to divide by 18.
-    float cur_height = std::stoi(std::string(str_cur_height)) / 18.f; 
+    float cur_height = std::stoi(std::string(str_cur_height)) / 18.f;
     float cur_width = std::stoi(std::string(str_cur_width)) / 18.f;
 
     if (cur_height < options_.inline_image_max_height) {
@@ -320,19 +333,19 @@ void HTMLGenerator::HandleImage(const ParseTreeImageNode& node) {
           "<figure style='width: ", std::to_string(resized_cur_width),
           "px; height: ", std::to_string(resized_cur_height),
           "px; display: inline-block'><picture><img class='content-img' src='",
-          context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
-          "</picture><figcaption>", image.caption, "</figcaption></figure>"));
+          image_url, "' alt='", image.alt, "'>", "</picture><figcaption>",
+          image.caption, "</figcaption></figure>"));
     } else {
-      GetCurrentTarget()->append(StrCat(
-          "<figure><picture><img class='content-img' src='",
-          context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
-          "</picture><figcaption>", image.caption, "</figcaption></figure>"));
+      GetCurrentTarget()->append(
+          StrCat("<figure><picture><img class='content-img' src='", image_url,
+                 "' alt='", image.alt, "'>", "</picture><figcaption>",
+                 image.caption, "</figcaption></figure>"));
     }
   } else {
-    GetCurrentTarget()->append(StrCat(
-        "<figure><picture><img class='content-img' src='",
-        context_->FindImageForHtml(image.url), "' alt='", image.alt, "'>",
-        "</picture><figcaption>", image.caption, "</figcaption></figure>"));
+    GetCurrentTarget()->append(
+        StrCat("<figure><picture><img class='content-img' src='", image_url,
+               "' alt='", image.alt, "'>", "</picture><figcaption>",
+               image.caption, "</figcaption></figure>"));
   }
   images_.pop_back();
 }
