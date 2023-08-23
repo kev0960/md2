@@ -14,6 +14,49 @@ namespace {
 
 using json = nlohmann::json;
 
+bool IsValidUTF8(const std::string& s) {
+  const unsigned char* bytes = (const unsigned char*)s.c_str();
+  unsigned int cp;
+  int num;
+
+  while (*bytes != 0x00) {
+    if ((*bytes & 0x80) == 0x00) {
+      // U+0000 to U+007F
+      cp = (*bytes & 0x7F);
+      num = 1;
+    } else if ((*bytes & 0xE0) == 0xC0) {
+      // U+0080 to U+07FF
+      cp = (*bytes & 0x1F);
+      num = 2;
+    } else if ((*bytes & 0xF0) == 0xE0) {
+      // U+0800 to U+FFFF
+      cp = (*bytes & 0x0F);
+      num = 3;
+    } else if ((*bytes & 0xF8) == 0xF0) {
+      // U+10000 to U+10FFFF
+      cp = (*bytes & 0x07);
+      num = 4;
+    } else
+      return false;
+
+    bytes += 1;
+    for (int i = 1; i < num; ++i) {
+      if ((*bytes & 0xC0) != 0x80) return false;
+      cp = (cp << 6) | (*bytes & 0x3F);
+      bytes += 1;
+    }
+
+    if ((cp > 0x10FFFF) || ((cp >= 0xD800) && (cp <= 0xDFFF)) ||
+        ((cp <= 0x007F) && (num != 1)) ||
+        ((cp >= 0x0080) && (cp <= 0x07FF) && (num != 2)) ||
+        ((cp >= 0x0800) && (cp <= 0xFFFF) && (num != 3)) ||
+        ((cp >= 0x10000) && (cp <= 0x1FFFFF) && (num != 4)))
+      return false;
+  }
+
+  return true;
+}
+
 // Returns true if the metadata has not changed.
 bool CheckMetadataMatches(std::string_view article_path_name,
                           const Database::ArticleHeaderInfo& prev_version,
@@ -58,11 +101,11 @@ std::string BooleanString(bool b) {
 
 }  // namespace
 
-Database::Database(const std::string& auth_file_path, const MetadataRepo& repo)
-    : repo_(repo) {
+Database::Database(const std::string& auth_file_path, const MetadataRepo& repo,
+                   bool use_new_schema)
+    : repo_(repo), use_new_schema_(use_new_schema) {
   std::ifstream auth_file_in(auth_file_path);
   json auth_file = json::parse(auth_file_in);
-
   // Initiate the connection to the PSQL server.
   std::string pg_user;
   std::string pg_password;
@@ -85,9 +128,17 @@ Database::Database(const std::string& auth_file_path, const MetadataRepo& repo)
 
   // Read all the hashes of current saved articles.
   pqxx::work read_articles(*conn_);
-  pqxx::result articles = read_articles.exec(
-      "SELECT article_url, current_content_sha256, creation_date, "
-      "is_published, is_deleted FROM Articles;");
+
+  pqxx::result articles;
+  if (use_new_schema) {
+    articles = read_articles.exec(
+        "SELECT article_url, current_content_sha256, create_time, "
+        "is_published, is_deleted FROM article;");
+  } else {
+    articles = read_articles.exec(
+        "SELECT article_url, current_content_sha256, creation_date, "
+        "is_published, is_deleted FROM Articles;");
+  }
 
   for (auto itr = articles.begin(); itr != articles.end(); ++itr) {
     articles_in_db_[itr[0].as<std::string>()] = {
@@ -102,6 +153,11 @@ bool Database::MaybeUpdateContent(
     const std::string& content) {
   const auto& [article_path_name, info] = *itr;
 
+  if (!IsValidUTF8(content)) {
+    LOG(0) << "Rejecting invalid content [" << article_path_name << "] ";
+    return false;
+  }
+
   bool updated = false;
 
   const std::string& prev_hash = info.current_content_sha256;
@@ -111,17 +167,27 @@ bool Database::MaybeUpdateContent(
     try {
       // Now insert into the database.
       pqxx::work append_new_article_info(*conn_);
-      append_new_article_info.exec(
-          StrCat("UPDATE articles SET contents = contents || "
-                 "row(now(), '",
-                 /* content */ append_new_article_info.esc(content),
-                 "', '', false)::article_content WHERE article_url = '",
-                 append_new_article_info.esc(article_path_name), "';"));
 
-      append_new_article_info.exec(
-          StrCat("UPDATE articles SET current_content_sha256 = '", current_hash,
-                 "' WHERE article_url = '",
-                 append_new_article_info.esc(article_path_name), "';"));
+      if (use_new_schema_) {
+        append_new_article_info.exec(StrCat(
+            "UPDATE article SET current_content_sha256 = '", current_hash,
+            "', content = '", append_new_article_info.esc(content),
+            "', update_time = now() WHERE article_url = '",
+            append_new_article_info.esc(article_path_name), "';"));
+      } else {
+        append_new_article_info.exec(
+            StrCat("UPDATE articles SET contents = contents || "
+                   "row(now(), '",
+                   /* content */ append_new_article_info.esc(content),
+                   "', '', false)::article_content WHERE article_url = '",
+                   append_new_article_info.esc(article_path_name), "';"));
+
+        append_new_article_info.exec(
+            StrCat("UPDATE articles SET current_content_sha256 = '",
+                   current_hash, "' WHERE article_url = '",
+                   append_new_article_info.esc(article_path_name), "';"));
+      }
+
       append_new_article_info.commit();
       updated = true;
     } catch (std::exception& e) {
@@ -146,15 +212,28 @@ bool Database::MaybeUpdateMetadata(
   // enough)
   if (!CheckMetadataMatches(article_path_name, itr->second, repo_)) {
     pqxx::work modify_article_metadata(*conn_);
-    modify_article_metadata.exec(StrCat(
-        "UPDATE articles SET creation_date='",
-        /* creation_date */
-        DefaultDateWhenEmpty(metadata->GetPublishDate()), "', is_published=",
-        /* is_published */
-        BooleanString(metadata->IsPublished()), ", is_deleted=false",
-        /* is_deleted */
-        " WHERE article_url = '",
-        modify_article_metadata.esc(article_path_name), "';"));
+
+    if (use_new_schema_) {
+      modify_article_metadata.exec(StrCat(
+          "UPDATE article SET create_time='",
+          /* creation_date */
+          DefaultDateWhenEmpty(metadata->GetPublishDate()), "', is_published=",
+          /* is_published */
+          BooleanString(metadata->IsPublished()), ", is_deleted=false",
+          /* is_deleted */
+          " WHERE article_url = '",
+          modify_article_metadata.esc(article_path_name), "';"));
+    } else {
+      modify_article_metadata.exec(StrCat(
+          "UPDATE articles SET creation_date='",
+          /* creation_date */
+          DefaultDateWhenEmpty(metadata->GetPublishDate()), "', is_published=",
+          /* is_published */
+          BooleanString(metadata->IsPublished()), ", is_deleted=false",
+          /* is_deleted */
+          " WHERE article_url = '",
+          modify_article_metadata.esc(article_path_name), "';"));
+    }
     modify_article_metadata.commit();
 
     return true;
@@ -173,25 +252,50 @@ bool Database::CreateNewArticle(const std::string& article_path_name,
     return false;
   }
 
-  std::string current_hash = GenerateSha256Hash(content).value_or("");
-  create_new_article.exec(
-      StrCat("INSERT INTO articles(article_url, creation_date, is_published, "
-             "is_deleted, current_content_sha256) VALUES ('",
-             create_new_article.esc(article_path_name), "', '",
-             /* creation_date */
-             DefaultDateWhenEmpty(metadata->GetPublishDate()), "', ",
-             /* is_published */
-             BooleanString(metadata->IsPublished()), ", ",
-             /* is_deleted */
-             "false, '",
-             /* current_content_sha256 */ current_hash, "');"));
+  if (!IsValidUTF8(content)) {
+    LOG(0) << "Rejecting invalid content [" << article_path_name << "] ";
+    return false;
+  }
 
-  create_new_article.exec(
-      StrCat("UPDATE articles SET contents = contents || "
-             "row(now(), '",
-             create_new_article.esc(content),
-             "', '', false)::article_content WHERE article_url = '",
-             create_new_article.esc(article_path_name), "';"));
+  std::string current_hash = GenerateSha256Hash(content).value_or("");
+
+  if (use_new_schema_) {
+    create_new_article.exec(
+        StrCat("INSERT INTO article(article_url, create_time, update_time, "
+               "is_published, "
+               "is_deleted, current_content_sha256, content) VALUES ('",
+               create_new_article.esc(article_path_name), "', '",
+               /* create_time */
+               DefaultDateWhenEmpty(metadata->GetPublishDate()), "', ",
+               /* update_time */
+               "now(), ",
+               /* is_published */
+               BooleanString(metadata->IsPublished()), ", ",
+               /* is_deleted */
+               "false, '",
+               /* current_content_sha256 */ current_hash, "', ",
+               /*  content */ "'", create_new_article.esc(content), "'", ");"));
+
+  } else {
+    create_new_article.exec(
+        StrCat("INSERT INTO articles(article_url, creation_date, is_published, "
+               "is_deleted, current_content_sha256) VALUES ('",
+               create_new_article.esc(article_path_name), "', '",
+               /* creation_date */
+               DefaultDateWhenEmpty(metadata->GetPublishDate()), "', ",
+               /* is_published */
+               BooleanString(metadata->IsPublished()), ", ",
+               /* is_deleted */
+               "false, '",
+               /* current_content_sha256 */ current_hash, "');"));
+
+    create_new_article.exec(
+        StrCat("UPDATE articles SET contents = contents || "
+               "row(now(), '",
+               create_new_article.esc(content),
+               "', '', false)::article_content WHERE article_url = '",
+               create_new_article.esc(article_path_name), "';"));
+  }
 
   create_new_article.commit();
 

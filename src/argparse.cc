@@ -161,6 +161,10 @@ std::optional<size_t> ReadFromJson(std::string_view arg,
     option->update_database = option_data["update_database"].get<bool>();
   }
 
+  if (option_data.count("update_database")) {
+    option->use_new_schema = option_data["use_new_schema"].get<bool>();
+  }
+
   return end;
 }
 

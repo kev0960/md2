@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <unordered_set>
+#include <optional>
 
 #include "logger.h"
 #include "parse_tree_nodes/box.h"

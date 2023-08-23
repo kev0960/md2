@@ -264,7 +264,7 @@ void Driver::StartClangFormatServer(const std::string& server_location) {
 }
 
 void Driver::UpdateDatabase() const {
-  Database database(options_.auth_file_path, repo_);
+  Database database(options_.auth_file_path, repo_, options_.use_new_schema);
   for (const auto& [file_name, file_info] : file_contents_) {
     auto& [content, read_pos, rel_path] = file_info;
     database.TryUpdateFileToDatabase(

@@ -11,7 +11,8 @@ namespace md2 {
 class Database {
  public:
   // Using the credentials in auth_file_path, try to connect to the database.
-  Database(const std::string& auth_file_path, const MetadataRepo& repo);
+  Database(const std::string& auth_file_path, const MetadataRepo& repo,
+           bool use_new_schema = false);
 
   // article_url (== path name). e.g "314"
   bool TryUpdateFileToDatabase(const std::string& article_url,
@@ -30,7 +31,6 @@ class Database {
   };
 
  private:
-
   // If the hash value of the content does not match to the one in the database,
   // try to add patch. Note that path name is identical to "article_url" field.
   bool MaybeUpdateContent(
@@ -48,6 +48,8 @@ class Database {
   std::unordered_map<std::string, ArticleHeaderInfo> articles_in_db_;
 
   const MetadataRepo& repo_;
+
+  const bool use_new_schema_;
 };
 }  // namespace md2
 

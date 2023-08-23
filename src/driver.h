@@ -42,6 +42,9 @@ struct DriverOptions {
 
   // Port number for the md2 server.
   int md2_server_port = 5555;
+
+  // If true, then new schema will be used for the database.
+  bool use_new_schema = false;
 };
 
 class Driver {

@@ -5,14 +5,15 @@
   "json_output_dir" : "/home/jaebum/ModooCode",
   "jobs" : 16,
   "use_clang_format_server" : true,
-  "clang_format_server" : "/home/jaebum/llvm-project/build/bin/clang-format-server",
+  "clang_format_server" : "/home/jaebum/llvm-project/bin/clang-format-server",
   "clang_format_server_port" : 5001,
   "book_to_dir" : [
     {"book" : "135", "dir" : "/home/jaebum/book/cpp"},
     {"book" : "231", "dir" : "/home/jaebum/book/c"}
   ],
-  "html" : true, 
+  "html" : true,
   "latex" : true,
   "auth_file_path" : "/home/jaebum/db_auth.json",
-  "update_database" : true
+  "update_database" : true,
+  "use_new_schema": true
 }
